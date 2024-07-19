@@ -1,0 +1,16 @@
+<resources>
+    <string name="ruleRequired">Required</string>
+    <string name="ruleNumeric">Must be a number</string>
+    <string name="ruleDecimal">Must be a decimal</string>
+    <string name="ruleMinValue">Must be at least %1$s</string>
+    <string name="ruleMaxValue">Must be at most %1$s</string>
+    <string name="ruleMinLength">Must be at least %1$s characters</string>
+    <string name="ruleMaxLength">Must be at most %1$s characters</string>
+    <string name="ruleEmail">Invalid email address</string>
+    <string name="rulePhone">Invalid phone number</string>
+    <string name="ruleDay">Invalid day</string>
+    <string name="ruleMonth">Invalid month</string>
+    <string name="ruleYear">Invalid year</string>
+    <string name="ruleInvalidDate">Invalid date %1$s</string>
+    <string name="rulePasswords">Passwords do not match</string>
+</resources>
