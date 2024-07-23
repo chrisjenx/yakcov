@@ -1,16 +1,18 @@
-import org.jetbrains.compose.ExperimentalComposeLibrary
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+@file:OptIn(ExperimentalWasmDsl::class)
+
 import com.android.build.api.dsl.ManagedVirtualDevice
+import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
+import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
     alias(libs.plugins.android.library)
+    alias(libs.plugins.maven.publish)
 }
 
 kotlin {
@@ -48,8 +50,13 @@ kotlin {
     }
 
     wasmJs {
-        browser()
-        //binaries.executable()
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                }
+            }
+        }
     }
 
     listOf(
@@ -98,6 +105,7 @@ kotlin {
         iosMain.dependencies {
         }
 
+
     }
 }
 
@@ -132,11 +140,5 @@ android {
     buildFeatures {
         //enables a Compose tooling support in the AndroidStudio
         compose = true
-    }
-}
-
-tasks.withType<KotlinJsCompile>().configureEach {
-    kotlinOptions {
-        target = "es2015"
     }
 }
