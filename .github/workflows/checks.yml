@@ -1,5 +1,4 @@
 name: Checks
-run-name: ${{ github.actor }} is running checks
 on:
   push:
     branches:
@@ -14,10 +13,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
       - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1.7.2
 
       - name: Run Js tests
-        run: ./gradlew jsBrowserTest
+        run: ./gradlew jsBrowserTest --warn
       - name: Run Wasm tests
-        run: ./gradlew wasmJsBrowserTest
+        run: ./gradlew wasmJsBrowserTest --warn
