@@ -42,4 +42,20 @@ jobs:
 #        with:
 #          components: 'platform-tools,build-tools-30.0.3'
       - name: Run Android tests
-        run: ./gradlew :library:testDebugUnitTest :library:jvmTest --warn
+        run: ./gradlew :library:testDebugUnitTest --warn --continue
+      - name: Run Jvm tests
+        run: ./gradlew :library:jvmTest --warn --continue
+
+  Checks-Apple:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+      - name: Run Apple tests
+        run: ./gradlew :library:iosSimulatorArm64Test --warn --continue
