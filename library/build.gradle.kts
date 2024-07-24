@@ -150,6 +150,7 @@ publishing {
             name = "githubPackages"
             url = uri("https://maven.pkg.github.com/chrisjenx/yakcov")
             credentials(PasswordCredentials::class)
+            // https://vanniktech.github.io/gradle-maven-publish-plugin/other/#configuring-the-repository
             // username is from: githubPackagesUsername or ORG_GRADLE_PROJECT_githubPackagesUsername
             // password is from: githubPackagesPassword or ORG_GRADLE_PROJECT_githubPackagesPassword
         }
