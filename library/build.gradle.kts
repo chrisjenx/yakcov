@@ -149,10 +149,9 @@ publishing {
         maven {
             name = "githubPackages"
             url = uri("https://maven.pkg.github.com/chrisjenx/yakcov")
-            credentials(PasswordCredentials::class) {
-                username = project.findProperty("githubPackagesUsername") as String
-                password = project.findProperty("githubPackagesPassword") as String
-            }
+            credentials(PasswordCredentials::class)
+            // username is from: githubPackagesUsername or ORG_GRADLE_PROJECT_githubPackagesUsername
+            // password is from: githubPackagesPassword or ORG_GRADLE_PROJECT_githubPackagesPassword
         }
     }
 }
