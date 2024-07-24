@@ -1,0 +1,23 @@
+name: Checks
+run-name: ${{ github.actor }} is running checks
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Checks-JS:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1.7.2
+
+      - name: Run Js tests
+        run: ./gradlew jsBrowserTest
+      - name: Run Wasm tests
+        run: ./gradlew wasmJsBrowserTest
