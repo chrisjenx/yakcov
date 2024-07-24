@@ -48,8 +48,8 @@ android {
 }
 
 dependencies {
-    //implementation(project(":library"))
-    implementation("com.chrisjenx.yakcov:library:1.0.0-SNAPSHOT")
+    implementation(project(":library"))
+//    implementation("com.chrisjenx.yakcov:library:+")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activityCompose)
@@ -58,20 +58,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.testManifest)
-}
-
-repositories {
-    mavenCentral()
-    google()
-    maven {
-        url = uri("https://maven.pkg.github.com/chrisjenx/yakcov")
-        content { includeGroup("com.chrisjenx.yakcov") }
-    }
 }

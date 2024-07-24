@@ -6,18 +6,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.chrisjenx.yakcov.Email
 import com.chrisjenx.yakcov.Required
-import com.chrisjenx.yakcov.TextFieldValueValidator
 import com.chrisjenx.yakcov.rememberTextFieldValueValidator
 import com.chrisjenx.yakcov.sample.ui.theme.YakcovTheme
 
@@ -42,9 +43,16 @@ class SampleActivity : ComponentActivity() {
                             OutlinedTextField(
                                 value = value,
                                 label = { Text(text = "Email") },
-                                modifier = Modifier.validateFocusChanged(),
+                                modifier = Modifier
+                                    .validateFocusChanged()
+                                    .fillMaxWidth(),
                                 onValueChange = ::onValueChange,
                                 isError = isError(),
+                                keyboardOptions = KeyboardOptions(
+                                    autoCorrect = false,
+                                    keyboardType = KeyboardType.Email,
+                                ),
+                                singleLine = true,
                                 supportingText = supportingText()
                             )
                         }
