@@ -46,14 +46,15 @@ kotlin {
                 }
             }
         }
-        //binaries.executable()
     }
 
     wasmJs {
         browser {
+            //https://youtrack.jetbrains.com/issue/CMP-5792/Wasm-has-wrong-absolute-dir-when-testing-library
             testTask {
                 useKarma {
                     useChromeHeadless()
+                    useConfigDirectory(project.projectDir.resolve("karma.config.d").resolve("wasm"))
                 }
             }
         }
@@ -140,5 +141,50 @@ android {
     buildFeatures {
         //enables a Compose tooling support in the AndroidStudio
         compose = true
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "githubPackages"
+            url = uri("https://maven.pkg.github.com/chrisjenx/yakcov")
+            credentials(PasswordCredentials::class) {
+                username = project.findProperty("githubPackagesUsername") as String
+                password = project.findProperty("githubPackagesPassword") as String
+            }
+        }
+    }
+}
+
+mavenPublishing {
+    coordinates("com.chrisjenx.yakcov", "library", "1.0.0-SNAPSHOT")
+
+    // the following is optional
+
+    pom {
+        name.set("Yakcov")
+        description.set("Yet Another Kotlin COmpose Validation library")
+        inceptionYear.set("2024")
+        url.set("https://github.com/chrisjenx/yakcov/")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+        developers {
+            developer {
+                id.set("chrisjenx")
+                name.set("Chris Jenkins ")
+                url.set("https://github.com/chrisjenx/")
+            }
+        }
+        scm {
+            url.set("https://github.com/chrisjenx/yakcov/")
+            connection.set("scm:git:git://github.com/chrisjenx/yakcov.git")
+            developerConnection.set("scm:git:ssh://git@github.com/chrisjenx/yakcov.git")
+        }
     }
 }
