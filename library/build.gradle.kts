@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
 import com.android.build.api.dsl.ManagedVirtualDevice
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -157,10 +158,15 @@ publishing {
     }
 }
 
-mavenPublishing {
-    coordinates("com.chrisjenx.yakcov", "library", "1.0.0-SNAPSHOT")
+// get git shortSha for version
+@Suppress("UnstableApiUsage")
+val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+    .standardOutput.asText.map { it.trim() }
 
-    // the following is optional
+mavenPublishing {
+    coordinates("com.chrisjenx.yakcov", "library", "1.0.0-${gitSha.get()}")
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
 
     pom {
         name.set("Yakcov")

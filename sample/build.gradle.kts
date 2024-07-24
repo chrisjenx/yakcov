@@ -72,8 +72,6 @@ repositories {
     google()
     maven {
         url = uri("https://maven.pkg.github.com/chrisjenx/yakcov")
-        content {
-            includeGroup("com.chrisjenx.yakcov")
-        }
+        content { includeGroup("com.chrisjenx.yakcov") }
     }
 }
