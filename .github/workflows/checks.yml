@@ -6,7 +6,8 @@ on:
   pull_request:
     branches:
       - main
-
+permissions:
+  checks: write
 jobs:
   Checks-JS:
     runs-on: ubuntu-latest
@@ -31,6 +32,7 @@ jobs:
         with:
           report_paths: '**/build/test-results/**/TEST-*.xml'
           check_name: 'JS JUnit Test Report'
+          require_tests: true
   Checks-Jvm:
     runs-on: ubuntu-latest
     steps:
@@ -52,6 +54,7 @@ jobs:
         with:
           report_paths: '**/build/test-results/**/TEST-*.xml'
           check_name: 'JVM JUnit Test Report'
+          require_tests: true
   Checks-Apple:
     runs-on: macos-latest
     steps:
@@ -71,3 +74,4 @@ jobs:
         with:
           report_paths: '**/build/test-results/**/TEST-*.xml'
           check_name: 'Apple JUnit Test Report'
+          require_tests: true
