@@ -37,15 +37,10 @@ jobs:
           distribution: 'zulu'
           java-version: '21'
           cache: 'gradle'
-#      - name: Setup Android SDK
-#        uses: android/setup-android@v2
-#        with:
-#          components: 'platform-tools,build-tools-30.0.3'
       - name: Run Android tests
         run: ./gradlew :library:testDebugUnitTest --warn --continue
       - name: Run Jvm tests
         run: ./gradlew :library:jvmTest --warn --continue
-
   Checks-Apple:
     runs-on: macos-latest
     steps:
