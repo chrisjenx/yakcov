@@ -169,8 +169,13 @@ val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD")
 
 mavenPublishing {
     // If gradle property release true remove sha from version
-    version = if (project.hasProperty("release")) gitCurrentTag.get()
-    else "${gitCurrentTag.get()}-${gitSha.get()}"
+    version = if (
+        providers.systemProperty("release").isPresent || providers.gradleProperty("release").isPresent
+    ) {
+        gitCurrentTag.get()
+    } else {
+        "${gitCurrentTag.get()}-${gitSha.get()}"
+    }
     coordinates("com.chrisjenx.yakcov", "library", version = version.toString())
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
