@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - run: git describe --abbrev=0 --tags
+      - run: git rev-parse --short HEAD
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
