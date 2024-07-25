@@ -172,6 +172,7 @@ mavenPublishing {
     version = if (project.hasProperty("release")) gitCurrentTag.get()
     else "${gitCurrentTag.get()}-${gitSha.get()}"
     coordinates("com.chrisjenx.yakcov", "library", version = version.toString())
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
     pom {
