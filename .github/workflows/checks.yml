@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - run: git tag --sort=taggerdate | tail -1
+      - run: git describe --tags $(git rev-list --tags --max-count=1)
       - run: git describe --abbrev=0 --tags
       - run: git rev-parse --short HEAD
       - name: Setup Java JDK
