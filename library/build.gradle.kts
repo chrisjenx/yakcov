@@ -159,8 +159,9 @@ publishing {
 }
 
 @Suppress("UnstableApiUsage")
-val gitCurrentTag = providers.exec { commandLine("git", "describe", "--abbrev=0", "--tags") }
-    .standardOutput.asText.map { it.trim() }
+val gitCurrentTag = providers.exec {
+    commandLine("git", "describe", "--tags", "`git rev-list --tags --max-count=1`")
+}.standardOutput.asText.map { it.trim() }
 
 // get git shortSha for version
 @Suppress("UnstableApiUsage")
