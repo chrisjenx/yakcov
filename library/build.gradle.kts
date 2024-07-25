@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalWasmDsl::class)
+@file:OptIn(ExperimentalWasmDsl::class, ExperimentalKotlinGradlePluginApi::class)
 
 import com.android.build.api.dsl.ManagedVirtualDevice
 import com.vanniktech.maven.publish.SonatypeHost
@@ -58,6 +58,9 @@ kotlin {
                     useConfigDirectory(project.projectDir.resolve("karma.config.d").resolve("wasm"))
                 }
             }
+        }
+        compilerOptions {
+            target = "es2015"
         }
     }
 
