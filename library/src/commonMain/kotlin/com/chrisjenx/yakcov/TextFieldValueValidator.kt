@@ -8,11 +8,14 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.util.fastJoinToString
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * We wrap the [TextFieldValue] to add validation support.
@@ -27,12 +30,14 @@ import androidx.compose.ui.util.fastJoinToString
  * ## Usage
  *
  * ```
- * with(model.email) {
+ * val emailValidator = rememberTextFieldValueValidator(rules = listOf(Required, Email))
+ * with(emailValidator) {
  *   TextField(
  *     value = value,
  *     onValueChange = ::onValueChange,
- *     modifier = Modifier.validateFocusChanged(), // Will validate after losing focus
- *     // other params
+ *     modifier = Modifier
+ *       .validateFocusChanged() // Will validate after losing focus
+ *       .shakeOnInvalid(), // Will shake the field if invalid and validate() is called
  *     isError = isError(), // Will mark as error if an error is present
  *     supportingText = supportingText(), // Will concat all errors into a composable response
  *   )
@@ -42,19 +47,20 @@ import androidx.compose.ui.util.fastJoinToString
  * The recommend way to use these in your models is as such:
  *
  * ```
- * @Stable // Note these are stable not Immutable, make sure if this is emmbedded that it's parent's are stable too
+ * @Stable // Note these are stable not Immutable, make sure if this is embedded that it's parent's are stable too
  * data class MyModel(
  *   // by default marks as required
  *   val email: TextFieldValueValidator = TextFieldValueValidator(
  *     textFieldValue = // optional initial value
  *     rules = listOf(Required, Email), // Pass in the validators you want to use.
- *     initialValidate = true, // if true, will start validation straight away vs user interaction or calling validate
+ *     initialValidate = true, // if true, will start validation straight away vs user interaction or calling validate()
  *   ),
  * )
  * ```
  *
- * You can use the helper methods to control other composable state, as these are derived state they will update
- * when the user interacts with the field, or if you call [TextFieldValueValidator.validate].
+ * You can use the helper methods to control other composable state, as these are derived state
+ * they will update when the user interacts with the field, or if you
+ * call [TextFieldValueValidator.validate].
  *
  * ```
  * Button(
@@ -68,12 +74,11 @@ import androidx.compose.ui.util.fastJoinToString
  * ```
  * val model = _model.asStateFlow()
  *
- * // helper method to check if fields are valid (will also show errors if they are not showing already)
+ * // We provide a helper method to validate all fields if desired, otherwise call validate on
+ * //  the ones you care about
  * fun validate(): Boolean {
  *   val model = this.model.value
- *   val isValid = true
- *   if(!model.email.validate()) isValid = false
- *   return isValid
+ *   return listOf(model.email, model.password).validate()
  * }
  *
  * fun save() {
@@ -82,7 +87,7 @@ import androidx.compose.ui.util.fastJoinToString
  *   // etc..
  * }
  * ```
- * Upating the model: It would be invalid to copy these values, you need to update the underlying value or call validate:
+ * Updating the model: It would be invalid to copy these values, you need to update the underlying value or call validate:
  *
  * ```
  * // CORRECT WAY
@@ -107,7 +112,7 @@ import androidx.compose.ui.util.fastJoinToString
 @Stable
 class TextFieldValueValidator(
     private val textFieldValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue()),
-    private val rules: List<TextFieldValueRule> = listOf(Required),
+    internal val rules: List<TextFieldValueRule> = listOf(Required),
     initialValidate: Boolean = false,
     private val alwaysShowRule: Boolean = false,
     private val validationSeparator: String = defaultValidationSeparator,
@@ -118,6 +123,7 @@ class TextFieldValueValidator(
         rules: List<TextFieldValueRule> = listOf(Required),
         initialValidate: Boolean = false,
     ) : this(mutableStateOf(TextFieldValue(text)), rules, initialValidate)
+
 
     /**
      * Set to true after first call of validate.
@@ -131,6 +137,14 @@ class TextFieldValueValidator(
     private val errorState: List<StringValidation>? by derivedStateOf {
         if (!shouldValidate) return@derivedStateOf null
         validations
+    }
+
+    // Lazy create shaking state
+    private val shakingState by lazy {
+        ShakingState(
+            strength = ShakingState.Strength.Custom(20f),
+            direction = ShakingState.Direction.LEFT_THEN_RIGHT
+        )
     }
 
     /**
@@ -158,9 +172,8 @@ class TextFieldValueValidator(
      * @see validate
      */
     fun validate(textFieldValue: TextFieldValue? = null): Boolean {
-        textFieldValue?.also { this.textFieldValue.value = it }
-        shouldValidate = true
-        return errorState == null
+        println("validating $rules")
+        return validate(textFieldValue = textFieldValue, shake = true)
     }
 
     /**
@@ -231,8 +244,35 @@ class TextFieldValueValidator(
         var hadFocus by mutableStateOf(false)
         return this.onFocusChanged { focusState ->
             if (focusState.hasFocus) hadFocus = true
-            if (!focusState.isFocused && hadFocus) validate(textFieldValue = null)
+            // Don't shake on loss of focus, as we want to just show the error
+            if (!focusState.isFocused && hadFocus) validate(textFieldValue = null, shake = false)
         }
+    }
+
+    private var shakeOnInvalidScope: CoroutineScope? = null
+
+    /**
+     * Adds to the modifier, that when [validate] is called AND the field is invalid it will
+     * shake the field to draw attention to the error.
+     */
+    @Composable
+    fun Modifier.shakeOnInvalid(): Modifier {
+        shakeOnInvalidScope = rememberCoroutineScope()
+        return this.shakable(shakingState)
+    }
+
+    // Internal validate method so focus and external validate act correctly
+    private fun validate(textFieldValue: TextFieldValue? = null, shake: Boolean = false): Boolean {
+        textFieldValue?.also { this.textFieldValue.value = it }
+        shouldValidate = true
+        println("$rules, errorState: $errorState")
+        if (shake) errorState?.let {
+            // Only shake if invalid and scope is set
+            shakeOnInvalidScope?.let { scope ->
+                scope.launch { shakingState.shake(animationDuration = 20) }
+            }
+        }
+        return errorState == null
     }
 
     override fun equals(other: Any?): Boolean {
@@ -295,5 +335,8 @@ fun rememberTextFieldValueValidator(
  * false if any are invalid
  */
 fun List<TextFieldValueValidator>.validate(): Boolean {
-    return this.all { validator -> validator.validate(textFieldValue = null) }
+    // Fold to make sure we loop through all validators
+    return this.fold(true) { valid, validator ->
+        validator.validate(textFieldValue = null) && valid
+    }
 }

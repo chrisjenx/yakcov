@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
 import com.android.build.api.dsl.ManagedVirtualDevice
+import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -149,18 +150,23 @@ publishing {
         maven {
             name = "githubPackages"
             url = uri("https://maven.pkg.github.com/chrisjenx/yakcov")
-            credentials(PasswordCredentials::class) {
-                username = project.findProperty("githubPackagesUsername") as String
-                password = project.findProperty("githubPackagesPassword") as String
-            }
+            credentials(PasswordCredentials::class)
+            // https://vanniktech.github.io/gradle-maven-publish-plugin/other/#configuring-the-repository
+            // username is from: githubPackagesUsername or ORG_GRADLE_PROJECT_githubPackagesUsername
+            // password is from: githubPackagesPassword or ORG_GRADLE_PROJECT_githubPackagesPassword
         }
     }
 }
 
-mavenPublishing {
-    coordinates("com.chrisjenx.yakcov", "library", "1.0.0-SNAPSHOT")
+// get git shortSha for version
+@Suppress("UnstableApiUsage")
+val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+    .standardOutput.asText.map { it.trim() }
 
-    // the following is optional
+mavenPublishing {
+    coordinates("com.chrisjenx.yakcov", "library", "1.0.0-${gitSha.get()}")
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
 
     pom {
         name.set("Yakcov")
