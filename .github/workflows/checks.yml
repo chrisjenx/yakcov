@@ -14,9 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - run: git describe --tags $(git rev-list --tags --max-count=1)
-      - run: git describe --abbrev=0 --tags
-      - run: git rev-parse --short HEAD
+        with:
+          fetch-tags: true
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
@@ -41,6 +40,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-tags: true
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
@@ -63,6 +64,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-tags: true
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
