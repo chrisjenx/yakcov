@@ -159,13 +159,18 @@ publishing {
 }
 
 @Suppress("UnstableApiUsage")
-val gitCurrentTag = providers.exec {
-    commandLine("git", "describe", "--tags", "`git rev-list --tags --max-count=1`")
+private val gitRevListTags = providers.exec {
+    commandLine("git", "rev-list", "--tags", "--max-count=1")
+}.standardOutput.asText.map { it.trim() }
+
+@Suppress("UnstableApiUsage")
+private val gitCurrentTag = providers.exec {
+    commandLine("git", "describe", "--tags", gitRevListTags.get())
 }.standardOutput.asText.map { it.trim() }
 
 // get git shortSha for version
 @Suppress("UnstableApiUsage")
-val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+private val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
     .standardOutput.asText.map { it.trim() }
 
 mavenPublishing {
