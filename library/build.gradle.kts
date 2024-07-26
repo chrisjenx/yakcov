@@ -159,18 +159,29 @@ publishing {
 }
 
 @Suppress("UnstableApiUsage")
-val gitCurrentTag = providers.exec { commandLine("git", "describe", "--abbrev=0", "--tags") }
-    .standardOutput.asText.map { it.trim() }
+private val gitRevListTags = providers.exec {
+    commandLine("git", "rev-list", "--tags", "--max-count=1")
+}.standardOutput.asText.map { it.trim() }
+
+@Suppress("UnstableApiUsage")
+private val gitCurrentTag = providers.exec {
+    commandLine("git", "describe", "--tags", gitRevListTags.get())
+}.standardOutput.asText.map { it.trim() }
 
 // get git shortSha for version
 @Suppress("UnstableApiUsage")
-val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
+private val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
     .standardOutput.asText.map { it.trim() }
 
 mavenPublishing {
     // If gradle property release true remove sha from version
-    version = if (project.hasProperty("release")) gitCurrentTag.get()
-    else "${gitCurrentTag.get()}-${gitSha.get()}"
+    version = if (
+        providers.systemProperty("release").isPresent || providers.gradleProperty("release").isPresent
+    ) {
+        gitCurrentTag.get()
+    } else {
+        "${gitCurrentTag.get()}-${gitSha.get()}"
+    }
     coordinates("com.chrisjenx.yakcov", "library", version = version.toString())
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
