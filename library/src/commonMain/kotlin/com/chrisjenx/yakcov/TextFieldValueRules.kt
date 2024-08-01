@@ -32,16 +32,15 @@ abstract class TextFieldValueRule {
 @Stable
 data object Required : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
-        return if (value.text.isBlank()) StringValidation(Res.string.ruleRequired) else null
+        return if (value.text.isBlank()) StringResourceValidation(Res.string.ruleRequired) else null
     }
 }
-
 
 @Stable
 data object Numeric : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         return if (value.text.toLongOrNull() == null) {
-            StringValidation(Res.string.ruleNumeric)
+            StringResourceValidation(Res.string.ruleNumeric)
         } else {
             null
         }
@@ -53,7 +52,7 @@ data object Numeric : TextFieldValueRule() {
 data object Decimal : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         return if (value.text.toFloatOrNull() == null) {
-            StringValidation(Res.string.ruleDecimal)
+            StringResourceValidation(Res.string.ruleDecimal)
         } else {
             null
         }
@@ -65,7 +64,7 @@ data class MinValue(val minValue: Number) : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         val number = value.text.toDoubleOrNull()
         return if (number == null || number < minValue.toDouble()) {
-            StringValidation(Res.string.ruleMinValue, minValue)
+            StringResourceValidation(Res.string.ruleMinValue, minValue)
         } else null
     }
 }
@@ -75,7 +74,7 @@ data class MaxValue(val maxValue: Float) : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         val number = value.text.toFloatOrNull()
         return if (value.text.isNotBlank() && (number == null || number > maxValue)) {
-            StringValidation(Res.string.ruleMaxValue, maxValue)
+            StringResourceValidation(Res.string.ruleMaxValue, maxValue)
         } else null
     }
 }
@@ -84,7 +83,7 @@ data class MaxValue(val maxValue: Float) : TextFieldValueRule() {
 data class MinLength(val minLength: Int) : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         return if (value.text.length < minLength) {
-            StringValidation(Res.string.ruleMinLength, minLength)
+            StringResourceValidation(Res.string.ruleMinLength, minLength)
         } else null
     }
 }
@@ -93,7 +92,7 @@ data class MinLength(val minLength: Int) : TextFieldValueRule() {
 data class MaxLength(val maxLength: Int) : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         return if (value.text.length > maxLength) {
-            StringValidation(Res.string.ruleMaxLength, maxLength)
+            StringResourceValidation(Res.string.ruleMaxLength, maxLength)
         } else null
     }
 }
@@ -104,7 +103,7 @@ data object Email : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         // only validate if not empty as Required will check if not empty
         return if (!value.text.isEmail()) {
-            StringValidation(Res.string.ruleEmail)
+            StringResourceValidation(Res.string.ruleEmail)
         } else null
     }
 }
@@ -115,7 +114,7 @@ data object Phone : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         // only validate if not empty as Required will check if not empty
         return if (!value.text.isPhoneNumber()) {
-            StringValidation(Res.string.rulePhone)
+            StringResourceValidation(Res.string.rulePhone)
         } else null
     }
 }
@@ -124,14 +123,17 @@ data object Phone : TextFieldValueRule() {
 data class DayValidation(val localDate: State<LocalDate>) : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         val current = localDate.value
-        val dayOfMonth = value.text.toIntOrNull() ?: return StringValidation(Res.string.ruleDay)
+        val dayOfMonth = value.text.toIntOrNull()
+            ?: return StringResourceValidation(Res.string.ruleDay)
         runCatching {
             LocalDate(
                 current.year,
                 current.monthNumber,
                 dayOfMonth
             )
-        }.onFailure { return StringValidation(Res.string.ruleInvalidDate, it.message ?: "") }
+        }.onFailure {
+            return StringResourceValidation(Res.string.ruleInvalidDate, it.message ?: "")
+        }
         return null
     }
 }
@@ -140,14 +142,17 @@ data class DayValidation(val localDate: State<LocalDate>) : TextFieldValueRule()
 data class MonthValidation(val localDate: State<LocalDate>) : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         val current = localDate.value
-        val monthOfYear = value.text.toIntOrNull() ?: return StringValidation(Res.string.ruleMonth)
+        val monthOfYear = value.text.toIntOrNull()
+            ?: return StringResourceValidation(Res.string.ruleMonth)
         runCatching {
             LocalDate(
                 current.year,
                 monthOfYear,
                 current.dayOfMonth
             )
-        }.onFailure { return StringValidation(Res.string.ruleInvalidDate, it.message ?: "") }
+        }.onFailure {
+            return StringResourceValidation(Res.string.ruleInvalidDate, it.message ?: "")
+        }
         return null
     }
 }
@@ -156,25 +161,25 @@ data class MonthValidation(val localDate: State<LocalDate>) : TextFieldValueRule
 data class YearValidation(val localDate: State<LocalDate>) : TextFieldValueRule() {
     override fun validate(value: TextFieldValue): StringValidation? {
         val current = localDate.value
-        val year = value.text.toIntOrNull() ?: return StringValidation(Res.string.ruleYear)
+        val year = value.text.toIntOrNull() ?: return StringResourceValidation(Res.string.ruleYear)
         runCatching {
             LocalDate(
                 year,
                 current.monthNumber,
                 current.dayOfMonth
             )
-        }.onFailure { return StringValidation(Res.string.ruleInvalidDate, it.message ?: "") }
+        }.onFailure {
+            return StringResourceValidation(Res.string.ruleInvalidDate, it.message ?: "")
+        }
         return null
     }
 }
 
 @Stable
 data class PasswordMatches(val otherField: TextFieldValueValidator) : TextFieldValueRule() {
-
     override fun validate(value: TextFieldValue): StringValidation? {
         return if (value.text != otherField.value.text) {
-            StringValidation(Res.string.rulePasswords)
+            StringResourceValidation(Res.string.rulePasswords)
         } else null
     }
-
 }

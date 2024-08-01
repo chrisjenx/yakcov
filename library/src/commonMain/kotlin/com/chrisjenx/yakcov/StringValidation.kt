@@ -7,10 +7,10 @@ import org.jetbrains.compose.resources.stringResource
 
 @Immutable
 @Suppress("DataClassPrivateConstructor")
-data class StringValidation private constructor(
+data class StringResourceValidation private constructor(
     private val stringResource: StringResource,
     private val varargs: List<Any> = emptyList(),
-) {
+) : StringValidation {
 
     constructor(stringResource: StringResource, vararg varargs: Any) : this(
         stringResource = stringResource,
@@ -18,5 +18,18 @@ data class StringValidation private constructor(
     )
 
     @Composable
-    fun format(): String = stringResource(stringResource, *varargs.toTypedArray())
+    override fun format(): String = stringResource(stringResource, *varargs.toTypedArray())
+}
+
+@Immutable
+data class RegularStringValidation(
+    private val string: String,
+) : StringValidation {
+    @Composable
+    override fun format(): String = string
+}
+
+interface StringValidation {
+    @Composable
+    fun format(): String
 }
