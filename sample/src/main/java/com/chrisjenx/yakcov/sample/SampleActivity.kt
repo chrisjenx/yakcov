@@ -30,7 +30,6 @@ import com.chrisjenx.yakcov.Required
 import com.chrisjenx.yakcov.rememberTextFieldValueValidator
 import com.chrisjenx.yakcov.sample.ui.theme.YakcovTheme
 import com.chrisjenx.yakcov.validate
-import kotlinx.coroutines.launch
 
 class SampleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,7 +79,7 @@ class SampleActivity : ComponentActivity() {
                             rules = listOf(
                                 Required,
                                 MinLength(minLength = 6),
-                                PasswordMatches(passwordValidator)
+                                PasswordMatches(passwordValidator),
                             ),
                             alwaysShowRule = true
                         )
