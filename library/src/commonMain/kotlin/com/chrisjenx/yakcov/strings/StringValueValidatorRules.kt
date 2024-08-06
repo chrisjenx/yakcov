@@ -1,10 +1,16 @@
 @file:Suppress("FunctionName")
 
-package com.chrisjenx.yakcov
+package com.chrisjenx.yakcov.strings
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.ui.text.input.TextFieldValue
+import com.chrisjenx.yakcov.StringResourceValidation
+import com.chrisjenx.yakcov.StringValidation
+import com.chrisjenx.yakcov.ValueValidator
+import com.chrisjenx.yakcov.ValueValidatorRule
+import com.chrisjenx.yakcov.isEmail
+import com.chrisjenx.yakcov.isPhoneNumber
 import kotlinx.datetime.LocalDate
 import yakcov.library.generated.resources.Res
 import yakcov.library.generated.resources.ruleDay

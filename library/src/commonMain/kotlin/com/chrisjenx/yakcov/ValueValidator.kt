@@ -12,12 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.util.fastJoinToString
-import com.chrisjenx.yakcov.TextFieldValueValidator.Companion.defaultValidationSeparator
+import com.chrisjenx.yakcov.strings.TextFieldValueValidator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 abstract class ValueValidator<V, R>(
-    val state: MutableState<V>,
+    protected val state: MutableState<V>,
     protected val rules: List<ValueValidatorRule<R>>,
     protected val initialValidate: Boolean = false,
     protected val alwaysShowRule: Boolean = false,
@@ -73,7 +73,7 @@ abstract class ValueValidator<V, R>(
      * Slightly different to [validate] this is prefered to be called whne the value changes and
      * won't shake while the user is typing unlike [validate]
      */
-    open fun onValueChange(value: V) {
+    open fun onValueChange(value: V?) {
         validate(value, shake = false)
     }
 
@@ -184,6 +184,13 @@ abstract class ValueValidator<V, R>(
         return state.toString()
     }
 
+    companion object {
+        /**
+         * What we joinToString with for multiple rules
+         */
+        var defaultValidationSeparator = ", "
+    }
+
 }
 
 
@@ -191,7 +198,7 @@ abstract class ValueValidator<V, R>(
  * Iterate through list of fields and validate them all to start error validation, true if all valid
  * false if any are invalid
  */
-fun List<TextFieldValueValidator>.validate(): Boolean {
+fun List<ValueValidator<*, *>>.validate(): Boolean {
     // Fold to make sure we loop through all validators
     return this.fold(true) { valid, validator ->
         validator.validate(value = null, shake = true) && valid

@@ -1,5 +1,10 @@
 <resources>
     <string name="ruleRequired">Required</string>
+    <string name="ruleNotNull">A selection must be made</string>
+    <string name="ruleNotEmptyList">List must not be empty</string>
+    <string name="ruleIsEmptyList">List must be empty</string>
+    <string name="ruleIsChecked">Must be checked</string>
+    <string name="ruleIsNotChecked">Must not be checked</string>
     <string name="ruleNumeric">Must be a number</string>
     <string name="ruleDecimal">Must be a decimal</string>
     <string name="ruleMinValue">Must be at least %1$s</string>

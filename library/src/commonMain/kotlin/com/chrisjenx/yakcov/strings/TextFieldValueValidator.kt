@@ -1,4 +1,4 @@
-package com.chrisjenx.yakcov
+package com.chrisjenx.yakcov.strings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -6,6 +6,9 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.input.TextFieldValue
+import com.chrisjenx.yakcov.ValueValidator
+import com.chrisjenx.yakcov.ValueValidator.Companion.defaultValidationSeparator
+import com.chrisjenx.yakcov.ValueValidatorRule
 
 /**
  * We wrap the [TextFieldValue] to add validation support.
@@ -147,13 +150,6 @@ class TextFieldValueValidator(
         return state.value.text
     }
 
-    companion object {
-        /**
-         * What we joinToString with for multiple rules
-         */
-        var defaultValidationSeparator = ", "
-    }
-
 }
 
 
@@ -166,7 +162,7 @@ fun rememberTextFieldValueValidator(
     rules: List<ValueValidatorRule<String>> = listOf(Required),
     initialValidate: Boolean = false,
     alwaysShowRule: Boolean = false,
-    validationSeparator: String = TextFieldValueValidator.defaultValidationSeparator,
+    validationSeparator: String = defaultValidationSeparator,
 ): TextFieldValueValidator {
     return remember {
         TextFieldValueValidator(
