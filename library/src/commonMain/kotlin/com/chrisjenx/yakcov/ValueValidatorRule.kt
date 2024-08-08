@@ -2,9 +2,12 @@ package com.chrisjenx.yakcov
 
 interface ValueValidatorRule<V> {
     /**
-     * Validate the [value] and return an error message if the value is invalid,
-     * or null if the value is valid.
+     * Validate the [value] and return an [ValidationResult].
+     *
+     * @param value The value to validate.
+     * @return The result of the validation. [ValidationResult.outcome]
+     *  will default to ERROR unless overridden
      */
-    abstract fun validate(value: V): StringValidation?
+    fun validate(value: V): ValidationResult
 
 }

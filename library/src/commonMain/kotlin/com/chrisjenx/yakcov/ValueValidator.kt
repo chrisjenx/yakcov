@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.util.fastJoinToString
+import com.chrisjenx.yakcov.ValidationResult.Outcome
 import com.chrisjenx.yakcov.strings.TextFieldValueValidator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -23,7 +24,7 @@ abstract class ValueValidator<V, R>(
     protected val alwaysShowRule: Boolean = false,
     protected val validationSeparator: String = defaultValidationSeparator,
     protected val shakeOnInvalid: Boolean = false,
-    private val validateMapper: ValueValidatorRule<R>.(V) -> StringValidation?,
+    private val validateMapper: ValueValidatorRule<R>.(V) -> ValidationResult,
 ) {
 
     /**
@@ -34,92 +35,116 @@ abstract class ValueValidator<V, R>(
     /**
      * Set to true after first call of validate.
      */
-    private var shouldValidate by mutableStateOf(initialValidate || rules.isEmpty())
+    private var shouldValidate: Boolean by mutableStateOf(initialValidate || rules.isEmpty())
 
     /**
-     * Once validation is requested return validation rules, null is valid or not requested
-     * validation yet, check [shouldValidate].
+     *  Current Field validation state, will be empty if no rules are set.
      */
-    protected val errorState: List<StringValidation>? by derivedStateOf {
-        if (!shouldValidate) return@derivedStateOf null
-        validations
-    }
-
-    // Lazy create shaking state
-    private val shakingState by lazy {
-        ShakingState(
-            strength = ShakingState.Strength.Custom(20f),
-            direction = ShakingState.Direction.LEFT_THEN_RIGHT
-        )
+    val validationResults: List<ValidationResult> by derivedStateOf {
+        rules.map { it.validateMapper(value) }
     }
 
     /**
-     *  Current Field validation state, this will only show invalid rules, once they are
-     *  satisfied these will disappear. I.e. a null list is valid field.
-     */
-    val validations: List<StringValidation>? by derivedStateOf {
-        rules.mapNotNull { it.validateMapper(value) }.takeIf { it.isNotEmpty() }
-    }
-
-    /**
-     * True once [validate] has been called and there are no errors.
+     * True once [validate] has been called and all rules are are less than [Outcome.ERROR]
      *
      * @see isError
-     * @see getErrorString
+     * @see getValidationResultString
      */
-    val isValid by derivedStateOf { shouldValidate && errorState == null }
+    val isValid: Boolean by derivedStateOf {
+        if (!shouldValidate) return@derivedStateOf false
+        val severity = validationResults.map { it.outcome() }.maxOfOrNull { it.severity }
+            ?: return@derivedStateOf false
+        severity < Outcome.ERROR.severity
+    }
 
     /**
      * Slightly different to [validate] this is prefered to be called whne the value changes and
      * won't shake while the user is typing unlike [validate]
      */
     open fun onValueChange(value: V?) {
-        validate(value, shake = false)
+        validateWithResult(value, shake = false)
     }
 
     /**
      * Called when requesting if valid or to update the value and validate.
      *
      * @see validate
+     * @return true if the value if outcomes are all less than [Outcome.ERROR]
      */
-    open fun validate(value: V? = null): Boolean {
-        return validate(value, shake = true)
-    }
+    open fun validate(value: V? = null): Boolean = validate(value, shake = true)
 
     /**
-     * @return true if the [TextFieldValue] is invalid, false otherwise.
-     */
-    fun isError(): Boolean = errorState != null
-
-    /**
-     * @return the error message if the [TextFieldValue] is invalid, null otherwise.
-     */
-    @Composable
-    fun getErrorString(): String? {
-        return errorState?.map { it.format() }?.fastJoinToString(validationSeparator)
-    }
-
-    /**
-     * Returns the rule validations if set, will only return outstanding rules.
-     * I.e. if field is required this will only show if the field is empty.
+     * Called when requesting if valid or to update the value and validate.
      *
-     * Unlike [getErrorString] this will return rules regardless of if [validate] has been called or not.
+     * @see validate
+     * @return the outcome of the validations, returns most severe outcome.
+     */
+    open fun validateWithResult(value: V? = null): Outcome {
+        return validateWithResult(value, shake = true)
+    }
+
+    /**
+     * @return true if the [ValueValidator] has started validation and any outcome is [Outcome.ERROR]
+     * or higher.
+     */
+    fun isError(): Boolean = validationResults
+        .takeIf { shouldValidate }
+        ?.maxOfOrNull { it.outcome().severity >= Outcome.ERROR.severity }
+        ?: false
+
+    /**
+     * If there are multiple rules this will return the highest severity of the rules.
+     * I.e. if three rules succeed and one Errors, this will return Error.
+     *
+     * @return the outcome of the validations, will be null if no validations have been run yet.
+     */
+    fun outcome(): Outcome? = validationResults
+        .takeIf { shouldValidate }
+        ?.maxByOrNull { it.outcome().severity }?.outcome()
+
+    /**
+     * @return the error message of [ValueValidatorRule] with [Outcome.ERROR], null otherwise.
      */
     @Composable
-    fun getValidationString(): String? {
-        return validations?.map { it.format() }?.fastJoinToString(validationSeparator)
+    @Deprecated(
+        "Use getValidationResultString instead",
+        ReplaceWith("getValidationResultString(Output.ERROR.severity)")
+    )
+    fun getErrorString(): String? {
+        return validationResults
+            .takeIf { shouldValidate }
+            ?.filter { it.outcome().severity >= Outcome.ERROR.severity }
+            ?.mapNotNull { it.format() }
+            ?.takeIf { it.isNotEmpty() } // return null if no errors
+            ?.fastJoinToString(validationSeparator)
+    }
+
+    /**
+     * Unlike [getErrorString] this will return rules regardless if
+     * [validate] has been called or not.
+     *
+     * @param severity the minimum severity to return, defaults to [Outcome.SUCCESS.severity]
+     * @return the validation message of [ValueValidatorRule] with [Outcome]
+     *  greater or equal to [severity]
+     */
+    @Composable
+    fun getValidationResultString(severity: Short = Outcome.SUCCESS.severity): String? {
+        return validationResults
+            .filter { it.outcome().severity >= severity }
+            .mapNotNull { it.format() }
+            .takeIf { it.isNotEmpty() }
+            ?.fastJoinToString(validationSeparator)
     }
 
     /**
      * Generates a supporting error text for your TextField.
+     *
+     * @param severity the minimum severity to show, defaults to [Outcome.SUCCESS.severity]
      */
     @Composable
-    fun supportingText(): (@Composable () -> Unit)? {
-        if (alwaysShowRule) getValidationString()?.let { validations ->
+    fun supportingText(severity: Short = Outcome.SUCCESS.severity): (@Composable () -> Unit)? {
+        if (alwaysShowRule || shouldValidate) getValidationResultString(severity)?.let { validations ->
             return { Text(validations) }
-        }
-        getErrorString()?.let { error ->
-            return { Text(error) }
         }
         return null
     }
@@ -132,11 +157,17 @@ abstract class ValueValidator<V, R>(
         return this.onFocusChanged { focusState ->
             if (focusState.hasFocus) hadFocus = true
             // Don't shake on loss of focus, as we want to just show the error
-            if (!focusState.isFocused && hadFocus) validate(value = null, shake = false)
+            if (!focusState.isFocused && hadFocus) validateWithResult(value = null, shake = false)
         }
     }
 
     private var shakeOnInvalidScope: CoroutineScope? = null
+    private val shakingState by lazy {
+        ShakingState(
+            strength = ShakingState.Strength.Custom(20f),
+            direction = ShakingState.Direction.LEFT_THEN_RIGHT
+        )
+    }
 
     /**
      * Adds to the modifier, that when [validate] is called AND the field is invalid it will
@@ -150,15 +181,20 @@ abstract class ValueValidator<V, R>(
 
     // Internal validate method so focus and external validate act correctly
     internal fun validate(value: V? = null, shake: Boolean = false): Boolean {
+        return validateWithResult(value, shake).severity < Outcome.ERROR.severity
+    }
+
+    // Internal validate method so focus and external validate act correctly
+    internal fun validateWithResult(value: V? = null, shake: Boolean = false): Outcome {
         value?.also { this.value = it }
         shouldValidate = true
-        if (shake) errorState?.let {
+        val outcome = validationResults
+            .map { it.outcome() }.maxByOrNull { it.severity } ?: Outcome.SUCCESS
+        if (shake && outcome.severity >= Outcome.ERROR.severity) {
             // Only shake if invalid and scope is set
-            shakeOnInvalidScope?.let { scope ->
-                scope.launch { shakingState.shake(animationDuration = 20) }
-            }
+            shakeOnInvalidScope?.launch { shakingState.shake(animationDuration = 20) }
         }
-        return errorState == null
+        return outcome
     }
 
 
@@ -170,13 +206,13 @@ abstract class ValueValidator<V, R>(
 
         if (value != other.value) return false
         if (rules != other.rules) return false
-        return errorState == other.errorState
+        return validationResults == other.validationResults
     }
 
     override fun hashCode(): Int {
         var result = value.hashCode()
         result = 31 * result + rules.hashCode()
-        result = 31 * result + (errorState?.hashCode() ?: 0)
+        result = 31 * result + validationResults.hashCode()
         return result
     }
 
@@ -203,5 +239,14 @@ fun List<ValueValidator<*, *>>.validate(): Boolean {
     return this.fold(true) { valid, validator ->
         validator.validate(value = null, shake = true) && valid
     }
+}
+
+/**
+ * Iterate through list of fields and validate them all to start error validation, will return
+ * the highest severity of all the validators passed in.
+ */
+fun List<ValueValidator<*, *>>.validateWithResult(): Outcome {
+    return this.map { it.validateWithResult(value = null, shake = true) }
+        .maxByOrNull { it.severity } ?: Outcome.SUCCESS
 }
 

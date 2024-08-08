@@ -5,8 +5,8 @@ package com.chrisjenx.yakcov.strings
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.ui.text.input.TextFieldValue
-import com.chrisjenx.yakcov.StringResourceValidation
-import com.chrisjenx.yakcov.StringValidation
+import com.chrisjenx.yakcov.ResourceValidationResult
+import com.chrisjenx.yakcov.ValidationResult
 import com.chrisjenx.yakcov.ValueValidator
 import com.chrisjenx.yakcov.ValueValidatorRule
 import com.chrisjenx.yakcov.isEmail
@@ -31,18 +31,19 @@ import kotlin.jvm.JvmName
 
 @Stable
 data object Required : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
-        return if (value.isBlank()) StringResourceValidation(Res.string.ruleRequired) else null
+    override fun validate(value: String): ValidationResult {
+        return if (value.isBlank()) ResourceValidationResult.error(Res.string.ruleRequired)
+        else ResourceValidationResult.success()
     }
 }
 
 @Stable
 data object Numeric : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         return if (value.toLongOrNull() == null) {
-            StringResourceValidation(Res.string.ruleNumeric)
+            ResourceValidationResult.error(Res.string.ruleNumeric)
         } else {
-            null
+            ResourceValidationResult.success()
         }
     }
 }
@@ -50,128 +51,128 @@ data object Numeric : ValueValidatorRule<String> {
 
 @Stable
 data object Decimal : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         return if (value.toFloatOrNull() == null) {
-            StringResourceValidation(Res.string.ruleDecimal)
+            ResourceValidationResult.error(Res.string.ruleDecimal)
         } else {
-            null
+            ResourceValidationResult.success()
         }
     }
 }
 
 @Stable
 data class MinValue(val minValue: Number) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         val number = value.toDoubleOrNull()
         return if (number == null || number < minValue.toDouble()) {
-            StringResourceValidation(Res.string.ruleMinValue, minValue)
-        } else null
+            ResourceValidationResult.error(Res.string.ruleMinValue, minValue)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
 @Stable
 data class MaxValue(val maxValue: Float) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         val number = value.toFloatOrNull()
         return if (value.isNotBlank() && (number == null || number > maxValue)) {
-            StringResourceValidation(Res.string.ruleMaxValue, maxValue)
-        } else null
+            ResourceValidationResult.error(Res.string.ruleMaxValue, maxValue)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
 @Stable
 data class MinLength(val minLength: Int) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         return if (value.length < minLength) {
-            StringResourceValidation(Res.string.ruleMinLength, minLength)
-        } else null
+            ResourceValidationResult.error(Res.string.ruleMinLength, minLength)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
 @Stable
 data class MaxLength(val maxLength: Int) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         return if (value.length > maxLength) {
-            StringResourceValidation(Res.string.ruleMaxLength, maxLength)
-        } else null
+            ResourceValidationResult.error(Res.string.ruleMaxLength, maxLength)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
 // Email
 @Stable
 data object Email : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         // only validate if not empty as Required will check if not empty
         return if (!value.isEmail()) {
-            StringResourceValidation(Res.string.ruleEmail)
-        } else null
+            ResourceValidationResult.error(Res.string.ruleEmail)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
 // Phone
 @Stable
 data object Phone : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         // only validate if not empty as Required will check if not empty
         return if (!value.isPhoneNumber()) {
-            StringResourceValidation(Res.string.rulePhone)
-        } else null
+            ResourceValidationResult.error(Res.string.rulePhone)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
 @Stable
 data class DayValidation(val localDate: State<LocalDate>) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         val current = localDate.value
         val dayOfMonth = value.toIntOrNull()
-            ?: return StringResourceValidation(Res.string.ruleDay)
+            ?: return ResourceValidationResult.error(Res.string.ruleDay)
         runCatching {
-            LocalDate(
-                current.year,
-                current.monthNumber,
-                dayOfMonth
-            )
+            LocalDate(current.year, current.monthNumber, dayOfMonth)
         }.onFailure {
-            return StringResourceValidation(Res.string.ruleInvalidDate, it.message ?: "")
+            return ResourceValidationResult.error(Res.string.ruleInvalidDate, it.message ?: "")
         }
-        return null
+        return ResourceValidationResult.success()
     }
 }
 
 @Stable
 data class MonthValidation(val localDate: State<LocalDate>) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         val current = localDate.value
         val monthOfYear = value.toIntOrNull()
-            ?: return StringResourceValidation(Res.string.ruleMonth)
+            ?: return ResourceValidationResult.error(Res.string.ruleMonth)
         runCatching {
-            LocalDate(
-                current.year,
-                monthOfYear,
-                current.dayOfMonth
-            )
+            LocalDate(current.year, monthOfYear, current.dayOfMonth)
         }.onFailure {
-            return StringResourceValidation(Res.string.ruleInvalidDate, it.message ?: "")
+            return ResourceValidationResult.error(Res.string.ruleInvalidDate, it.message ?: "")
         }
-        return null
+        return ResourceValidationResult.success()
     }
 }
 
 @Stable
 data class YearValidation(val localDate: State<LocalDate>) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
+    override fun validate(value: String): ValidationResult {
         val current = localDate.value
-        val year = value.toIntOrNull() ?: return StringResourceValidation(Res.string.ruleYear)
+        val year = value.toIntOrNull() ?: return ResourceValidationResult.error(Res.string.ruleYear)
         runCatching {
-            LocalDate(
-                year,
-                current.monthNumber,
-                current.dayOfMonth
-            )
+            LocalDate(year, current.monthNumber, current.dayOfMonth)
         }.onFailure {
-            return StringResourceValidation(Res.string.ruleInvalidDate, it.message ?: "")
+            return ResourceValidationResult.error(Res.string.ruleInvalidDate, it.message ?: "")
         }
-        return null
+        return ResourceValidationResult.success()
     }
 }
 
@@ -180,9 +181,12 @@ data class YearValidation(val localDate: State<LocalDate>) : ValueValidatorRule<
 internal data class PasswordMatchesString(
     val otherField: ValueValidator<String, *>
 ) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
-        return if (value != otherField.value) StringResourceValidation(Res.string.rulePasswords)
-        else null
+    override fun validate(value: String): ValidationResult {
+        return if (value != otherField.value) {
+            ResourceValidationResult.error(Res.string.rulePasswords)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
@@ -190,9 +194,12 @@ internal data class PasswordMatchesString(
 internal data class PasswordMatchesTextFieldValue(
     val otherField: ValueValidator<TextFieldValue, *>
 ) : ValueValidatorRule<String> {
-    override fun validate(value: String): StringValidation? {
-        return if (value != otherField.value.text) StringResourceValidation(Res.string.rulePasswords)
-        else null
+    override fun validate(value: String): ValidationResult {
+        return if (value != otherField.value.text) {
+            ResourceValidationResult.error(Res.string.rulePasswords)
+        } else {
+            ResourceValidationResult.success()
+        }
     }
 }
 
