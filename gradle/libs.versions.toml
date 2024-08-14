@@ -1,18 +1,18 @@
 [versions]
 
-kotlin = "2.0.0"
-compose = "1.6.11"
+kotlin = "2.0.20-RC"
+compose = "1.7.0-alpha02"
 agp = "8.4.2"
-androidx-activityCompose = "1.9.0"
+androidx-activityCompose = "1.9.1"
 androidx-uiTest = "1.6.8"
 kotlinx-datetime = "0.6.0"
-libphonenumberJvm = "8.13.41"
+libphonenumberJvm = "8.13.43"
 libphonenumberAndroid = "8.13.35"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.3"
+lifecycleRuntimeKtx = "2.8.4"
 composeBom = "2024.06.00"
 
 [libraries]
