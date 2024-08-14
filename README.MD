@@ -11,7 +11,7 @@ val emailValidator = TextFieldValueValidator(
 with(emailValiator) {
     OutlinedTextField(
         value = value,
-        onValueChange = ::validate,
+        onValueChange = ::onValueChange,
         modifier = Modifier
             .validateFocusChanged() // will start validation on loss of focus
             .shakeOnInvalid() // will shake the field when invalid and validate() is called
