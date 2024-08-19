@@ -12,7 +12,7 @@ import yakcov.library.generated.resources.ruleNotEmptyList
 import yakcov.library.generated.resources.ruleNotNull
 
 @Stable
-class NotNull<T> : ValueValidatorRule<T?> {
+class Required<T> : ValueValidatorRule<T?> {
     override fun validate(value: T?): ValidationResult {
         return if (value == null) ResourceValidationResult.error(Res.string.ruleNotNull)
         else RegularValidationResult.success()
