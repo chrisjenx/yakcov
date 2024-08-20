@@ -8,6 +8,7 @@ import com.chrisjenx.yakcov.ResourceValidationResult
 import com.chrisjenx.yakcov.ValidationResult
 import com.chrisjenx.yakcov.ValueValidatorRule
 import yakcov.library.generated.resources.Res
+import yakcov.library.generated.resources.ruleInList
 import yakcov.library.generated.resources.ruleIsChecked
 import yakcov.library.generated.resources.ruleIsNotChecked
 import yakcov.library.generated.resources.ruleNotEmptyList
