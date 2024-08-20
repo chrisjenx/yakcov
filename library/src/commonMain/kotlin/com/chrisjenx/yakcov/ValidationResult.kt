@@ -8,6 +8,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Immutable
 @Suppress("DataClassPrivateConstructor")
+@ExposedCopyVisibility
 data class ResourceValidationResult private constructor(
     private val stringResource: StringResource?,
     private val varargs: List<Any> = emptyList(),
@@ -48,6 +49,7 @@ data class ResourceValidationResult private constructor(
 
 @Immutable
 @Suppress("DataClassPrivateConstructor")
+@ExposedCopyVisibility
 data class RegularValidationResult private constructor(
     private val string: String?,
     private val outcome: Outcome,
