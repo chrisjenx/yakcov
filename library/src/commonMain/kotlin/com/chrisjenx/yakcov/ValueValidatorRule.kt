@@ -1,6 +1,6 @@
 package com.chrisjenx.yakcov
 
-interface ValueValidatorRule<V> {
+fun interface ValueValidatorRule<V> {
     /**
      * Validate the [value] and return an [ValidationResult].
      *

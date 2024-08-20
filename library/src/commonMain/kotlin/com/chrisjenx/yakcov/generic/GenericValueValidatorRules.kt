@@ -1,6 +1,8 @@
 package com.chrisjenx.yakcov.generic
 
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import com.chrisjenx.yakcov.RegularValidationResult
 import com.chrisjenx.yakcov.ResourceValidationResult
 import com.chrisjenx.yakcov.ValidationResult
@@ -15,6 +17,15 @@ import yakcov.library.generated.resources.ruleNotNull
 class Required<T> : ValueValidatorRule<T?> {
     override fun validate(value: T?): ValidationResult {
         return if (value == null) ResourceValidationResult.error(Res.string.ruleNotNull)
+        else RegularValidationResult.success()
+    }
+}
+
+@Stable
+class InList<T>(list: State<List<T>>) : ValueValidatorRule<T?> {
+    private val list: List<T> by list
+    override fun validate(value: T?): ValidationResult {
+        return if (value in list) ResourceValidationResult.error(Res.string.ruleInList)
         else RegularValidationResult.success()
     }
 }
