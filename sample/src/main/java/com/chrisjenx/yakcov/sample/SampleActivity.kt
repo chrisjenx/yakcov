@@ -76,7 +76,7 @@ class SampleActivity : ComponentActivity() {
                                 onValueChange = ::onValueChange,
                                 isError = isError(),
                                 keyboardOptions = KeyboardOptions(
-                                    autoCorrect = false,
+                                    autoCorrectEnabled = false,
                                     keyboardType = KeyboardType.Email,
                                 ),
                                 singleLine = true,
@@ -111,7 +111,7 @@ class SampleActivity : ComponentActivity() {
                                 isError = isError(),
                                 supportingText = supportingText(),
                                 keyboardOptions = KeyboardOptions(
-                                    autoCorrect = false,
+                                    autoCorrectEnabled = false,
                                     keyboardType = KeyboardType.Password,
                                 ),
                                 visualTransformation = PasswordVisualTransformation(),
@@ -128,7 +128,7 @@ class SampleActivity : ComponentActivity() {
                                 onValueChange = ::onValueChange,
                                 isError = isError(),
                                 keyboardOptions = KeyboardOptions(
-                                    autoCorrect = false,
+                                    autoCorrectEnabled = false,
                                     keyboardType = KeyboardType.Password,
                                 ),
                                 visualTransformation = PasswordVisualTransformation(),
