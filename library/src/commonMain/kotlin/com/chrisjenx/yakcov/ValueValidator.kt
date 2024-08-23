@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 abstract class ValueValidator<V, R>(
     protected val state: MutableState<V>,
     protected val rules: List<ValueValidatorRule<R>>,
-    protected val initialValidate: Boolean = false,
+    initialValidate: Boolean = false,
     protected val alwaysShowRule: Boolean = false,
     protected val validationSeparator: String = defaultValidationSeparator,
     protected val shakeOnInvalid: Boolean = false,
@@ -32,10 +32,10 @@ abstract class ValueValidator<V, R>(
      */
     var value: V by state
 
-    /**
-     * Set to true after first call of validate.
-     */
-    private var shouldValidate: Boolean by mutableStateOf(initialValidate || rules.isEmpty())
+    internal var internalState: InternalState by mutableStateOf(
+        if (initialValidate || rules.isEmpty()) InternalState.Validating()
+        else InternalState.Initial
+    )
 
     /**
      *  Current Field validation state, will be empty if no rules are set.
@@ -51,27 +51,34 @@ abstract class ValueValidator<V, R>(
      * @see getValidationResultString
      */
     val isValid: Boolean by derivedStateOf {
-        if (!shouldValidate) return@derivedStateOf false
+        if (internalState !is InternalState.Validating) return@derivedStateOf false
         val severity = validationResults.map { it.outcome() }.maxOfOrNull { it.severity }
             ?: return@derivedStateOf false
         severity < Outcome.ERROR.severity
     }
 
     /**
-     * Slightly different to [validate] this is prefered to be called whne the value changes and
-     * won't shake while the user is typing unlike [validate]
+     * Slightly different to [validate] this is preferred to be called when the value changes and
+     * won't shake while the user is typing unlike [validate]. This also will respect settings
+     * set by [validationConfig].
+     *
+     * @see validate
      */
     open fun onValueChange(value: V?) {
-        validateWithResult(value, shake = false)
+        validateWithResult(value, shake = false, shouldShowError = showErrorOnUserInput)
     }
 
     /**
      * Called when requesting if valid or to update the value and validate.
      *
+     * This will shake if enabled, will also turn on errors if deferred by [validationConfig].
+     *
      * @see validate
      * @return true if the value if outcomes are all less than [Outcome.ERROR]
      */
-    open fun validate(value: V? = null): Boolean = validate(value, shake = true)
+    open fun validate(value: V? = null): Boolean {
+        return validate(value, shake = true, shouldShowError = true)
+    }
 
     /**
      * Called when requesting if valid or to update the value and validate.
@@ -80,7 +87,7 @@ abstract class ValueValidator<V, R>(
      * @return the outcome of the validations, returns most severe outcome.
      */
     open fun validateWithResult(value: V? = null): Outcome {
-        return validateWithResult(value, shake = true)
+        return validateWithResult(value, shake = true, shouldShowError = true)
     }
 
     /**
@@ -88,7 +95,7 @@ abstract class ValueValidator<V, R>(
      * or higher.
      */
     fun isError(): Boolean = validationResults
-        .takeIf { shouldValidate }
+        .takeIf { (internalState as? InternalState.Validating)?.shouldShowError == true }
         ?.maxOfOrNull { it.outcome().severity >= Outcome.ERROR.severity }
         ?: false
 
@@ -99,7 +106,7 @@ abstract class ValueValidator<V, R>(
      * @return the outcome of the validations, will be null if no validations have been run yet.
      */
     fun outcome(): Outcome? = validationResults
-        .takeIf { shouldValidate }
+        .takeIf { internalState is InternalState.Validating }
         ?.maxByOrNull { it.outcome().severity }?.outcome()
 
     /**
@@ -112,7 +119,7 @@ abstract class ValueValidator<V, R>(
     )
     fun getErrorString(): String? {
         return validationResults
-            .takeIf { shouldValidate }
+            .takeIf { (internalState as? InternalState.Validating)?.shouldShowError == true }
             ?.filter { it.outcome().severity >= Outcome.ERROR.severity }
             ?.mapNotNull { it.format() }
             ?.takeIf { it.isNotEmpty() } // return null if no errors
@@ -143,15 +150,63 @@ abstract class ValueValidator<V, R>(
      */
     @Composable
     fun supportingText(severity: Short = Outcome.SUCCESS.severity): (@Composable () -> Unit)? {
-        if (alwaysShowRule || shouldValidate) getValidationResultString(severity)?.let { validations ->
+        val isValidating = internalState is InternalState.Validating
+        if (alwaysShowRule || isValidating) getValidationResultString(severity)?.let { validations ->
             return { Text(validations) }
         }
         return null
     }
 
     /**
+     * Weather to show error message when user has started typing (or loosing focus),
+     * errors will then be show after [validate] is called.
+     * Default is true (matched the default value set on that method)
+     *
+     * @see validationConfig
+     */
+    private var showErrorOnUserInput by mutableStateOf(true)
+
+    /**
+     * Returns a [Modifier] that will modify how the field acts to user interaction and validation
+     *
+     * @param validateOnFocusLost when the user leaves the field will start validation (and show
+     *  error if invalid).
+     * @param shakeOnInvalid when [validate] is called AND the field is invalid it will
+     *  shake the field to draw attention to the error.
+     * @param showErrorOnInteraction default `true`, will show error message [onValueChange]
+     *  or if loosing focus when [validateOnFocusLost] is `true`.
+     *  When you call [validate] it will start validating showing errors if present.
+     */
+    @Composable
+    fun Modifier.validationConfig(
+        validateOnFocusLost: Boolean = false,
+        shakeOnInvalid: Boolean = false,
+        showErrorOnInteraction: Boolean = true,
+    ): Modifier {
+        // Set scope if shaking is enabled
+        shakeOnInvalidScope = if (shakeOnInvalid) rememberCoroutineScope() else null
+        // Track if we should show error on user input
+        showErrorOnUserInput = showErrorOnInteraction
+        // Track focus
+        var hadFocus by mutableStateOf(false)
+        return this
+            .onFocusChanged { focusState ->
+                if (focusState.hasFocus) hadFocus = true
+                // Don't shake on loss of focus, as we want to just show the error
+                if (validateOnFocusLost && !focusState.isFocused && hadFocus) {
+                    onValueChange(value = null)
+                }
+            }
+            .shakable(shakingState)
+    }
+
+    /**
      * Returns a [Modifier] that will validate the [TextFieldValue] when the focus is lost.
      */
+    @Deprecated(
+        "Use validationConfig instead",
+        ReplaceWith("validationConfig(validateOnFocusLost = true)")
+    )
     fun Modifier.validateFocusChanged(): Modifier {
         var hadFocus by mutableStateOf(false)
         return this.onFocusChanged { focusState ->
@@ -174,20 +229,32 @@ abstract class ValueValidator<V, R>(
      * shake the field to draw attention to the error.
      */
     @Composable
+    @Deprecated(
+        "Use validationConfig instead",
+        ReplaceWith("validationConfig(shakeOnInvalid = true)")
+    )
     fun Modifier.shakeOnInvalid(): Modifier {
         shakeOnInvalidScope = rememberCoroutineScope()
         return this.shakable(shakingState)
     }
 
     // Internal validate method so focus and external validate act correctly
-    internal fun validate(value: V? = null, shake: Boolean = false): Boolean {
-        return validateWithResult(value, shake).severity < Outcome.ERROR.severity
+    internal fun validate(
+        value: V? = null,
+        shake: Boolean = false,
+        shouldShowError: Boolean? = null,
+    ): Boolean {
+        return validateWithResult(value, shake, shouldShowError).severity < Outcome.ERROR.severity
     }
 
     // Internal validate method so focus and external validate act correctly
-    internal fun validateWithResult(value: V? = null, shake: Boolean = false): Outcome {
+    internal fun validateWithResult(
+        value: V? = null,
+        shake: Boolean = false,
+        shouldShowError: Boolean? = null,
+    ): Outcome {
         value?.also { this.value = it }
-        shouldValidate = true
+        internalState = internalState.toValidating(shouldShowError)
         val outcome = validationResults
             .map { it.outcome() }.maxByOrNull { it.severity } ?: Outcome.SUCCESS
         if (shake && outcome.severity >= Outcome.ERROR.severity) {
@@ -206,6 +273,7 @@ abstract class ValueValidator<V, R>(
 
         if (value != other.value) return false
         if (rules != other.rules) return false
+        if (internalState != other.internalState) return false
         return validationResults == other.validationResults
     }
 
@@ -213,6 +281,7 @@ abstract class ValueValidator<V, R>(
         var result = value.hashCode()
         result = 31 * result + rules.hashCode()
         result = 31 * result + validationResults.hashCode()
+        result = 31 * result + internalState.hashCode()
         return result
     }
 
@@ -227,6 +296,33 @@ abstract class ValueValidator<V, R>(
         var defaultValidationSeparator = ", "
     }
 
+    internal sealed class InternalState {
+        /**
+         * Initial state, no validation has been started yet.
+         */
+        data object Initial : InternalState()
+
+        /**
+         * @param shouldShowError if true [isError] can be true, [supportingText]
+         * will still show messaging.
+         */
+        data class Validating(val shouldShowError: Boolean = true) : InternalState()
+
+        /**
+         * Convert to validating state, if [canShowError] is null it will default to true or the
+         * current state if already in validating state.
+         */
+        fun toValidating(canShowError: Boolean? = null): InternalState = when (this) {
+            is Initial -> Validating(shouldShowError = canShowError ?: true)
+            is Validating -> {
+                val canShow = canShowError ?: this.shouldShowError
+                // Once true we don't go back to false (unless we come from intial state)
+                this.copy(shouldShowError = this.shouldShowError || canShow)
+            }
+        }
+
+    }
+
 }
 
 
@@ -237,7 +333,7 @@ abstract class ValueValidator<V, R>(
 fun List<ValueValidator<*, *>>.validate(): Boolean {
     // Fold to make sure we loop through all validators
     return this.fold(true) { valid, validator ->
-        validator.validate(value = null, shake = true) && valid
+        validator.validate(value = null, shake = true, shouldShowError = true) && valid
     }
 }
 
@@ -246,7 +342,7 @@ fun List<ValueValidator<*, *>>.validate(): Boolean {
  * the highest severity of all the validators passed in.
  */
 fun List<ValueValidator<*, *>>.validateWithResult(): Outcome {
-    return this.map { it.validateWithResult(value = null, shake = true) }
+    return this.map { it.validateWithResult(value = null, shake = true, shouldShowError = true) }
         .maxByOrNull { it.severity } ?: Outcome.SUCCESS
 }
 
