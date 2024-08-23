@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -70,8 +69,10 @@ class SampleActivity : ComponentActivity() {
                                 value = value,
                                 label = { Text(text = "Email") },
                                 modifier = Modifier
-                                    .validateFocusChanged()
-                                    .shakeOnInvalid()
+                                    .validationConfig(
+                                        validateOnFocusLost = true,
+                                        shakeOnInvalid = true,
+                                    )
                                     .fillMaxWidth(),
                                 onValueChange = ::onValueChange,
                                 isError = isError(),
@@ -105,7 +106,7 @@ class SampleActivity : ComponentActivity() {
                                 value = value,
                                 label = { Text(text = "Password") },
                                 modifier = Modifier
-                                    .validateFocusChanged()
+                                    .validationConfig(validateOnFocusLost = true)
                                     .fillMaxWidth(),
                                 onValueChange = ::onValueChange,
                                 isError = isError(),
@@ -123,7 +124,7 @@ class SampleActivity : ComponentActivity() {
                                 value = value,
                                 label = { Text(text = "Confirm Password") },
                                 modifier = Modifier
-                                    .validateFocusChanged()
+                                    .validationConfig(validateOnFocusLost = true)
                                     .fillMaxWidth(),
                                 onValueChange = ::onValueChange,
                                 isError = isError(),
@@ -132,6 +133,36 @@ class SampleActivity : ComponentActivity() {
                                     keyboardType = KeyboardType.Password,
                                 ),
                                 visualTransformation = PasswordVisualTransformation(),
+                                singleLine = true,
+                                supportingText = supportingText()
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Error on submit",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        val requiredValidator =
+                            rememberTextFieldValueValidator(rules = listOf(Required))
+                        with(requiredValidator) {
+                            OutlinedTextField(
+                                value = value,
+                                label = { Text(text = "Name") },
+                                modifier = Modifier
+                                    .validationConfig(
+                                        validateOnFocusLost = true,
+                                        shakeOnInvalid = true,
+                                        showErrorOnInteraction = false,
+                                    )
+                                    .fillMaxWidth(),
+                                onValueChange = ::onValueChange,
+                                isError = isError(),
+                                keyboardOptions = KeyboardOptions(
+                                    autoCorrectEnabled = false,
+                                    keyboardType = KeyboardType.Text,
+                                ),
                                 singleLine = true,
                                 supportingText = supportingText()
                             )
@@ -150,8 +181,10 @@ class SampleActivity : ComponentActivity() {
                                         onValueChange = { genericValidator.onValueChange(it) },
                                         role = Role.Checkbox
                                     )
-                                    .validateFocusChanged()
-                                    .shakeOnInvalid()
+                                    .validationConfig(
+                                        validateOnFocusLost = true,
+                                        shakeOnInvalid = true,
+                                    )
                                     .padding(end = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -184,7 +217,7 @@ class SampleActivity : ComponentActivity() {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .border(1.dp, Color.Gray)
-                                    .shakeOnInvalid()
+                                    .validationConfig(shakeOnInvalid = true)
                                     .padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
@@ -224,6 +257,7 @@ class SampleActivity : ComponentActivity() {
                                     emailValidator,
                                     passwordValidator,
                                     passwordMatchesValidator,
+                                    requiredValidator,
                                     genericValidator,
                                     listValidator,
                                 ).validate()
