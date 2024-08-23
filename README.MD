@@ -13,8 +13,14 @@ with(emailValiator) {
         value = value,
         onValueChange = ::onValueChange,
         modifier = Modifier
-            .validateFocusChanged() // will start validation on loss of focus
-            .shakeOnInvalid() // will shake the field when invalid and validate() is called
+            .validationConfig(
+                // will start validation on loss of focus
+                validateOnFocusLost = true,
+                // will shake the field when invalid and validate() is called
+                shakeOnInvalid = true,
+                // when false will delay [isError] until validate() is called
+                showErrorOnInteraction = false,
+            )
             .fillMaxWidth(),
         label = { Text("Email*") },
         placeholder = { Text("Email") },
@@ -24,6 +30,16 @@ with(emailValiator) {
     )
 }
 ```
+
+### Other Features
+
+- Multiplatform support! Android, JVM, JS, Wasm, iOS!
+- `TextFieldValueValidator` - a validator for `TextFieldValue` that can be used with `TextField` and `OutlinedTextField`
+- `GenericValueValidator` - a generic validator that can be used to validate any type
+  - Can use with any Composable, not just `TextField`s!
+- Build in `ValueValidatorRule`s to make putting forms together easier
+- `Outcome` - Supports different levels of severity for validation messages, `Error`, `Warning`, `Info`, `Success`
+- `ValidationConfig` - Allows you to configure how the validation should behave to user interaction
 
 ## Dependencies
 
