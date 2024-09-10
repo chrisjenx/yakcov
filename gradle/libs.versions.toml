@@ -1,12 +1,12 @@
 [versions]
 
 kotlin = "2.0.20"
-compose = "1.7.0-beta01"
+compose = "1.7.0-beta02"
 agp = "8.6.0"
 androidx-activityCompose = "1.9.2"
 androidx-uiTest = "1.7.0"
 kotlinx-datetime = "0.6.1"
-libphonenumberJvm = "8.13.44"
+libphonenumberJvm = "8.13.45"
 libphonenumberAndroid = "8.13.35"
 coreKtx = "1.13.1"
 junit = "4.13.2"
