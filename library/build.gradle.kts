@@ -87,7 +87,7 @@ kotlin {
         }
 
         androidMain.dependencies {
-            implementation(compose.uiTooling)
+            compileOnly(compose.uiTooling)
             implementation(libs.androidx.activityCompose)
             implementation(libs.libphonenumber.android)
         }
@@ -99,7 +99,7 @@ kotlin {
 
         jsMain.dependencies {
             implementation(compose.html.core)
-            implementation(npm("libphonenumber-js", "1.11.4"))
+            implementation(npm("libphonenumber-js", "1.11.10"))
         }
 
         iosMain.dependencies {

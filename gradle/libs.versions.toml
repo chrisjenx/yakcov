@@ -1,19 +1,19 @@
 [versions]
 
 kotlin = "2.0.20"
-compose = "1.7.0-beta02"
-agp = "8.6.0"
+compose = "1.7.0-rc01"
+agp = "8.6.1"
 androidx-activityCompose = "1.9.2"
-androidx-uiTest = "1.7.0"
+androidx-uiTest = "1.7.3"
 kotlinx-datetime = "0.6.1"
-libphonenumberJvm = "8.13.45"
+libphonenumberJvm = "8.13.47"
 libphonenumberAndroid = "8.13.35"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.5"
-composeBom = "2024.09.00"
+lifecycleRuntimeKtx = "2.8.6"
+composeBom = "2024.09.02"
 
 [libraries]
 androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }

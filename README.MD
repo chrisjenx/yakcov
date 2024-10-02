@@ -43,12 +43,11 @@ with(emailValiator) {
 
 ## Dependencies
 
-By default we publish
+By default we publish 
 to [Maven Central](https://central.sonatype.com/artifact/com.chrisjenx.yakcov/library).
 
 We publish all targets (Android, JVM, JS, Wasm, iOS) you can include the common library in your
-project and
-it will pull in the correct target for what ever targets you have specified.
+project and it will pull in the correct target for what ever targets you have specified.
 
 ```kotlin
 commonMain {
@@ -74,4 +73,4 @@ dependencies {
 ## Testing
 
 - You will need Chrome installed for JS based tests to run
-- run tests with `./gradlew :library:test`
+- run tests with `./gradlew :library:allTests`
