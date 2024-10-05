@@ -5,10 +5,16 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.chrisjenx.yakcov.ValueValidator
 import com.chrisjenx.yakcov.ValueValidator.Companion.defaultValidationSeparator
 import com.chrisjenx.yakcov.ValueValidatorRule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * We wrap the [TextFieldValue] to add validation support.
@@ -105,18 +111,16 @@ import com.chrisjenx.yakcov.ValueValidatorRule
 @Stable
 class TextFieldValueValidator(
     state: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue()),
-    rules: List<ValueValidatorRule<String>>,
+    rules: List<ValueValidatorRule<String>> = listOf(Required),
     initialValidate: Boolean = false,
     alwaysShowRule: Boolean = false,
     validationSeparator: String = defaultValidationSeparator,
-    shakeOnInvalid: Boolean = false,
 ) : ValueValidator<TextFieldValue, String>(
     state = state,
     rules = rules,
     initialValidate = initialValidate,
     alwaysShowRule = alwaysShowRule,
     validationSeparator = validationSeparator,
-    shakeOnInvalid = shakeOnInvalid,
     validateMapper = { validate(it.text) }
 ) {
 
@@ -124,15 +128,40 @@ class TextFieldValueValidator(
         value: String,
         rules: List<ValueValidatorRule<String>> = listOf(Required),
         initialValidate: Boolean = false,
+        alwaysShowRule: Boolean = false,
+        validationSeparator: String = defaultValidationSeparator,
     ) : this(
-        mutableStateOf(TextFieldValue(value)), rules, initialValidate
+        mutableStateOf(TextFieldValue(value)), rules, initialValidate = initialValidate,
+        alwaysShowRule = alwaysShowRule, validationSeparator = validationSeparator
     )
 
     /**
      * Alias for [onValueChange] for String changes
      */
-    fun onValueChange(value: String) {
-        onValueChange(value = value.let { state.value.copy(text = value) })
+    fun onValueChange(string: String) {
+        onValueChange(value = string.let { state.value.copy(text = it) })
+    }
+
+    /**
+     * Returns a [Modifier] that will move the cursor to the end of the text when the focus is gained.
+     *
+     * @param highlight if true will highlight the text as well
+     */
+    @Composable
+    fun Modifier.onFocusCursorToEnd(
+        scope: CoroutineScope = rememberCoroutineScope(),
+        highlight: Boolean = false,
+    ): Modifier {
+        return this.onFocusChanged {
+            if (it.isFocused) {
+                scope.launch {
+                    val range = if (!highlight) TextRange(value.text.length)
+                    // Yes, this is the wrong way around (bug workaround to get cursor to end)
+                    else TextRange(value.text.length, 0)
+                    value = value.copy(selection = range)
+                }
+            }
+        }
     }
 
     /**
@@ -142,8 +171,8 @@ class TextFieldValueValidator(
      *
      * @see validate
      */
-    fun validate(value: String? = null): Boolean {
-        return validate(value = value?.let { state.value.copy(text = value) })
+    fun validate(string: String? = null): Boolean {
+        return validate(value = string?.let { state.value.copy(text = it) })
     }
 
     override fun toString(): String {
@@ -163,14 +192,32 @@ fun rememberTextFieldValueValidator(
     initialValidate: Boolean = false,
     alwaysShowRule: Boolean = false,
     validationSeparator: String = defaultValidationSeparator,
-): TextFieldValueValidator {
-    return remember {
-        TextFieldValueValidator(
-            state = textFieldValue,
-            rules = rules,
-            initialValidate = initialValidate,
-            alwaysShowRule = alwaysShowRule,
-            validationSeparator = validationSeparator,
-        )
-    }
+): TextFieldValueValidator = remember {
+    TextFieldValueValidator(
+        state = textFieldValue,
+        rules = rules,
+        initialValidate = initialValidate,
+        alwaysShowRule = alwaysShowRule,
+        validationSeparator = validationSeparator,
+    )
+}
+
+/**
+ * @see TextFieldValueValidator for docs
+ */
+@Composable
+fun rememberTextFieldValueValidator(
+    value: String,
+    rules: List<ValueValidatorRule<String>> = listOf(Required),
+    initialValidate: Boolean = false,
+    alwaysShowRule: Boolean = false,
+    validationSeparator: String = defaultValidationSeparator,
+): TextFieldValueValidator = remember {
+    TextFieldValueValidator(
+        value = value,
+        rules = rules,
+        initialValidate = initialValidate,
+        alwaysShowRule = alwaysShowRule,
+        validationSeparator = validationSeparator,
+    )
 }

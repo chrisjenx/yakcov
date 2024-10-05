@@ -23,7 +23,6 @@ abstract class ValueValidator<V, R>(
     initialValidate: Boolean = false,
     protected val alwaysShowRule: Boolean = false,
     protected val validationSeparator: String = defaultValidationSeparator,
-    protected val shakeOnInvalid: Boolean = false,
     private val validateMapper: ValueValidatorRule<R>.(V) -> ValidationResult,
 ) {
 
