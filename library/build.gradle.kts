@@ -10,13 +10,29 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 
 plugins {
     alias(libs.plugins.multiplatform)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.cocoapods)
     alias(libs.plugins.maven.publish)
 }
 
 kotlin {
+    cocoapods {
+        version = "1.0.0"
+        summary = "Yet Another Kotlin COmpose Validation library"
+        homepage = "https://github.com/chrisjenx/yakcov"
+        ios.deploymentTarget = "14.1"
+        framework {
+            baseName = "shared"
+            isStatic = true
+            pod("libPhoneNumber-iOS")
+//            @OptIn(ExperimentalKotlinGradlePluginApi::class)
+//            transitiveExport = true
+        }
+    }
+
+    applyDefaultHierarchyTemplate()
     androidTarget {
         compilations.all {
             compileTaskProvider {
@@ -59,16 +75,17 @@ kotlin {
         }
     }
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
-            baseName = "ComposeApp"
-            isStatic = true
-        }
-    }
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+//    listOf(
+//
+//    ).forEach {
+//        it.binaries.framework {
+//            baseName = "Yakcov"
+//            isStatic = true
+//        }
+//    }
 
     sourceSets {
         commonMain.dependencies {
@@ -106,6 +123,11 @@ kotlin {
         }
 
 
+    }
+
+    //https://kotlinlang.org/docs/native-objc-interop.html#export-of-kdoc-comments-to-generated-objective-c-headers
+    targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
+        compilations["main"].compilerOptions.options.freeCompilerArgs.add("-Xexport-kdoc")
     }
 }
 

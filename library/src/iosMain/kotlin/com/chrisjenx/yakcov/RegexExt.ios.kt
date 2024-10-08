@@ -10,7 +10,7 @@ import platform.Foundation.matchesInString
  * Check if is phone number to best ability of each platform.
  */
 @OptIn(ExperimentalForeignApi::class)
-actual fun String?.isPhoneNumber(): Boolean {
+actual fun String?.isPhoneNumber(defaultRegion: String?): Boolean {
     if (this.isNullOrBlank()) return false
     val detector = NSDataDetector(types = NSTextCheckingTypePhoneNumber, error = null)
     val range = NSMakeRange(0.toULong(), this.length.toULong())

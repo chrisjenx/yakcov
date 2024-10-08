@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class RegexTest {
+class PhoneNumberTest {
 
     @Test
     fun isPhoneNumber_fail() {

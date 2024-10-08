@@ -4,10 +4,10 @@ package com.chrisjenx.yakcov
 /**
  * Check if is phone number to best ability of each platform.
  */
-actual fun String?.isPhoneNumber(): Boolean {
+actual fun String?.isPhoneNumber(defaultRegion: String?): Boolean {
     this ?: return false
     return try {
-        val result = parsePhoneNumber(this, "US")
+        val result = parsePhoneNumber(this, defaultRegion?.uppercase())
         result?.isValid() ?: false
     } catch (e: Throwable) {
         false

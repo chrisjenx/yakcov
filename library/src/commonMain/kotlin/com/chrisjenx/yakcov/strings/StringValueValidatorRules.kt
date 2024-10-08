@@ -120,11 +120,14 @@ data object Email : ValueValidatorRule<String> {
 }
 
 // Phone
+/**
+ * @param defaultRegion the default region to use for phone number validation, ISO 3166-1 alpha-2 code US, GB, ES, etc
+ */
 @Stable
-data object Phone : ValueValidatorRule<String> {
+data class Phone(val defaultRegion: String = "US") : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
         // only validate if not empty as Required will check if not empty
-        return if (!value.isPhoneNumber()) {
+        return if (!value.isPhoneNumber(defaultRegion)) {
             ResourceValidationResult.error(Res.string.rulePhone)
         } else {
             ResourceValidationResult.success()

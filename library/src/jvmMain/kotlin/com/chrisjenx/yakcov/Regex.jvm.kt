@@ -7,10 +7,10 @@ private val phoneUtil = PhoneNumberUtil.getInstance()
 /**
  * Check if is phone number to best ability of each platform.
  */
-actual fun String?.isPhoneNumber(): Boolean {
+actual fun String?.isPhoneNumber(defaultRegion: String?): Boolean {
     this ?: return false
     return try {
-        val result = phoneUtil.parse(this, "US")
+        val result = phoneUtil.parse(this, defaultRegion?.uppercase())
         phoneUtil.isValidNumber(result)
     } catch (t: Throwable) {
         false
