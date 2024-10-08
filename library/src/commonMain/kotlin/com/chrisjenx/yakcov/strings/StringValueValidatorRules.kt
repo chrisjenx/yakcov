@@ -20,6 +20,7 @@ import yakcov.library.generated.resources.ruleInvalidDate
 import yakcov.library.generated.resources.ruleMaxLength
 import yakcov.library.generated.resources.ruleMaxValue
 import yakcov.library.generated.resources.ruleMinLength
+import yakcov.library.generated.resources.ruleMinLengthNoWhitespace
 import yakcov.library.generated.resources.ruleMinValue
 import yakcov.library.generated.resources.ruleMonth
 import yakcov.library.generated.resources.ruleNumeric
@@ -40,6 +41,7 @@ data object Required : ValueValidatorRule<String> {
 @Stable
 data object Numeric : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
+        if (value.isBlank()) return ResourceValidationResult.success()
         return if (value.toLongOrNull() == null) {
             ResourceValidationResult.error(Res.string.ruleNumeric)
         } else {
@@ -52,6 +54,7 @@ data object Numeric : ValueValidatorRule<String> {
 @Stable
 data object Decimal : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
+        if (value.isBlank()) return ResourceValidationResult.success()
         return if (value.toFloatOrNull() == null) {
             ResourceValidationResult.error(Res.string.ruleDecimal)
         } else {
@@ -63,6 +66,7 @@ data object Decimal : ValueValidatorRule<String> {
 @Stable
 data class MinValue(val minValue: Number) : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
+        if (value.isBlank()) return ResourceValidationResult.success()
         val number = value.toDoubleOrNull()
         return if (number == null || number < minValue.toDouble()) {
             ResourceValidationResult.error(Res.string.ruleMinValue, minValue)
@@ -75,6 +79,7 @@ data class MinValue(val minValue: Number) : ValueValidatorRule<String> {
 @Stable
 data class MaxValue(val maxValue: Float) : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
+        if (value.isBlank()) return ResourceValidationResult.success()
         val number = value.toFloatOrNull()
         return if (value.isNotBlank() && (number == null || number > maxValue)) {
             ResourceValidationResult.error(Res.string.ruleMaxValue, maxValue)
@@ -84,13 +89,29 @@ data class MaxValue(val maxValue: Float) : ValueValidatorRule<String> {
     }
 }
 
+/**
+ * @param trim if true will trim the start and end before checking the length
+ * @param includeWhiteSpace if false will not count white space chars in this string.
+ *  As defined by [Char.isWhitespace]
+ */
 @Stable
-data class MinLength(val minLength: Int) : ValueValidatorRule<String> {
+data class MinLength(
+    val minLength: Int,
+    val trim: Boolean = true,
+    val includeWhiteSpace: Boolean = true,
+) : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
-        return if (value.length < minLength) {
-            ResourceValidationResult.error(Res.string.ruleMinLength, minLength)
-        } else {
-            ResourceValidationResult.success()
+        val trimmed = value.let { if (trim) it.trim() else it }
+        return when {
+            includeWhiteSpace && trimmed.length < minLength -> {
+                ResourceValidationResult.error(Res.string.ruleMinLength, minLength)
+            }
+
+            !includeWhiteSpace && trimmed.count { !it.isWhitespace() } < minLength -> {
+                ResourceValidationResult.error(Res.string.ruleMinLengthNoWhitespace, minLength)
+            }
+
+            else -> ResourceValidationResult.success()
         }
     }
 }
@@ -111,6 +132,7 @@ data class MaxLength(val maxLength: Int) : ValueValidatorRule<String> {
 data object Email : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
         // only validate if not empty as Required will check if not empty
+        if (value.isBlank()) return ResourceValidationResult.success()
         return if (!value.isEmail()) {
             ResourceValidationResult.error(Res.string.ruleEmail)
         } else {
@@ -127,6 +149,7 @@ data object Email : ValueValidatorRule<String> {
 data class Phone(val defaultRegion: String = "US") : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
         // only validate if not empty as Required will check if not empty
+        if (value.isBlank()) return ResourceValidationResult.success()
         return if (!value.isPhoneNumber(defaultRegion)) {
             ResourceValidationResult.error(Res.string.rulePhone)
         } else {

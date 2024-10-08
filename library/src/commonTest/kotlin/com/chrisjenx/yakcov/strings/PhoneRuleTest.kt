@@ -15,7 +15,12 @@ class PhoneRuleTest {
     }
 
     @Test
-    fun phoneNumber_invalid() {
+    fun phoneNumber_empty_success() {
+        assertEquals(Outcome.SUCCESS, Phone().validate("").outcome())
+    }
+
+    @Test
+    fun phoneNumber_invalid_error() {
         assertEquals(Outcome.ERROR, Phone().validate("43435").outcome())
     }
 
@@ -25,7 +30,7 @@ class PhoneRuleTest {
     }
 
     @Test
-    @IOSIgnore
+    @IOSIgnore // FIXME: This is failing on iOS, get cocoapods working so we can use libphonenumber on iOS.
     fun phoneNumber_wrongRegion() {
         // This is a UK number should error for US
         assertEquals(Outcome.ERROR, Phone("US").validate("07745973912").outcome())

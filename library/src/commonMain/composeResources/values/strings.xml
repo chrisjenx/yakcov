@@ -11,6 +11,7 @@
     <string name="ruleMinValue">Must be at least %1$s</string>
     <string name="ruleMaxValue">Must be at most %1$s</string>
     <string name="ruleMinLength">Must be at least %1$s characters</string>
+    <string name="ruleMinLengthNoWhitespace">Must be at least %1$s characters excluding whitespace</string>
     <string name="ruleMaxLength">Must be at most %1$s characters</string>
     <string name="ruleEmail">Invalid email address</string>
     <string name="rulePhone">Invalid phone number</string>
