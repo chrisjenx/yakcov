@@ -1,10 +1,16 @@
 package com.chrisjenx.yakcov
 
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class PhoneNumberTest {
+
+    @BeforeTest
+    fun setUp() {
+        initPhoneNumberUtil()
+    }
 
     @Test
     fun isPhoneNumber_fail() {
@@ -21,5 +27,6 @@ class PhoneNumberTest {
         assertTrue("6508991234".isPhoneNumber())
     }
 
-
 }
+
+expect fun initPhoneNumberUtil()

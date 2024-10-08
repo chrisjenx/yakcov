@@ -21,4 +21,4 @@ fun String?.isEmail(): Boolean {
  * @param defaultRegion The default region to use if the number is not in international format.
  *  it's two digits country code. e.g. "US", "GB", "ES"
  */
-expect fun String?.isPhoneNumber(defaultRegion: String? = null): Boolean
+expect fun String?.isPhoneNumber(defaultRegion: String? = "US"): Boolean

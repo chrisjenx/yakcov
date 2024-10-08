@@ -18,6 +18,10 @@ plugins {
 }
 
 kotlin {
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 //    cocoapods {
 //        version = "1.0.0"
 //        summary = "Yet Another Kotlin COmpose Validation library"
@@ -106,7 +110,8 @@ kotlin {
         androidMain.dependencies {
             compileOnly(compose.uiTooling)
             implementation(libs.androidx.activityCompose)
-            api(libs.libphonenumber.android)
+            implementation(libs.libphonenumber.android)
+            implementation(libs.androidx.startup.runtime)
         }
 
         jvmMain.dependencies {
@@ -153,6 +158,9 @@ android {
                 apiLevel = 34
                 systemImageSource = "aosp"
             }
+        }
+        unitTests {
+            isIncludeAndroidResources = true
         }
     }
     compileOptions {

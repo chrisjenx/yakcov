@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
@@ -27,14 +29,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.chrisjenx.yakcov.generic.IsChecked
 import com.chrisjenx.yakcov.generic.ListNotEmpty
@@ -43,6 +43,7 @@ import com.chrisjenx.yakcov.sample.ui.theme.YakcovTheme
 import com.chrisjenx.yakcov.strings.Email
 import com.chrisjenx.yakcov.strings.MinLength
 import com.chrisjenx.yakcov.strings.PasswordMatches
+import com.chrisjenx.yakcov.strings.Phone
 import com.chrisjenx.yakcov.strings.Required
 import com.chrisjenx.yakcov.strings.rememberTextFieldValueValidator
 import com.chrisjenx.yakcov.validate
@@ -57,6 +58,7 @@ class SampleActivity : ComponentActivity() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
                             .padding(innerPadding)
                             .padding(16.dp)
                     ) {
@@ -79,6 +81,29 @@ class SampleActivity : ComponentActivity() {
                                 keyboardOptions = KeyboardOptions(
                                     autoCorrectEnabled = false,
                                     keyboardType = KeyboardType.Email,
+                                ),
+                                singleLine = true,
+                                supportingText = supportingText()
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        val phoneValidator = rememberTextFieldValueValidator(
+                            rules = listOf(Required, Phone()),
+                        )
+                        with(phoneValidator) {
+                            OutlinedTextField(
+                                value = value,
+                                label = { Text(text = "Phone") },
+                                modifier = Modifier
+                                    .validationConfig(validateOnFocusLost = true)
+                                    .fillMaxWidth(),
+                                onValueChange = ::onValueChange,
+                                isError = isError(),
+                                keyboardOptions = KeyboardOptions(
+                                    autoCorrectEnabled = false,
+                                    keyboardType = KeyboardType.Phone,
                                 ),
                                 singleLine = true,
                                 supportingText = supportingText()
@@ -255,6 +280,7 @@ class SampleActivity : ComponentActivity() {
                             onClick = {
                                 listOf(
                                     emailValidator,
+                                    phoneValidator,
                                     passwordValidator,
                                     passwordMatchesValidator,
                                     requiredValidator,
@@ -272,21 +298,5 @@ class SampleActivity : ComponentActivity() {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    YakcovTheme {
-        Greeting("Android")
     }
 }
