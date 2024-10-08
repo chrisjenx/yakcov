@@ -13,24 +13,24 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
-    alias(libs.plugins.cocoapods)
+    //alias(libs.plugins.cocoapods)
     alias(libs.plugins.maven.publish)
 }
 
 kotlin {
-    cocoapods {
-        version = "1.0.0"
-        summary = "Yet Another Kotlin COmpose Validation library"
-        homepage = "https://github.com/chrisjenx/yakcov"
-        ios.deploymentTarget = "14.1"
-        framework {
-            baseName = "shared"
-            isStatic = true
-            pod("libPhoneNumber-iOS")
-//            @OptIn(ExperimentalKotlinGradlePluginApi::class)
-//            transitiveExport = true
-        }
-    }
+//    cocoapods {
+//        version = "1.0.0"
+//        summary = "Yet Another Kotlin COmpose Validation library"
+//        homepage = "https://github.com/chrisjenx/yakcov"
+//        ios.deploymentTarget = "14.1"
+//        framework {
+//            baseName = "shared"
+//            isStatic = true
+//            pod("libPhoneNumber-iOS")
+////            @OptIn(ExperimentalKotlinGradlePluginApi::class)
+////            transitiveExport = true
+//        }
+//    }
 
     applyDefaultHierarchyTemplate()
     androidTarget {
@@ -75,17 +75,17 @@ kotlin {
         }
     }
 
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
-//    listOf(
-//
-//    ).forEach {
-//        it.binaries.framework {
-//            baseName = "Yakcov"
-//            isStatic = true
-//        }
-//    }
+
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach {
+        it.binaries.framework {
+            baseName = "Yakcov"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -106,7 +106,7 @@ kotlin {
         androidMain.dependencies {
             compileOnly(compose.uiTooling)
             implementation(libs.androidx.activityCompose)
-            implementation(libs.libphonenumber.android)
+            api(libs.libphonenumber.android)
         }
 
         jvmMain.dependencies {
