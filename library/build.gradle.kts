@@ -13,7 +13,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
-    //alias(libs.plugins.cocoapods)
+//    alias(libs.plugins.cocoapods)
     alias(libs.plugins.maven.publish)
 }
 
@@ -28,9 +28,9 @@ kotlin {
 //        homepage = "https://github.com/chrisjenx/yakcov"
 //        ios.deploymentTarget = "14.1"
 //        framework {
-//            baseName = "shared"
-//            isStatic = true
-//            pod("libPhoneNumber-iOS")
+//            baseName = "yakcov"
+////            isStatic = true
+////            pod("libPhoneNumber-iOS")
 ////            @OptIn(ExperimentalKotlinGradlePluginApi::class)
 ////            transitiveExport = true
 //        }
@@ -117,6 +117,9 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.libphonenumber.jvm)
+        }
+        jvmTest.dependencies {
+            implementation(compose.desktop.currentOs)
         }
 
         jsMain.dependencies {

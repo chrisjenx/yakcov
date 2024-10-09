@@ -51,8 +51,9 @@ abstract class ValueValidator<V, R>(
      */
     val isValid: Boolean by derivedStateOf {
         if (internalState !is InternalState.Validating) return@derivedStateOf false
+        // If no rules set then we are always valid
         val severity = validationResults.map { it.outcome() }.maxOfOrNull { it.severity }
-            ?: return@derivedStateOf false
+            ?: return@derivedStateOf true
         severity < Outcome.ERROR.severity
     }
 
@@ -95,7 +96,7 @@ abstract class ValueValidator<V, R>(
      */
     fun isError(): Boolean = validationResults
         .takeIf { (internalState as? InternalState.Validating)?.shouldShowError == true }
-        ?.maxOfOrNull { it.outcome().severity >= Outcome.ERROR.severity }
+        ?.any { it.outcome().severity >= Outcome.ERROR.severity }
         ?: false
 
     /**
@@ -106,7 +107,11 @@ abstract class ValueValidator<V, R>(
      */
     fun outcome(): Outcome? = validationResults
         .takeIf { internalState is InternalState.Validating }
-        ?.maxByOrNull { it.outcome().severity }?.outcome()
+        .let { results ->
+            if (results == null) return@let null // Not validating yet
+            // Return the result with the highest severity, or if no rules return success
+            results.maxByOrNull { it.outcome().severity }?.outcome() ?: Outcome.SUCCESS
+        }
 
     /**
      * @return the error message of [ValueValidatorRule] with [Outcome.ERROR], null otherwise.
