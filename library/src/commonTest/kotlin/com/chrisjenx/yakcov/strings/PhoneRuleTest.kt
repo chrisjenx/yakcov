@@ -1,6 +1,5 @@
 package com.chrisjenx.yakcov.strings
 
-import com.chrisjenx.yakcov.IOSIgnore
 import com.chrisjenx.yakcov.ValidationResult.Outcome
 import com.chrisjenx.yakcov.initPhoneNumberUtil
 import kotlin.test.BeforeTest
@@ -30,7 +29,6 @@ class PhoneRuleTest {
     }
 
     @Test
-    @IOSIgnore // FIXME: This is failing on iOS, get cocoapods working so we can use libphonenumber on iOS.
     fun phoneNumber_wrongRegion() {
         // This is a UK number should error for US
         assertEquals(Outcome.ERROR, Phone("US").validate("07745973912").outcome())

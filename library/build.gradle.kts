@@ -13,7 +13,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
-//    alias(libs.plugins.cocoapods)
+    alias(libs.plugins.cocoapods)
     alias(libs.plugins.maven.publish)
 }
 
@@ -22,19 +22,17 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-//    cocoapods {
-//        version = "1.0.0"
-//        summary = "Yet Another Kotlin COmpose Validation library"
-//        homepage = "https://github.com/chrisjenx/yakcov"
-//        ios.deploymentTarget = "14.1"
-//        framework {
-//            baseName = "yakcov"
-////            isStatic = true
-////            pod("libPhoneNumber-iOS")
-////            @OptIn(ExperimentalKotlinGradlePluginApi::class)
-////            transitiveExport = true
-//        }
-//    }
+    cocoapods {
+        summary = "Yet Another Kotlin COmpose Validation library"
+        homepage = "https://github.com/chrisjenx/yakcov"
+        ios.deploymentTarget = "14.1"
+        framework {
+            baseName = "yakcov"
+            @OptIn(ExperimentalKotlinGradlePluginApi::class)
+            transitiveExport = true
+        }
+        pod("libPhoneNumber-iOS", version = "~> 1.2")
+    }
 
     applyDefaultHierarchyTemplate()
     androidTarget {
@@ -47,14 +45,14 @@ kotlin {
             }
         }
         //https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        instrumentedTestVariant {
-            sourceSetTree.set(KotlinSourceSetTree.test)
-            dependencies {
-                debugImplementation(libs.androidx.testManifest)
-                implementation(libs.androidx.junit4)
-            }
-        }
+//        @OptIn(ExperimentalKotlinGradlePluginApi::class)
+//        instrumentedTestVariant {
+//            sourceSetTree.set(KotlinSourceSetTree.test)
+//            dependencies {
+//                debugImplementation(libs.androidx.testManifest)
+//                implementation(libs.androidx.junit4)
+//            }
+//        }
     }
 
     jvm()
@@ -155,13 +153,13 @@ android {
     @Suppress("UnstableApiUsage")
     testOptions {
         targetSdk = 34
-        managedDevices.devices {
-            maybeCreate<ManagedVirtualDevice>("pixel5").apply {
-                device = "Pixel 5"
-                apiLevel = 34
-                systemImageSource = "aosp"
-            }
-        }
+//        managedDevices.devices {
+//            maybeCreate<ManagedVirtualDevice>("pixel5").apply {
+//                device = "Pixel 5"
+//                apiLevel = 34
+//                systemImageSource = "aosp"
+//            }
+//        }
         unitTests {
             isIncludeAndroidResources = true
         }
