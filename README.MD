@@ -43,7 +43,7 @@ with(emailValiator) {
 
 ## Dependencies
 
-By default we publish 
+By default we publish
 to [Maven Central](https://central.sonatype.com/artifact/com.chrisjenx.yakcov/library).
 
 We publish all targets (Android, JVM, JS, Wasm, iOS) you can include the common library in your
@@ -62,6 +62,15 @@ If you only need a specific target you can include that directly, for example fo
 ```kotlin
 dependencies {
     implementation("com.chrisjenx.yakcov:library-android:${version}")
+}
+```
+
+### iOS
+You will need to add the following pod to your iOS project:
+
+```kotlin
+cocoaPods {
+    pod("libPhoneNumber-iOS", version = "~> 1.2")
 }
 ```
 
