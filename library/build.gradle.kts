@@ -1,12 +1,10 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
-import com.android.build.api.dsl.ManagedVirtualDevice
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 
 plugins {
     alias(libs.plugins.multiplatform)
@@ -44,15 +42,6 @@ kotlin {
                 }
             }
         }
-        //https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html
-//        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-//        instrumentedTestVariant {
-//            sourceSetTree.set(KotlinSourceSetTree.test)
-//            dependencies {
-//                debugImplementation(libs.androidx.testManifest)
-//                implementation(libs.androidx.junit4)
-//            }
-//        }
     }
 
     jvm()
@@ -153,13 +142,6 @@ android {
     @Suppress("UnstableApiUsage")
     testOptions {
         targetSdk = 34
-//        managedDevices.devices {
-//            maybeCreate<ManagedVirtualDevice>("pixel5").apply {
-//                device = "Pixel 5"
-//                apiLevel = 34
-//                systemImageSource = "aosp"
-//            }
-//        }
         unitTests {
             isIncludeAndroidResources = true
         }
