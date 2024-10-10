@@ -1,19 +1,17 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
-import com.android.build.api.dsl.ManagedVirtualDevice
 import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 
 plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
-//    alias(libs.plugins.cocoapods)
+    alias(libs.plugins.cocoapods)
     alias(libs.plugins.maven.publish)
 }
 
@@ -22,19 +20,17 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-//    cocoapods {
-//        version = "1.0.0"
-//        summary = "Yet Another Kotlin COmpose Validation library"
-//        homepage = "https://github.com/chrisjenx/yakcov"
-//        ios.deploymentTarget = "14.1"
-//        framework {
-//            baseName = "yakcov"
-////            isStatic = true
-////            pod("libPhoneNumber-iOS")
-////            @OptIn(ExperimentalKotlinGradlePluginApi::class)
-////            transitiveExport = true
-//        }
-//    }
+    cocoapods {
+        summary = "Yet Another Kotlin COmpose Validation library"
+        homepage = "https://github.com/chrisjenx/yakcov"
+        ios.deploymentTarget = "14.1"
+        framework {
+            baseName = "yakcov"
+            @OptIn(ExperimentalKotlinGradlePluginApi::class)
+            transitiveExport = true
+        }
+        pod("libPhoneNumber-iOS", version = "~> 1.2")
+    }
 
     applyDefaultHierarchyTemplate()
     androidTarget {
@@ -44,15 +40,6 @@ kotlin {
                     jvmTarget.set(JvmTarget.JVM_1_8)
                     freeCompilerArgs.add("-Xjdk-release=${JavaVersion.VERSION_1_8}")
                 }
-            }
-        }
-        //https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-test.html
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
-        instrumentedTestVariant {
-            sourceSetTree.set(KotlinSourceSetTree.test)
-            dependencies {
-                debugImplementation(libs.androidx.testManifest)
-                implementation(libs.androidx.junit4)
             }
         }
     }
@@ -155,13 +142,6 @@ android {
     @Suppress("UnstableApiUsage")
     testOptions {
         targetSdk = 34
-        managedDevices.devices {
-            maybeCreate<ManagedVirtualDevice>("pixel5").apply {
-                device = "Pixel 5"
-                apiLevel = 34
-                systemImageSource = "aosp"
-            }
-        }
         unitTests {
             isIncludeAndroidResources = true
         }

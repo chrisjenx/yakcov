@@ -1,10 +1,8 @@
 package com.chrisjenx.yakcov
 
+import cocoapods.libPhoneNumber_iOS.NBPhoneNumberUtil
 import kotlinx.cinterop.ExperimentalForeignApi
-import platform.Foundation.NSDataDetector
-import platform.Foundation.NSMakeRange
-import platform.Foundation.NSTextCheckingTypePhoneNumber
-import platform.Foundation.matchesInString
+
 
 /**
  * Check if is phone number to best ability of each platform.
@@ -12,8 +10,11 @@ import platform.Foundation.matchesInString
 @OptIn(ExperimentalForeignApi::class)
 actual fun String?.isPhoneNumber(defaultRegion: String?): Boolean {
     if (this.isNullOrBlank()) return false
-    val detector = NSDataDetector(types = NSTextCheckingTypePhoneNumber, error = null)
-    val range = NSMakeRange(0.toULong(), this.length.toULong())
-    val matches = detector.matchesInString(this, options = 0.toULong(), range = range)
-    return matches.isNotEmpty()
+    try {
+        val phoneUtil = NBPhoneNumberUtil.sharedInstance() ?: return false
+        val phoneNumber = phoneUtil.parse(this, defaultRegion, null)
+        return phoneUtil.isValidNumberForRegion(phoneNumber, defaultRegion)
+    } catch (e: Throwable) {
+        return false
+    }
 }
