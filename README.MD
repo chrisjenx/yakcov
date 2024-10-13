@@ -8,7 +8,7 @@
 val emailValidator = TextFieldValueValidator(
     rules = listOf(Required, Email)
 )
-with(emailValiator) {
+with(emailValidator) {
     OutlinedTextField(
         value = value,
         onValueChange = ::onValueChange,
