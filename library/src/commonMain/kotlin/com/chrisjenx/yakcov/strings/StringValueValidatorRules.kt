@@ -4,7 +4,13 @@ package com.chrisjenx.yakcov.strings
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.input.TextFieldValue
+import com.chrisjenx.yakcov.ImmutableBooleanState
+import com.chrisjenx.yakcov.ImmutableIntState
+import com.chrisjenx.yakcov.ImmutableLocalDateState
+import com.chrisjenx.yakcov.ImmutableNumberState
+import com.chrisjenx.yakcov.ImmutableStringState
 import com.chrisjenx.yakcov.ResourceValidationResult
 import com.chrisjenx.yakcov.ValidationResult
 import com.chrisjenx.yakcov.ValueValidator
@@ -64,12 +70,15 @@ data object Decimal : ValueValidatorRule<String> {
 }
 
 @Stable
-data class MinValue(val minValue: Number) : ValueValidatorRule<String> {
+data class MinValue(val minValue: State<Number>) : ValueValidatorRule<String> {
+    constructor(minValue: Number) : this(ImmutableNumberState(minValue))
+
+    private val _minValue by minValue
     override fun validate(value: String): ValidationResult {
         if (value.isBlank()) return ResourceValidationResult.success()
         val number = value.toDoubleOrNull()
-        return if (number == null || number < minValue.toDouble()) {
-            ResourceValidationResult.error(Res.string.ruleMinValue, minValue)
+        return if (number == null || number < _minValue.toDouble()) {
+            ResourceValidationResult.error(Res.string.ruleMinValue, _minValue)
         } else {
             ResourceValidationResult.success()
         }
@@ -77,12 +86,15 @@ data class MinValue(val minValue: Number) : ValueValidatorRule<String> {
 }
 
 @Stable
-data class MaxValue(val maxValue: Float) : ValueValidatorRule<String> {
+data class MaxValue(val maxValue: State<Number>) : ValueValidatorRule<String> {
+    constructor(maxValue: Number) : this(ImmutableNumberState(maxValue))
+
+    private val _maxValue by maxValue
     override fun validate(value: String): ValidationResult {
         if (value.isBlank()) return ResourceValidationResult.success()
-        val number = value.toFloatOrNull()
-        return if (value.isNotBlank() && (number == null || number > maxValue)) {
-            ResourceValidationResult.error(Res.string.ruleMaxValue, maxValue)
+        val number = value.toDoubleOrNull()
+        return if (value.isNotBlank() && (number == null || number > _maxValue.toDouble())) {
+            ResourceValidationResult.error(Res.string.ruleMaxValue, _maxValue)
         } else {
             ResourceValidationResult.success()
         }
@@ -96,19 +108,28 @@ data class MaxValue(val maxValue: Float) : ValueValidatorRule<String> {
  */
 @Stable
 data class MinLength(
-    val minLength: Int,
-    val trim: Boolean = true,
-    val includeWhiteSpace: Boolean = true,
+    val minLength: State<Int>,
+    val trim: State<Boolean> = ImmutableBooleanState(value = true),
+    val includeWhiteSpace: State<Boolean> = ImmutableBooleanState(value = true),
 ) : ValueValidatorRule<String> {
+    constructor(minLength: Int, trim: Boolean = true, includeWhiteSpace: Boolean = true) : this(
+        ImmutableIntState(minLength),
+        ImmutableBooleanState(trim),
+        ImmutableBooleanState(includeWhiteSpace)
+    )
+
+    private val _minLength by minLength
+    private val _trim by trim
+    private val _includeWhiteSpace by includeWhiteSpace
     override fun validate(value: String): ValidationResult {
-        val trimmed = value.let { if (trim) it.trim() else it }
+        val trimmed = value.let { if (_trim) it.trim() else it }
         return when {
-            includeWhiteSpace && trimmed.length < minLength -> {
-                ResourceValidationResult.error(Res.string.ruleMinLength, minLength)
+            _includeWhiteSpace && trimmed.length < _minLength -> {
+                ResourceValidationResult.error(Res.string.ruleMinLength, _minLength)
             }
 
-            !includeWhiteSpace && trimmed.count { !it.isWhitespace() } < minLength -> {
-                ResourceValidationResult.error(Res.string.ruleMinLengthNoWhitespace, minLength)
+            !_includeWhiteSpace && trimmed.count { !it.isWhitespace() } < _minLength -> {
+                ResourceValidationResult.error(Res.string.ruleMinLengthNoWhitespace, _minLength)
             }
 
             else -> ResourceValidationResult.success()
@@ -116,11 +137,21 @@ data class MinLength(
     }
 }
 
+/**
+ * Max length of a string
+ *
+ * @param maxLength the max length of the string
+ */
 @Stable
-data class MaxLength(val maxLength: Int) : ValueValidatorRule<String> {
+data class MaxLength(
+    val maxLength: State<Int>
+) : ValueValidatorRule<String> {
+    constructor(maxLength: Int) : this(ImmutableIntState(maxLength))
+
+    private val _maxLength by maxLength
     override fun validate(value: String): ValidationResult {
-        return if (value.length > maxLength) {
-            ResourceValidationResult.error(Res.string.ruleMaxLength, maxLength)
+        return if (value.length > _maxLength) {
+            ResourceValidationResult.error(Res.string.ruleMaxLength, _maxLength)
         } else {
             ResourceValidationResult.success()
         }
@@ -146,11 +177,16 @@ data object Email : ValueValidatorRule<String> {
  * @param defaultRegion the default region to use for phone number validation, ISO 3166-1 alpha-2 code US, GB, ES, etc
  */
 @Stable
-data class Phone(val defaultRegion: String = "US") : ValueValidatorRule<String> {
+data class Phone(
+    val defaultRegion: State<String> = ImmutableStringState(value = "US")
+) : ValueValidatorRule<String> {
+    constructor(defaultRegion: String) : this(ImmutableStringState(defaultRegion))
+
+    private val _defaultRegion by defaultRegion
     override fun validate(value: String): ValidationResult {
         // only validate if not empty as Required will check if not empty
         if (value.isBlank()) return ResourceValidationResult.success()
-        return if (!value.isPhoneNumber(defaultRegion)) {
+        return if (!value.isPhoneNumber(_defaultRegion)) {
             ResourceValidationResult.error(Res.string.rulePhone)
         } else {
             ResourceValidationResult.success()
@@ -160,6 +196,8 @@ data class Phone(val defaultRegion: String = "US") : ValueValidatorRule<String> 
 
 @Stable
 data class DayValidation(val localDate: State<LocalDate>) : ValueValidatorRule<String> {
+    constructor(localDate: LocalDate) : this(ImmutableLocalDateState(localDate))
+
     override fun validate(value: String): ValidationResult {
         val current = localDate.value
         val dayOfMonth = value.toIntOrNull()
@@ -175,6 +213,8 @@ data class DayValidation(val localDate: State<LocalDate>) : ValueValidatorRule<S
 
 @Stable
 data class MonthValidation(val localDate: State<LocalDate>) : ValueValidatorRule<String> {
+    constructor(localDate: LocalDate) : this(ImmutableLocalDateState(localDate))
+
     override fun validate(value: String): ValidationResult {
         val current = localDate.value
         val monthOfYear = value.toIntOrNull()
@@ -190,6 +230,8 @@ data class MonthValidation(val localDate: State<LocalDate>) : ValueValidatorRule
 
 @Stable
 data class YearValidation(val localDate: State<LocalDate>) : ValueValidatorRule<String> {
+    constructor(localDate: LocalDate) : this(ImmutableLocalDateState(localDate))
+
     override fun validate(value: String): ValidationResult {
         val current = localDate.value
         val year = value.toIntOrNull() ?: return ResourceValidationResult.error(Res.string.ruleYear)
@@ -238,3 +280,5 @@ fun PasswordMatches(stringField: ValueValidator<String, *>): ValueValidatorRule<
 fun PasswordMatches(textFieldValueField: ValueValidator<TextFieldValue, *>): ValueValidatorRule<String> {
     return PasswordMatchesTextFieldValue(textFieldValueField)
 }
+
+

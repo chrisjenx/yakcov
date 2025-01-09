@@ -128,7 +128,7 @@ kotlin {
 
 android {
     namespace = "com.chrisjenx.yakcov"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 23
@@ -141,7 +141,7 @@ android {
     //https://developer.android.com/studio/test/gradle-managed-devices
     @Suppress("UnstableApiUsage")
     testOptions {
-        targetSdk = 34
+        targetSdk = 35
         unitTests {
             isIncludeAndroidResources = true
         }

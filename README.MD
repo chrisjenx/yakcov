@@ -4,8 +4,10 @@
 
 `TextField` validation is a pain, hopefully this is a bit easier
 
+![](sample/assets/YakcovDemo.gif)
+
 ```kotlin
-val emailValidator = TextFieldValueValidator(
+val emailValidator = rememberTextFieldValueValidator(
     rules = listOf(Required, Email)
 )
 with(emailValidator) {
