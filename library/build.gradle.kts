@@ -120,9 +120,14 @@ kotlin {
 
     }
 
+
     //https://kotlinlang.org/docs/native-objc-interop.html#export-of-kdoc-comments-to-generated-objective-c-headers
     targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget> {
-        compilations["main"].compilerOptions.options.freeCompilerArgs.add("-Xexport-kdoc")
+        compilations["main"].compileTaskProvider.configure {
+            compilerOptions {
+                freeCompilerArgs.add("-Xexport-kdoc")
+            }
+        }
     }
 }
 
