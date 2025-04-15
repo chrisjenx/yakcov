@@ -1,5 +1,4 @@
 [versions]
-
 kotlin = "2.1.20"
 # https://github.com/JetBrains/compose-multiplatform/releases
 compose = "1.8.0-beta02"
