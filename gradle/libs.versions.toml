@@ -1,19 +1,19 @@
 [versions]
 kotlin = "2.1.20"
 # https://github.com/JetBrains/compose-multiplatform/releases
-compose = "1.8.0-beta02"
+compose = "1.8.0"
 agp = "8.7.3"
 androidx-activityCompose = "1.10.1"
 androidx-uiTest = "1.7.8"
 kotlinx-datetime = "0.6.2"
-libphonenumberJvm = "9.0.3"
+libphonenumberJvm = "9.0.5"
 libphonenumberAndroid = "8.13.35"
 coreKtx = "1.16.0"
 junit = "4.13.2"
 espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.7"
+lifecycleRuntimeKtx = "2.9.0"
 # https://developer.android.com/develop/ui/compose/bom/bom-mapping
-composeBom = "2025.04.00"
+composeBom = "2025.05.00"
 startupRuntime = "1.2.0"
 
 [libraries]

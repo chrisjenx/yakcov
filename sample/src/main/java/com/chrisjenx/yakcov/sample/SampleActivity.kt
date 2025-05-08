@@ -210,6 +210,15 @@ class SampleActivity : ComponentActivity() {
                             )
                         }
 
+                        Button(
+                            onClick = {
+                                passwordValidator.reset()
+                                passwordMatchesValidator.reset()
+                            }
+                        ) {
+                            Text(text = "Reset Validation State")
+                        }
+
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
