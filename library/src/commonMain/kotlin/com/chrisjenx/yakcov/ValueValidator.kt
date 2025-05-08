@@ -173,7 +173,7 @@ abstract class ValueValidator<V, R>(
     }
 
     /**
-     * Weather to show error message when user has started typing,
+     * Whether to show error message when user has started typing,
      * errors will then be show after [validate] is called.
      * Default is true (matched the default value set on that method)
      *
