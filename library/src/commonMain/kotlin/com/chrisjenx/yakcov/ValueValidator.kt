@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 abstract class ValueValidator<V, R>(
     protected val state: MutableState<V>,
     protected val rules: List<ValueValidatorRule<R>>,
-    initialValidate: Boolean = false,
+    internal val initialValidate: Boolean = false,
     protected val alwaysShowRule: Boolean = false,
     protected val validationSeparator: String = defaultValidationSeparator,
     private val validateMapper: ValueValidatorRule<R>.(V) -> ValidationResult,
@@ -88,6 +88,17 @@ abstract class ValueValidator<V, R>(
      */
     open fun validateWithResult(value: V? = null): Outcome {
         return validateWithResult(value, shake = true, shouldShowError = true)
+    }
+
+    /**
+     * Will reset the state of the validator back to initial validation state.
+     *
+     * The only exception is if the [initialValidate] is set to true, in which case this will
+     *  effectively do nothing.
+     */
+    open fun reset() {
+        if (initialValidate) return
+        internalState = InternalState.Initial
     }
 
     /**
@@ -162,7 +173,7 @@ abstract class ValueValidator<V, R>(
     }
 
     /**
-     * Weather to show error message when user has started typing (or loosing focus),
+     * Whether to show error message when user has started typing,
      * errors will then be show after [validate] is called.
      * Default is true (matched the default value set on that method)
      *
