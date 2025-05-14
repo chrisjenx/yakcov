@@ -1,6 +1,5 @@
 package com.chrisjenx.yakcov
 
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 /**
@@ -8,7 +7,6 @@ import androidx.compose.ui.Modifier
  *
  * @see ValueValidator.validationConfig
  */
-@Composable
 fun Modifier.validationConfig(
     validator: ValueValidator<*, *>,
     validateOnFocusLost: Boolean = false,

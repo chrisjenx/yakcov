@@ -6,9 +6,11 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.util.fastJoinToString
@@ -192,27 +194,32 @@ abstract class ValueValidator<V, R>(
      *  or if loosing focus when [validateOnFocusLost] is `true`.
      *  When you call [validate] it will start validating showing errors if present.
      */
-    @Composable
     fun Modifier.validationConfig(
         validateOnFocusLost: Boolean = false,
         shakeOnInvalid: Boolean = false,
         showErrorOnInteraction: Boolean = true,
-    ): Modifier {
+    ): Modifier = composed {
         // Set scope if shaking is enabled
         shakeOnInvalidScope = if (shakeOnInvalid) rememberCoroutineScope() else null
         // Track if we should show error on user input
         showErrorOnUserInput = showErrorOnInteraction
-        // Track focus
-        var hadFocus by mutableStateOf(false)
-        return this
-            .onFocusChanged { focusState ->
-                if (focusState.hasFocus) hadFocus = true
-                // Don't shake on loss of focus, as we want to just show the error
-                if (validateOnFocusLost && !focusState.isFocused && hadFocus) {
-                    onValueChange(value = null)
+        this
+            .then(
+                if (validateOnFocusLost) {
+                    // Track focus
+                    var hadFocus by remember { mutableStateOf(false) }
+                    Modifier.onFocusChanged { focusState ->
+                        // Don't shake on loss of focus, as we want to just show the error
+                        if (validateOnFocusLost && hadFocus && !focusState.hasFocus) {
+                            validate(value = null, shake = false, shouldShowError = true)
+                        }
+                        hadFocus = focusState.hasFocus
+                    }
+                } else {
+                    Modifier
                 }
-            }
-            .shakable(shakingState)
+            )
+            .then(if (shakeOnInvalid) Modifier.shakable(shakingState) else Modifier)
     }
 
     /**
@@ -222,12 +229,14 @@ abstract class ValueValidator<V, R>(
         "Use validationConfig instead",
         ReplaceWith("validationConfig(validateOnFocusLost = true)")
     )
-    fun Modifier.validateFocusChanged(): Modifier {
-        var hadFocus by mutableStateOf(false)
-        return this.onFocusChanged { focusState ->
-            if (focusState.hasFocus) hadFocus = true
+    fun Modifier.validateFocusChanged(): Modifier = composed {
+        var hadFocus by remember { mutableStateOf(false) }
+        onFocusChanged { focusState ->
             // Don't shake on loss of focus, as we want to just show the error
-            if (!focusState.isFocused && hadFocus) validateWithResult(value = null, shake = false)
+            if (hadFocus && !focusState.hasFocus) {
+                validate(value = null, shake = false, shouldShowError = true)
+            }
+            hadFocus = focusState.hasFocus
         }
     }
 
@@ -243,14 +252,13 @@ abstract class ValueValidator<V, R>(
      * Adds to the modifier, that when [validate] is called AND the field is invalid it will
      * shake the field to draw attention to the error.
      */
-    @Composable
     @Deprecated(
         "Use validationConfig instead",
         ReplaceWith("validationConfig(shakeOnInvalid = true)")
     )
-    fun Modifier.shakeOnInvalid(): Modifier {
+    fun Modifier.shakeOnInvalid(): Modifier = composed {
         shakeOnInvalidScope = rememberCoroutineScope()
-        return this.shakable(shakingState)
+        shakable(shakingState)
     }
 
     // Internal validate method so focus and external validate act correctly
@@ -360,4 +368,3 @@ fun List<ValueValidator<*, *>>.validateWithResult(): Outcome {
     return this.map { it.validateWithResult(value = null, shake = true, shouldShowError = true) }
         .maxByOrNull { it.severity } ?: Outcome.SUCCESS
 }
-
