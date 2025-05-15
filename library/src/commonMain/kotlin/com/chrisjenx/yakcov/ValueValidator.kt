@@ -290,10 +290,7 @@ abstract class ValueValidator<V, R>(
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null || this::class != other::class) return false
-
-        other as TextFieldValueValidator
-
+        if (other == null || other !is ValueValidator<*, *>) return false
         if (value != other.value) return false
         if (rules != other.rules) return false
         if (internalState != other.internalState) return false
