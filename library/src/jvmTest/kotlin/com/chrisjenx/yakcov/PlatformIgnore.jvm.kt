@@ -7,4 +7,7 @@ actual annotation class IOSIgnore
 actual annotation class AndroidJUnitIgnore
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-actual annotation class JSIgnore actual constructor()
+actual annotation class JSIgnore
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+actual annotation class WasmJsIgnore

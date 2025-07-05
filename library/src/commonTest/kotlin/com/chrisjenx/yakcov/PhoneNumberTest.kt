@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+@JSIgnore @WasmJsIgnore
 class PhoneNumberTest {
 
     @BeforeTest

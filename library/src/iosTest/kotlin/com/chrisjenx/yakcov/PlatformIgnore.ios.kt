@@ -6,4 +6,7 @@ actual typealias IOSIgnore = kotlin.test.Ignore
 actual annotation class AndroidJUnitIgnore
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
-actual annotation class JSIgnore()
+actual annotation class JSIgnore
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+actual annotation class WasmJsIgnore

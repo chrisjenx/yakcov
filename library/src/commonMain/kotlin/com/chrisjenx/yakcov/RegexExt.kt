@@ -1,5 +1,6 @@
 package com.chrisjenx.yakcov
 
+import io.michaelrocks.libphonenumber.kotlin.PhoneNumberUtil
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -14,6 +15,8 @@ fun String?.isEmail(): Boolean {
     return matches(emailRegex)
 }
 
+internal expect val phoneUtil: PhoneNumberUtil
+
 
 /**
  * Check if is phone number to best ability of each platform.
@@ -21,4 +24,13 @@ fun String?.isEmail(): Boolean {
  * @param defaultRegion The default region to use if the number is not in international format.
  *  it's two digits country code. e.g. "US", "GB", "ES"
  */
-expect fun String?.isPhoneNumber(defaultRegion: String? = "US"): Boolean
+fun String?.isPhoneNumber(defaultRegion: String? = "US"): Boolean {
+    this ?: return false
+    return try {
+        val result = phoneUtil.parse(this, defaultRegion?.uppercase())
+        phoneUtil.isValidNumber(result)
+    } catch (t: Throwable) {
+        t.printStackTrace()
+        false
+    }
+}

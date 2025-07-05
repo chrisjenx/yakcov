@@ -8,3 +8,6 @@ expect annotation class AndroidJUnitIgnore()
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 expect annotation class JSIgnore()
+
+@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
+expect annotation class WasmJsIgnore()

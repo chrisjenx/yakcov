@@ -10,7 +10,6 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
-    alias(libs.plugins.cocoapods)
     alias(libs.plugins.maven.publish)
 }
 
@@ -18,17 +17,6 @@ kotlin {
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
-    }
-    cocoapods {
-        summary = "Yet Another Kotlin COmpose Validation library"
-        homepage = "https://github.com/chrisjenx/yakcov"
-        ios.deploymentTarget = "14.1"
-        framework {
-            baseName = "yakcov"
-            @OptIn(ExperimentalKotlinGradlePluginApi::class)
-            transitiveExport = true
-        }
-        pod("libPhoneNumber-iOS", version = "~> 1.2")
     }
 
     applyDefaultHierarchyTemplate()
@@ -49,16 +37,19 @@ kotlin {
         browser {
             testTask {
                 useKarma {
+                    //TODO use firefox
                     useChromeHeadless()
                 }
             }
         }
+        useEsModules()
     }
 
     wasmJs {
         browser {
             testTask {
                 useKarma {
+                    //TODO use firefox
                     useChromeHeadless()
                 }
             }
@@ -73,7 +64,6 @@ kotlin {
     ).forEach {
         it.binaries.framework {
             baseName = "Yakcov"
-            isStatic = true
         }
     }
 
@@ -85,6 +75,7 @@ kotlin {
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.libphonenumber.kotlin)
         }
 
         commonTest.dependencies {
@@ -96,13 +87,16 @@ kotlin {
         androidMain.dependencies {
             compileOnly(compose.uiTooling)
             implementation(libs.androidx.activityCompose)
-            implementation(libs.libphonenumber.android)
             implementation(libs.androidx.startup.runtime)
+        }
+
+        androidUnitTest.dependencies {
+            // Should pull down jvm target
+            implementation(libs.libphonenumber.kotlin)
         }
 
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
-            implementation(libs.libphonenumber.jvm)
         }
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
@@ -110,7 +104,6 @@ kotlin {
 
         jsMain.dependencies {
             implementation(compose.html.core)
-            implementation(npm("libphonenumber-js", "1.11.10"))
         }
 
         iosMain.dependencies {
@@ -130,6 +123,11 @@ kotlin {
     }
 }
 
+compose.resources {
+    publicResClass = true
+    generateResClass = always
+}
+
 android {
     namespace = "com.chrisjenx.yakcov"
     compileSdk = 36
@@ -143,7 +141,6 @@ android {
         res.srcDirs("src/androidMain/res")
     }
     //https://developer.android.com/studio/test/gradle-managed-devices
-    @Suppress("UnstableApiUsage")
     testOptions {
         targetSdk = 35
         unitTests {
