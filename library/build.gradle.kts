@@ -1,6 +1,5 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
-import com.vanniktech.maven.publish.SonatypeHost
 import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
@@ -133,7 +132,7 @@ kotlin {
 
 android {
     namespace = "com.chrisjenx.yakcov"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 23
@@ -174,18 +173,15 @@ publishing {
     }
 }
 
-@Suppress("UnstableApiUsage")
 private val gitRevListTags = providers.exec {
     commandLine("git", "rev-list", "--tags", "--max-count=1")
 }.standardOutput.asText.map { it.trim() }
 
-@Suppress("UnstableApiUsage")
 private val gitCurrentTag = providers.exec {
     commandLine("git", "describe", "--tags", gitRevListTags.get())
 }.standardOutput.asText.map { it.trim() }
 
 // get git shortSha for version
-@Suppress("UnstableApiUsage")
 private val gitSha = providers.exec { commandLine("git", "rev-parse", "--short", "HEAD") }
     .standardOutput.asText.map { it.trim() }
 
@@ -199,7 +195,7 @@ mavenPublishing {
         "${gitCurrentTag.get()}-${gitSha.get()}"
     }
     coordinates("com.chrisjenx.yakcov", "library", version = version.toString())
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
     signAllPublications()
 
     pom {
