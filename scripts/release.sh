@@ -18,7 +18,7 @@ print_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Check if we're in the right directory
-if [ ! -f "RELEASE.md" ]; then
+if [ ! -f "RELEASE_SCRIPT.md" ]; then
     print_error "Not in yakcov project root directory. Please run from project root."
     exit 1
 fi
