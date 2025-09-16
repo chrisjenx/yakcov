@@ -142,7 +142,7 @@ android {
     }
     //https://developer.android.com/studio/test/gradle-managed-devices
     testOptions {
-        targetSdk = 35
+        targetSdk = 36
         unitTests {
             isIncludeAndroidResources = true
         }
