@@ -67,12 +67,17 @@ dependencies {
 }
 ```
 
-### iOS
-You will need to add the following pod to your iOS project:
+### Phone number validation (libphonenumber)
+
+Yakcov's phone-number validation rules uses [luca992](https://github.com/luca992/libphonenumber-kotlin) port of libphonenumber. The Yakcov library declares this as `compileOnly`, so if you plan to use any phone-number validation rules you must add the dependency yourself in your app or shared module.
+
+Kotlin Multiplatform (recommended):
 
 ```kotlin
-cocoaPods {
-    pod("libPhoneNumber-iOS", version = "~> 1.2")
+commonMain {
+    dependencies {
+        implementation("io.github.luca992.libphonenumber-kotlin:libphonenumber:0.1.8")
+    }
 }
 ```
 
