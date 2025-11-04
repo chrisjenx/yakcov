@@ -1,6 +1,5 @@
 @file:OptIn(ExperimentalWasmDsl::class)
 
-import org.jetbrains.compose.ExperimentalComposeLibrary
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -69,28 +68,40 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
-            implementation(libs.kotlinx.datetime)
-            implementation(libs.libphonenumber.kotlin)
+            // Change to compile only to not force consumers to bring in all compose dependencies
+            compileOnly(libs.jetbrains.compose.runtime)
+            compileOnly(libs.jetbrains.compose.foundation)
+            compileOnly(libs.jetbrains.compose.material3)
+            compileOnly(libs.jetbrains.compose.components.resources)
+            compileOnly(libs.jetbrains.compose.ui.tooling.preview)
+            compileOnly(libs.kotlinx.datetime)
+            compileOnly(libs.libphonenumber.kotlin)
         }
 
         commonTest.dependencies {
+            // Implement for tests to run
+            implementation(libs.jetbrains.compose.runtime)
+            implementation(libs.jetbrains.compose.foundation)
+            implementation(libs.jetbrains.compose.material3)
+            implementation(libs.jetbrains.compose.components.resources)
+            implementation(libs.jetbrains.compose.ui.tooling.preview)
+            implementation(libs.kotlinx.datetime)
+            implementation(libs.libphonenumber.kotlin)
+            // Test Dependencies
             implementation(kotlin("test"))
-            @OptIn(ExperimentalComposeLibrary::class)
-            implementation(compose.uiTest)
+            implementation(libs.jetbrains.compose.ui.test)
         }
 
         androidMain.dependencies {
-            compileOnly(compose.uiTooling)
-            implementation(libs.androidx.activityCompose)
-            implementation(libs.androidx.startup.runtime)
+            compileOnly(libs.jetbrains.compose.ui.tooling)
+            compileOnly(libs.androidx.activityCompose)
+            compileOnly(libs.androidx.startup.runtime)
         }
 
         androidUnitTest.dependencies {
+            // Implement for tests to run
+            implementation(libs.androidx.activityCompose)
+            implementation(libs.androidx.startup.runtime)
             // Should pull down jvm target
             implementation(libs.libphonenumber.kotlin)
         }
@@ -103,7 +114,11 @@ kotlin {
         }
 
         jsMain.dependencies {
-            implementation(compose.html.core)
+            compileOnly(libs.jetbrains.compose.html.core)
+        }
+
+        jsTest.dependencies {
+            implementation(libs.jetbrains.compose.html.core)
         }
 
         iosMain.dependencies {

@@ -23,15 +23,23 @@ if [ ! -f "RELEASE_SCRIPT.md" ]; then
     exit 1
 fi
 
-# Parse compose version from libs.versions.toml
-COMPOSE_VERSION=$(grep "^compose = " gradle/libs.versions.toml | head -1 | sed 's/compose = "\(.*\)"/\1/')
+# Parse compose version from libs.versions.toml (ignore pre-release/build metadata; keep only semver)
+RAW_COMPOSE_VERSION=$(grep "^compose = " gradle/libs.versions.toml | head -1 | sed 's/compose = "\(.*\)"/\1/')
 
-if [ -z "$COMPOSE_VERSION" ]; then
+if [ -z "$RAW_COMPOSE_VERSION" ]; then
     print_error "Could not find compose version in gradle/libs.versions.toml"
     exit 1
 fi
 
-print_info "Found compose version: $COMPOSE_VERSION"
+# Extract strict semver (MAJOR.MINOR.PATCH) e.g. 1.10.0 from 1.10.0-beta01
+COMPOSE_VERSION=$(echo "$RAW_COMPOSE_VERSION" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+
+if [ -z "$COMPOSE_VERSION" ]; then
+    print_error "Could not parse semver (MAJOR.MINOR.PATCH) from compose version: $RAW_COMPOSE_VERSION"
+    exit 1
+fi
+
+print_info "Found compose version: $RAW_COMPOSE_VERSION (using semver: $COMPOSE_VERSION)"
 
 # Determine release branch name
 RELEASE_BRANCH="release/$COMPOSE_VERSION"
