@@ -30,6 +30,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.Build-Matrix.outputs.matrix) }}
+    # next channel is beta — surface failures without blocking merges
+    continue-on-error: ${{ matrix.channel == 'next' }}
     name: Checks-JS (${{ matrix.channel }})
     steps:
       - name: Checkout code
@@ -65,6 +67,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.Build-Matrix.outputs.matrix) }}
+    # next channel is beta — surface failures without blocking merges
+    continue-on-error: ${{ matrix.channel == 'next' }}
     name: Checks-Jvm (${{ matrix.channel }})
     steps:
       - name: Checkout code
@@ -96,6 +100,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.Build-Matrix.outputs.matrix) }}
+    # next channel is beta — surface failures without blocking merges
+    continue-on-error: ${{ matrix.channel == 'next' }}
     name: Checks-Apple (${{ matrix.channel }})
     steps:
       - name: Checkout code
