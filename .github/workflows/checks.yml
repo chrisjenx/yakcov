@@ -34,6 +34,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Get tags
+        run: git fetch --tags origin
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
@@ -67,6 +69,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Get tags
+        run: git fetch --tags origin
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
@@ -96,6 +100,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Get tags
+        run: git fetch --tags origin
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
