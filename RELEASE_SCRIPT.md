@@ -2,105 +2,184 @@
 
 ## Overview
 
-The `release.sh` script automates the release process for the Yakcov library based on the instructions in `RELEASE.md`. It eliminates manual steps and reduces the chance of errors during releases.
+The `release.sh` script automates dual-channel releases for the Yakcov library. It reads `compose-releases.toml` to determine which Compose Multiplatform versions to target, then builds and publishes an artifact for each channel to Maven Central.
 
 ## What the Script Does
 
-1. **Parses the compose version** from `gradle/libs.versions.toml`
-2. **Creates or switches to a release branch** following the pattern `release/X.Y.Z`
-3. **Determines the next tag number** by analyzing existing tags and incrementing appropriately
-4. **Creates and pushes the git tag** to the remote repository
-5. **Executes the gradle publish command** to release to Maven Central
+For each channel defined in `compose-releases.toml`:
+
+1. **Determines the next tag** by analyzing existing git tags and incrementing
+2. **Cleans build state** (Gradle build + `kotlin-js-store`) to avoid stale JS/Wasm caches
+3. **Patches `gradle/libs.versions.toml`** with the channel's compose, material3, and kotlin versions
+4. **Builds and publishes** to Maven Central via Gradle with `-PpublishVersion=$TAG`
+5. **Creates and pushes the git tag** to the remote repository
+6. **Restores `libs.versions.toml`** to its original state
+
+## Configuration
+
+### `compose-releases.toml`
+
+Defines the release channels at the project root:
+
+```toml
+[stable]
+compose = "1.10.3"
+compose-material3 = "1.10.0-alpha05"
+
+[next]
+compose = "1.11.0-beta02"
+compose-material3 = "1.11.0-alpha06"
+kotlin = "2.3.20"
+```
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `compose` | Yes | Compose Multiplatform plugin + dependency version |
+| `compose-material3` | Yes | Material3 artifact version (often differs from compose) |
+| `kotlin` | No | Kotlin version override. Omit to inherit from `libs.versions.toml` |
+
+Remove a section to skip that channel. For example, removing `[next]` releases only the stable channel.
 
 ## Usage
 
 ### Prerequisites
 
-- Ensure you have the Yakcov keys on your machine (required for Maven Central publishing)
+- Yakcov signing keys on your machine (required for Maven Central publishing)
 - Run from the project root directory
-- Ensure you have push permissions to the repository
+- Push permissions to the repository
 
-### Basic Usage
+### Commands
 
 ```bash
+# Release all channels (default)
 ./scripts/release.sh
-```
 
-The script will:
-- Show you what it plans to do
-- Ask for confirmation before making any changes
-- Guide you through the release process with colored output
+# Release a specific channel only
+./scripts/release.sh --channel stable
+./scripts/release.sh --channel next
+
+# Preview what would happen without making changes
+./scripts/release.sh --dry-run
+
+# Combine flags
+./scripts/release.sh --channel next --dry-run
+```
 
 ### Example Output
 
 ```
-[INFO] Found compose version: 1.9.0
-[INFO] Release branch: release/1.9.0
-[INFO] Release branch release/1.9.0 does not exist (would create new)
-[INFO] Looking for existing tags with base: 1.9.0
-[INFO] No existing tags found for version 1.9.0, creating: 1.9.0
-[WARN] About to:
-  - Create git tag: 1.9.0
-  - Push tag to remote
-  - Build and publish to Maven Central
+[INFO] === Release Plan ===
 
-Continue? (y/N):
+[stable] compose=1.10.3  material3=1.10.0-alpha05  kotlin=<inherited>
+[stable] tag=1.10.3
+
+[next] compose=1.11.0-beta02  material3=1.11.0-alpha06  kotlin=2.3.20
+[next] tag=1.11.0-beta02
+
+Continue with release? (y/N):
 ```
 
-## Release Branch and Tag Naming
+## Tag Naming
 
-### Release Branches
-- Format: `release/X.Y.Z` where X.Y.Z matches the compose version
-- Example: `release/1.9.0`
+| Channel | First release | Subsequent releases |
+|---------|--------------|---------------------|
+| stable | `1.10.3` | `1.10.3-1`, `1.10.3-2` |
+| next | `1.11.0-beta02` | `1.11.0-beta02-1`, `1.11.0-beta02-2` |
 
-### Tags
-- First release for a version: `X.Y.Z` (e.g., `1.9.0`)
-- Subsequent releases: `X.Y.Z-N` where N increments (e.g., `1.9.0-1`, `1.9.0-2`)
-- The script automatically determines the next available tag number
+The script automatically detects existing tags and increments.
+
+## CI Matrix Testing
+
+The CI workflow (`.github/workflows/checks.yml`) automatically tests against all channels defined in `compose-releases.toml`. Each test job (JS, JVM, Apple) runs once per channel using a matrix strategy.
+
+## Failure Handling
+
+- If the build fails for a channel, no tag is pushed (clean rollback)
+- If one channel succeeds and another fails, the script reports which failed
+- Re-run with `--channel <name>` to retry only the failed channel
 
 ## Testing
 
-You can test the script logic without making any changes by running:
+Test the release logic without making any changes:
 
 ```bash
 ./scripts/test-release-logic.sh
 ```
 
-This will show you what the script would do without actually creating branches, tags, or publishing.
-
-## Error Handling
-
-The script includes several safety checks:
-
-- Verifies you're in the correct project directory
-- Confirms the compose version can be parsed
-- Shows you exactly what will happen before making changes
-- Requires explicit confirmation before proceeding
-- Uses `set -e` to exit immediately if any command fails
+This validates: TOML parsing, tag computation, version patching, and restoration.
 
 ## Manual Override
 
-If you need to bypass the script for any reason, you can still follow the manual process in `RELEASE.md`:
+To publish manually without the script:
 
-1. Switch to/Create a release branch matching the compose version
-2. Create a tag matching the version, increment by 1 for each tag
-3. Run: `./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -Drelease=true`
+```bash
+./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -PpublishVersion=1.10.3
+```
+
+## CI Release (GitHub Actions)
+
+A GitHub Actions workflow allows releasing from CI instead of locally.
+
+### Setup (one-time)
+
+Your local machine uses `~/.gradle/gradle.properties` for Maven Central credentials and GPG signing. CI needs the same values as GitHub secrets.
+
+1. **Create a GitHub environment** called `maven-central` at:
+   `https://github.com/chrisjenx/yakcov/settings/environments`
+
+2. **Add these secrets** to the `maven-central` environment, using the values from your `~/.gradle/gradle.properties`:
+
+   | Secret | gradle.properties equivalent | Description |
+   |--------|------------------------------|-------------|
+   | `MAVEN_CENTRAL_USERNAME` | `mavenCentralUsername` | Sonatype Central Portal user token username |
+   | `MAVEN_CENTRAL_PASSWORD` | `mavenCentralPassword` | Sonatype Central Portal user token password |
+   | `SIGNING_KEY` | n/a (file-based locally) | Run: `gpg --export-secret-keys --armor <key-id>` (full output) |
+   | `SIGNING_KEY_ID` | `signing.keyId` | Last 8 hex characters of your GPG key ID |
+   | `SIGNING_KEY_PASSWORD` | `signing.password` | GPG key passphrase |
+
+   > **Note:** Locally you use `signing.secretKeyRingFile` to point at a GPG keyring file. CI uses the in-memory key (`signingInMemoryKey`) instead — this is the ASCII-armored export of the same key.
+
+### Usage
+
+**From GitHub UI:**
+1. Go to Actions → "Release" workflow
+2. Click "Run workflow"
+3. Select channel (`all`, `stable`, or `next`)
+4. Optionally check "Dry run" to build without publishing
+5. Click "Run workflow"
+
+**From CLI:**
+```bash
+# Release all channels
+gh workflow run release.yml -f channel=all
+
+# Release stable only
+gh workflow run release.yml -f channel=stable
+
+# Dry run
+gh workflow run release.yml -f channel=all -f dry-run=true
+```
 
 ## Troubleshooting
 
-### "Not in yakcov project root directory"
-- Run the script from the project root where `RELEASE.md` exists
+### "compose-releases.toml not found"
+- Run the script from the project root
 
-### "Could not find compose version in gradle/libs.versions.toml"
-- Check that `gradle/libs.versions.toml` exists and contains a line like `compose = "X.Y.Z"`
+### Build fails for one channel
+- Check if the Compose/Kotlin version combination is compatible
+- Try running `./gradlew build` with the patched versions manually
+- Re-run with `--channel <name>` after fixing
 
 ### Maven Central publishing fails
-- Ensure you have the Yakcov keys on your machine
-- Check your network connection
-- Verify your Maven Central credentials are configured correctly
+- Ensure signing keys are configured
+- Check network connectivity
+- Verify Maven Central credentials
 
 ## Files
 
-- `scripts/release.sh` - Main release script
-- `scripts/test-release-logic.sh` - Test script to validate logic
-- `RELEASE_SCRIPT.md` - This documentation
+| File | Purpose |
+|------|---------|
+| `compose-releases.toml` | Defines Compose version channels |
+| `scripts/release.sh` | Main dual-channel release script |
+| `scripts/test-release-logic.sh` | Non-destructive test script |
+| `RELEASE_SCRIPT.md` | This documentation |
