@@ -145,10 +145,11 @@ _json_matrix() {
             continue
         fi
 
-        local compose_ver material3_ver kotlin_ver tag
+        local compose_ver material3_ver kotlin_ver xcode_ver tag
         compose_ver=$(read_channel_key "$channel" "compose")
         material3_ver=$(read_channel_key "$channel" "compose-material3")
         kotlin_ver=$(read_channel_key "$channel" "kotlin")
+        xcode_ver=$(read_channel_key "$channel" "xcode")
 
         # Skip channels missing required compose key
         if [ -z "$compose_ver" ]; then
@@ -159,7 +160,7 @@ _json_matrix() {
 
         $first || matrix+=","
         first=false
-        matrix+="{\"channel\":\"$channel\",\"compose\":\"$compose_ver\",\"material3\":\"$material3_ver\",\"kotlin\":\"${kotlin_ver:-}\",\"tag\":\"$tag\"}"
+        matrix+="{\"channel\":\"$channel\",\"compose\":\"$compose_ver\",\"material3\":\"$material3_ver\",\"kotlin\":\"${kotlin_ver:-}\",\"xcode\":\"${xcode_ver:-}\",\"tag\":\"$tag\"}"
     done
 
     matrix+="]"

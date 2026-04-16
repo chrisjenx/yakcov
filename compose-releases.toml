@@ -7,6 +7,7 @@
 #   compose          - Compose Multiplatform plugin + dependency version (required)
 #   compose-material3 - Material3 artifact version (required, often differs from compose)
 #   kotlin           - Kotlin version override (optional, inherits from libs.versions.toml if omitted)
+#   xcode            - Xcode version for Apple CI builds (optional, uses runner default if omitted)
 
 [stable]
 compose = "1.10.3"
@@ -16,3 +17,4 @@ compose-material3 = "1.10.0-alpha05"
 compose = "1.11.0-beta02"
 compose-material3 = "1.11.0-alpha06"
 kotlin = "2.3.20"
+xcode = "26.3"
