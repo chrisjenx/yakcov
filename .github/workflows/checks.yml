@@ -9,19 +9,39 @@ on:
 permissions:
   checks: write
 jobs:
-  Checks-JS:
+  Build-Matrix:
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.parse.outputs.matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Get tags
-        run: git fetch --tags origin
+      - name: Parse compose-releases.toml
+        id: parse
+        run: |
+          matrix=$(./scripts/lib-release.sh --json-matrix)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Parsed matrix: $matrix"
+
+  Checks-JS:
+    needs: Build-Matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.Build-Matrix.outputs.matrix) }}
+    name: Checks-JS (${{ matrix.channel }})
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
           distribution: 'zulu'
           java-version: '21'
           cache: 'gradle'
+      - name: Patch Compose versions
+        run: ./scripts/lib-release.sh --patch "${{ matrix.channel }}"
       - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1.7.2
       - name: Run Js tests
@@ -33,51 +53,63 @@ jobs:
         if: success() || failure()
         with:
           report_paths: '**/build/test-results/**/TEST-*.xml'
-          check_name: 'JS JUnit Test Report'
+          check_name: 'JS JUnit Test Report (${{ matrix.channel }})'
           require_tests: true
+
   Checks-Jvm:
+    needs: Build-Matrix
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.Build-Matrix.outputs.matrix) }}
+    name: Checks-Jvm (${{ matrix.channel }})
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Get tags
-        run: git fetch --tags origin
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
           distribution: 'zulu'
           java-version: '21'
           cache: 'gradle'
-      - name: Run Android tests
-        run: ./gradlew :library:testDebugUnitTest --warn --continue
-      - name: Run Jvm tests
-        run: ./gradlew :library:jvmTest --warn --continue
+      - name: Patch Compose versions
+        run: ./scripts/lib-release.sh --patch "${{ matrix.channel }}"
+      - name: Run Android and JVM tests
+        run: ./gradlew :library:testDebugUnitTest :library:jvmTest --warn --continue
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v4
-        if: success() || failure() # always run even if the previous step fails
+        if: success() || failure()
         with:
           report_paths: '**/build/test-results/**/TEST-*.xml'
-          check_name: 'JVM JUnit Test Report'
+          check_name: 'JVM JUnit Test Report (${{ matrix.channel }})'
           require_tests: true
+
   Checks-Apple:
+    needs: Build-Matrix
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.Build-Matrix.outputs.matrix) }}
+    name: Checks-Apple (${{ matrix.channel }})
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Get tags
-        run: git fetch --tags origin
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
           distribution: 'zulu'
           java-version: '21'
           cache: 'gradle'
+      - name: Patch Compose versions
+        run: ./scripts/lib-release.sh --patch "${{ matrix.channel }}"
       - name: Run Apple tests
         run: ./gradlew :library:iosSimulatorArm64Test --warn --continue
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v4
-        if: success() || failure() # always run even if the previous step fails
+        if: success() || failure()
         with:
           report_paths: '**/build/test-results/**/TEST-*.xml'
-          check_name: 'Apple JUnit Test Report'
+          check_name: 'Apple JUnit Test Report (${{ matrix.channel }})'
           require_tests: true

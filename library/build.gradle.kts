@@ -198,13 +198,14 @@ private val gitSha = providers.exec { commandLine("git", "rev-parse", "--short",
     .standardOutput.asText.map { it.trim() }
 
 mavenPublishing {
-    // If gradle property release true remove sha from version
-    version = if (
-        providers.systemProperty("release").isPresent || providers.gradleProperty("release").isPresent
-    ) {
-        gitCurrentTag.get()
-    } else {
-        "${gitCurrentTag.get()}-${gitSha.get()}"
+    // Version priority: explicit publishVersion > git tag (release) > git tag + sha (dev)
+    version = when {
+        providers.gradleProperty("publishVersion").isPresent ->
+            providers.gradleProperty("publishVersion").get()
+        providers.systemProperty("release").isPresent || providers.gradleProperty("release").isPresent ->
+            gitCurrentTag.get()
+        else ->
+            "${gitCurrentTag.get()}-${gitSha.get()}"
     }
     coordinates("com.chrisjenx.yakcov", "library", version = version.toString())
     publishToMavenCentral()

@@ -1,0 +1,18 @@
+# Compose Multiplatform release channels
+# Each section defines a channel to build and publish against.
+# The release script and CI matrix read this file to determine which
+# Compose versions to target.
+#
+# Keys:
+#   compose          - Compose Multiplatform plugin + dependency version (required)
+#   compose-material3 - Material3 artifact version (required, often differs from compose)
+#   kotlin           - Kotlin version override (optional, inherits from libs.versions.toml if omitted)
+
+[stable]
+compose = "1.10.3"
+compose-material3 = "1.10.0-alpha05"
+
+[next]
+compose = "1.11.0-beta02"
+compose-material3 = "1.11.0-alpha06"
+kotlin = "2.3.20"

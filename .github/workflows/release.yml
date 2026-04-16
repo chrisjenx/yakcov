@@ -1,0 +1,104 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel'
+        required: true
+        type: choice
+        options:
+          - all
+          - stable
+          - next
+      dry-run:
+        description: 'Dry run (build only, no publish or tag)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  Build-Matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.parse.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Parse compose-releases.toml
+        id: parse
+        env:
+          CHANNEL_FILTER: ${{ inputs.channel }}
+        run: |
+          matrix=$(./scripts/lib-release.sh --json-matrix "$CHANNEL_FILTER")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Parsed matrix: $matrix"
+
+  Publish:
+    needs: Build-Matrix
+    runs-on: ubuntu-latest
+    environment: maven-central
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.Build-Matrix.outputs.matrix) }}
+    name: Publish (${{ matrix.channel }} → ${{ matrix.tag }})
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+      - name: Patch Compose versions
+        run: ./scripts/lib-release.sh --patch "${{ matrix.channel }}"
+      - name: Publish to Maven Central
+        if: ${{ inputs.dry-run == false }}
+        run: ./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -PpublishVersion="${{ matrix.tag }}"
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
+      - name: Dry-run build
+        if: ${{ inputs.dry-run == true }}
+        run: ./gradlew :library:build --no-configuration-cache -PpublishVersion="${{ matrix.tag }}"
+      - name: Create and push git tag
+        if: ${{ inputs.dry-run == false }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ matrix.tag }}"
+          git push origin "${{ matrix.tag }}"
+
+  Summary:
+    if: always()
+    needs: [Build-Matrix, Publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release summary
+        env:
+          PUBLISH_RESULT: ${{ needs.Publish.result }}
+        run: |
+          echo "## Release Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Channel**: ${{ inputs.channel }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Dry run**: ${{ inputs.dry-run }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$PUBLISH_RESULT" = "success" ]; then
+            echo "All publish jobs succeeded." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Some publish jobs failed or were skipped. Check individual job logs." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

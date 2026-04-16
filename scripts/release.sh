@@ -1,132 +1,194 @@
 #!/bin/bash
 
-# Yakcov Release Script
-# Based on RELEASE.md instructions
-# Automates the release process for Yakcov library
+# Yakcov Dual-Channel Release Script
+# Reads compose-releases.toml and builds/publishes for each configured channel.
+# Usage: ./scripts/release.sh [--channel stable|next|all] [--dry-run]
 
-set -e  # Exit on any error
+set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Source shared release utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib-release.sh"
 
-# Function to print colored output
-print_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-print_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+# Defaults
+CHANNEL_FILTER="all"
+DRY_RUN=false
+VERSION_PATCHED=false
 
-# Check if we're in the right directory
-if [ ! -f "RELEASE_SCRIPT.md" ]; then
-    print_error "Not in yakcov project root directory. Please run from project root."
-    exit 1
-fi
-
-# Parse compose version from libs.versions.toml (ignore pre-release/build metadata; keep only semver)
-RAW_COMPOSE_VERSION=$(grep "^compose = " gradle/libs.versions.toml | head -1 | sed 's/compose = "\(.*\)"/\1/')
-
-if [ -z "$RAW_COMPOSE_VERSION" ]; then
-    print_error "Could not find compose version in gradle/libs.versions.toml"
-    exit 1
-fi
-
-# Extract strict semver (MAJOR.MINOR.PATCH) e.g. 1.10.0 from 1.10.0-beta01
-COMPOSE_VERSION=$(echo "$RAW_COMPOSE_VERSION" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-
-if [ -z "$COMPOSE_VERSION" ]; then
-    print_error "Could not parse semver (MAJOR.MINOR.PATCH) from compose version: $RAW_COMPOSE_VERSION"
-    exit 1
-fi
-
-print_info "Found compose version: $RAW_COMPOSE_VERSION (using semver: $COMPOSE_VERSION)"
-
-# Determine release branch name
-RELEASE_BRANCH="release/$COMPOSE_VERSION"
-print_info "Release branch: $RELEASE_BRANCH"
-
-# Check if release branch exists locally
-if git branch --list | grep -q "$RELEASE_BRANCH"; then
-    print_info "Release branch $RELEASE_BRANCH exists locally, switching to it"
-    git checkout "$RELEASE_BRANCH"
-else
-    # Check if release branch exists remotely
-    if git branch -r --list | grep -q "origin/$RELEASE_BRANCH"; then
-        print_info "Release branch $RELEASE_BRANCH exists remotely, checking it out"
-        git checkout -b "$RELEASE_BRANCH" "origin/$RELEASE_BRANCH"
-    else
-        print_info "Creating new release branch: $RELEASE_BRANCH"
-        git checkout -b "$RELEASE_BRANCH"
+# Restore libs.versions.toml on unexpected exit (Ctrl+C, errors, etc.)
+trap '
+    if $VERSION_PATCHED; then
+        print_warn "Restoring libs.versions.toml after unexpected exit..."
+        restore_versions
     fi
+' EXIT
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --channel)
+            CHANNEL_FILTER="$2"
+            shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: ./scripts/release.sh [--channel stable|next|all] [--dry-run]"
+            echo ""
+            echo "Options:"
+            echo "  --channel <name>  Release only the specified channel (default: all)"
+            echo "  --dry-run         Show what would happen without making changes"
+            echo "  -h, --help        Show this help"
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
+# Check we're in the right directory
+if [ ! -f "compose-releases.toml" ]; then
+    print_error "compose-releases.toml not found. Please run from the project root."
+    exit 1
 fi
 
-# Find existing tags for this version to determine next increment
-BASE_TAG="$COMPOSE_VERSION"
-print_info "Looking for existing tags with base: $BASE_TAG"
+if [ ! -f "gradle/libs.versions.toml" ]; then
+    print_error "gradle/libs.versions.toml not found."
+    exit 1
+fi
 
-# Get all tags that match this version pattern, sorted
-EXISTING_TAGS=$(git tag -l "$BASE_TAG*" | sort -V)
+# --- Release logic for a single channel ---
 
-if [ -z "$EXISTING_TAGS" ]; then
-    # No tags exist for this version, create the base tag
-    NEW_TAG="$BASE_TAG"
-    print_info "No existing tags found for version $COMPOSE_VERSION, creating: $NEW_TAG"
-else
-    print_info "Existing tags for $COMPOSE_VERSION:"
-    echo "$EXISTING_TAGS"
-    
-    # Find the highest increment
-    HIGHEST_INCREMENT=0
-    
-    # Check for base tag (no increment)
-    if echo "$EXISTING_TAGS" | grep -q "^${BASE_TAG}$"; then
-        HIGHEST_INCREMENT=0
+release_channel() {
+    local channel="$1"
+    local compose_ver
+    compose_ver=$(read_channel_key "$channel" "compose")
+    local tag
+    tag=$(next_tag_for "$compose_ver")
+
+    print_channel "$channel" "Compose version: $compose_ver"
+    print_channel "$channel" "Next tag: $tag"
+
+    if $DRY_RUN; then
+        print_channel "$channel" "[DRY RUN] Would clean build state"
+        print_channel "$channel" "[DRY RUN] Would patch libs.versions.toml"
+        print_channel "$channel" "[DRY RUN] Would build and publish with version: $tag"
+        print_channel "$channel" "[DRY RUN] Would create and push git tag: $tag"
+        return 0
     fi
-    
-    # Check for incremented tags (BASE_TAG-1, BASE_TAG-2, etc.)
-    for tag in $EXISTING_TAGS; do
-        if [[ $tag =~ ^${BASE_TAG}-([0-9]+)$ ]]; then
-            increment=${BASH_REMATCH[1]}
-            if [ $increment -gt $HIGHEST_INCREMENT ]; then
-                HIGHEST_INCREMENT=$increment
-            fi
-        fi
+
+    # Clean build state (yarn.lock and JS/Wasm caches differ per Compose/Kotlin version)
+    print_channel "$channel" "Cleaning build state..."
+    ./gradlew :library:clean --quiet 2>/dev/null || true
+    rm -rf kotlin-js-store
+
+    # Patch versions
+    VERSION_PATCHED=true
+    patch_versions "$channel"
+
+    # Build and publish
+    print_channel "$channel" "Building and publishing version $tag..."
+    if ! ./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -PpublishVersion="$tag"; then
+        print_error "Build/publish failed for channel '$channel'"
+        restore_versions
+        VERSION_PATCHED=false
+        return 1
+    fi
+
+    # Restore versions before tagging (clean working tree)
+    restore_versions
+    VERSION_PATCHED=false
+
+    # Create and push tag
+    print_channel "$channel" "Creating git tag: $tag"
+    git tag "$tag"
+    print_channel "$channel" "Pushing tag to remote"
+    git push origin "$tag"
+
+    print_channel "$channel" "Released successfully: $tag"
+    return 0
+}
+
+# --- Main ---
+
+CHANNELS=$(list_channels)
+
+if [ -z "$CHANNELS" ]; then
+    print_error "No channels found in compose-releases.toml"
+    exit 1
+fi
+
+# Filter channels
+if [ "$CHANNEL_FILTER" != "all" ]; then
+    if ! echo "$CHANNELS" | grep -q "^${CHANNEL_FILTER}$"; then
+        print_error "Channel '$CHANNEL_FILTER' not found in compose-releases.toml"
+        print_info "Available channels: $(echo "$CHANNELS" | tr '\n' ' ')"
+        exit 1
+    fi
+    CHANNELS="$CHANNEL_FILTER"
+fi
+
+# Show plan
+echo ""
+print_info "=== Release Plan ==="
+for channel in $CHANNELS; do
+    compose_ver=$(read_channel_key "$channel" "compose")
+    material3_ver=$(read_channel_key "$channel" "compose-material3")
+    kotlin_ver=$(read_channel_key "$channel" "kotlin")
+    tag=$(next_tag_for "$compose_ver")
+    echo ""
+    print_channel "$channel" "compose=$compose_ver  material3=$material3_ver  kotlin=${kotlin_ver:-<inherited>}"
+    print_channel "$channel" "tag=$tag"
+done
+echo ""
+
+if $DRY_RUN; then
+    print_warn "[DRY RUN] No changes will be made."
+    echo ""
+    for channel in $CHANNELS; do
+        release_channel "$channel"
+        echo ""
     done
-    
-    # Create next increment
-    NEXT_INCREMENT=$((HIGHEST_INCREMENT + 1))
-    NEW_TAG="$BASE_TAG-$NEXT_INCREMENT"
-    print_info "Next tag will be: $NEW_TAG"
+    print_info "Dry run complete."
+    exit 0
 fi
 
-# Confirm before creating tag and publishing
-print_warn "About to:"
-echo "  - Create git tag: $NEW_TAG"
-echo "  - Push tag to remote"
-echo "  - Build and publish to Maven Central"
+# Confirm
+read -p "$(echo -e "${YELLOW}Continue with release? (y/N):${NC} ")" -n 1 -r
 echo ""
-read -p "Continue? (y/N): " -n 1 -r
-echo ""
-
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     print_info "Aborted by user"
     exit 0
 fi
 
-# Create and push the tag
-print_info "Creating git tag: $NEW_TAG"
-git tag "$NEW_TAG"
+# Execute releases
+SUCCEEDED=()
+FAILED=()
 
-print_info "Pushing tag to remote"
-git push origin "$NEW_TAG"
+for channel in $CHANNELS; do
+    echo ""
+    print_info "=== Releasing channel: $channel ==="
+    if release_channel "$channel"; then
+        SUCCEEDED+=("$channel")
+    else
+        FAILED+=("$channel")
+    fi
+done
 
-# Build and release to Maven Central
-print_info "Building and publishing to Maven Central..."
-print_warn "Make sure you have the Yakcov keys on your machine!"
+# Summary
 echo ""
+print_info "=== Release Summary ==="
+if [ ${#SUCCEEDED[@]} -gt 0 ]; then
+    print_info "Succeeded: ${SUCCEEDED[*]}"
+fi
+if [ ${#FAILED[@]} -gt 0 ]; then
+    print_error "Failed: ${FAILED[*]}"
+    print_warn "Re-run with --channel <name> to retry failed channels."
+    exit 1
+fi
 
-./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -Drelease=true
-
-print_info "Release completed successfully!"
-print_info "Tag created: $NEW_TAG"
-print_info "Branch: $RELEASE_BRANCH"
+print_info "All channels released successfully!"
