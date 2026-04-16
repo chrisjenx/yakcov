@@ -122,3 +122,26 @@ jobs:
           report_paths: '**/build/test-results/**/TEST-*.xml'
           check_name: 'Apple JUnit Test Report (${{ matrix.channel }})'
           require_tests: true
+
+  # Single aggregate gate — use this as the required status check in branch
+  # protection rules instead of naming each matrix leg (which change with
+  # compose-releases.toml).
+  CI-Gate:
+    needs: [Build-Matrix, Checks-JS, Checks-Jvm, Checks-Apple]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all checks passed
+        env:
+          RESULTS: ${{ toJson(needs) }}
+        run: |
+          echo "Job results: $RESULTS"
+          echo "$RESULTS" | python3 -c "
+          import json, sys
+          results = json.load(sys.stdin)
+          failed = [name for name, job in results.items() if job['result'] != 'success']
+          if failed:
+              print(f'::error::Failed jobs: {failed}')
+              sys.exit(1)
+          print('All matrix checks passed.')
+          "
