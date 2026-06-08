@@ -15,6 +15,16 @@ Pods/
 *.jks
 *yarn.lock
 *.podspec
-.claude/
-docs/superpowers/
+# Claude Code & superpowers
+# Ignore only local/ephemeral bits — shared config (settings.json, commands/,
+# agents/, hooks/, skills/) under .claude/ is meant to be committed.
+.claude/settings.local.json
+.claude/worktrees/
 settings.local.json
+# Personal/local project memory (the committed, shared file is CLAUDE.md)
+CLAUDE.local.md
+# superpowers brainstorm/plan/spec output
+docs/superpowers/
+# superpowers git worktree dirs (.worktrees preferred, worktrees is the fallback)
+.worktrees/
+worktrees/
