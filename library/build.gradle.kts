@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose)
     alias(libs.plugins.maven.publish)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
@@ -74,6 +75,8 @@ kotlin {
             compileOnly(libs.jetbrains.compose.components.resources)
             compileOnly(libs.jetbrains.compose.ui.tooling.preview)
             compileOnly(libs.kotlinx.datetime)
+            compileOnly(libs.kotlinx.serialization.core)
+            compileOnly(libs.jetbrains.compose.runtime.saveable)
             compileOnly(libs.libphonenumber.kotlin)
         }
 
@@ -85,6 +88,8 @@ kotlin {
             implementation(libs.jetbrains.compose.components.resources)
             implementation(libs.jetbrains.compose.ui.tooling.preview)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.jetbrains.compose.runtime.saveable)
             implementation(libs.libphonenumber.kotlin)
             // Test Dependencies
             implementation(kotlin("test"))
