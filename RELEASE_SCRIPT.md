@@ -23,13 +23,16 @@ Defines the release channels at the project root:
 
 ```toml
 [stable]
-compose = "1.10.3"
-compose-material3 = "1.10.0-alpha05"
+compose = "1.11.1"
+compose-material3 = "1.11.0-alpha07"
+xcode = "26.3"  # Compose 1.11 iOS needs a newer Xcode than the runner default
 
-[next]
-compose = "1.11.0-beta02"
-compose-material3 = "1.11.0-alpha06"
-kotlin = "2.3.20"
+# The [next] beta channel is optional. Re-enable it to also build/publish against
+# the next development line (e.g. Compose 1.12):
+# [next]
+# compose = "1.12.0-alpha01"
+# compose-material3 = "1.12.0-alpha01"
+# kotlin = "2.4.0"
 ```
 
 | Key | Required | Description |
@@ -70,11 +73,8 @@ Remove a section to skip that channel. For example, removing `[next]` releases o
 ```
 [INFO] === Release Plan ===
 
-[stable] compose=1.10.3  material3=1.10.0-alpha05  kotlin=<inherited>
-[stable] tag=1.10.3
-
-[next] compose=1.11.0-beta02  material3=1.11.0-alpha06  kotlin=2.3.20
-[next] tag=1.11.0-beta02
+[stable] compose=1.11.1  material3=1.11.0-alpha07  kotlin=<inherited>
+[stable] tag=1.11.1
 
 Continue with release? (y/N):
 ```
@@ -83,8 +83,8 @@ Continue with release? (y/N):
 
 | Channel | First release | Subsequent releases |
 |---------|--------------|---------------------|
-| stable | `1.10.3` | `1.10.3-1`, `1.10.3-2` |
-| next | `1.11.0-beta02` | `1.11.0-beta02-1`, `1.11.0-beta02-2` |
+| stable | `1.11.1` | `1.11.1-1`, `1.11.1-2` |
+| next (when enabled) | `1.12.0-alpha01` | `1.12.0-alpha01-1`, `1.12.0-alpha01-2` |
 
 The script automatically detects existing tags and increments.
 
@@ -113,7 +113,7 @@ This validates: TOML parsing, tag computation, version patching, and restoration
 To publish manually without the script:
 
 ```bash
-./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -PpublishVersion=1.10.3
+./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -PpublishVersion=1.11.1
 ```
 
 ## CI Release (GitHub Actions)
