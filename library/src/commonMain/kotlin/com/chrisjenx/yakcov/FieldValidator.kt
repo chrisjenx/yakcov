@@ -38,6 +38,7 @@ import androidx.compose.runtime.snapshots.Snapshot
  * ```
  * class CheckoutPresenter {
  *     val email = FieldValidator("", listOf(Required, Email))
+ *     // CurrencyAmount is your own ValueValidatorRule — compose built-ins with your domain rules
  *     val amount = FieldValidator("", listOf(Required, CurrencyAmount))
  *     fun submit(): Boolean = listOf(email, amount).allValid()   // reveals, then checks
  * }

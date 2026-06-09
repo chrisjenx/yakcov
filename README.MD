@@ -33,6 +33,86 @@ with(emailValidator) {
 }
 ```
 
+### Presenter-driven validation (headless)
+
+Yakcov also works when a **presenter owns the form state** — useful for snapshot-presenter
+(Molecule) and reducer-MVI screens. The field draft and validity become unit-testable without
+entering composition; only the message render (`text()` / `supportingText()`) stays in Compose.
+
+**(a) Snapshot / Molecule presenter** — the presenter owns a mutable `FieldValidator`:
+
+```kotlin
+// presenter — owns the FieldValidator as a field; draft + validity testable without composition
+class CheckoutPresenter {
+    val email = FieldValidator("", listOf(Required, Email))
+    // CurrencyAmount here is your own ValueValidatorRule — compose built-ins with your domain rules
+    val amount = FieldValidator("", listOf(Required, CurrencyAmount))
+
+    fun submit(): Boolean = listOf(email, amount).allValid() // reveals, then checks
+}
+
+// reusable binder, written once in app code (one line per field at the call site)
+@Composable
+fun ValidatedTextField(field: FieldValidator<String>, label: String, modifier: Modifier = Modifier) {
+    OutlinedTextField(
+        value = field.value,
+        onValueChange = field::onChange,
+        label = { Text(label) },
+        isError = field.state.isError,
+        supportingText = field.state.supportingText(),
+        modifier = modifier.onFocusLost { field.onBlur() },
+    )
+}
+
+ValidatedTextField(presenter.email, label = "Email")
+```
+
+> Construct a `FieldValidator` **once** and hold it (a presenter class / DI / `remember`). Don't
+> construct it inside a recomposing presenter body, and don't copy it — both reset its state.
+
+The binder above uses the `String` overload of `OutlinedTextField` for brevity. For reformatting
+fields (currency, phone) bind a local `TextFieldValue` and push only `.text` to `onChange` so the
+cursor/selection survives — see `ValidatedTextField` in the [sample](sample/src/main/java/com/chrisjenx/yakcov/sample/PresenterSample.kt).
+
+**(b) Reducer-MVI** — keep your `Model` immutable; store the draft + the serializable
+`FieldValidationState` and recompute with the pure `toFieldState` in `reduce()` (no `FieldValidator`):
+
+```kotlin
+data class Model(
+    val emailDraft: String = "",
+    val emailState: FieldValidationState = FieldValidationState.Pristine,
+)
+sealed interface Event { data class EmailChanged(val text: String) : Event; data object Submit : Event }
+private val emailRules = listOf(Required, Email)
+
+fun reduce(model: Model, event: Event): Model = when (event) {
+    is Event.EmailChanged -> model.copy(
+        emailDraft = event.text,
+        emailState = emailRules.toFieldState(event.text, showError = model.emailState.showError),
+    )
+    Event.Submit -> model.copy(
+        emailState = emailRules.toFieldState(model.emailDraft, showError = true), // reveal
+    )
+}
+
+fun Model.canSubmit(): Boolean = listOf(emailState).hasNoErrors()
+```
+
+**Shake** stays UI-owned: keep a `rememberShakingState()` in the screen and call `shakingState.shake()`
+in response to the presenter's "invalid submit" signal.
+
+**Persistence:** `FieldValidationState` is `@Immutable @Serializable` — only `severity` + `showError`
+persist; the message (`result`) is `@Transient` and recomputes on restore. Persist with
+kotlinx.serialization into a `SavedStateHandle`/`DataStore`, or use `rememberSaveable(stateSaver =
+FieldValidationState.Saver)`. To restore: persist the draft yourself, reconstruct
+`FieldValidator(initial = restoredDraft, rules)` and call `reveal()`/`onBlur()` (or seed `showError`)
+before first composition so the rules re-run and the message reappears.
+
+> Yakcov declares `kotlinx-serialization-core` and `compose-runtime` as `compileOnly`. If you
+> serialize `FieldValidationState`, add a serialization runtime (e.g. `kotlinx-serialization-json`).
+> If your presenter **unit tests** construct `FieldValidator` or read `.value`/`.state`, add
+> `org.jetbrains.compose:runtime` to your test source set (it is not pulled transitively).
+
 ### Other Features
 
 - Multiplatform support! Android, JVM, JS, Wasm, iOS!

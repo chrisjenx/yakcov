@@ -350,6 +350,8 @@ class SampleActivity : ComponentActivity() {
                         ) {
                             Text(text = "Validate")
                         }
+                        Spacer(modifier = Modifier.height(24.dp))
+                        PresenterFormSample()
                     }
                 }
             }
