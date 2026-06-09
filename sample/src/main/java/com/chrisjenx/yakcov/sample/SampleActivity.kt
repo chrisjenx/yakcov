@@ -352,6 +352,8 @@ class SampleActivity : ComponentActivity() {
                         }
                         Spacer(modifier = Modifier.height(24.dp))
                         PresenterFormSample()
+                        Spacer(modifier = Modifier.height(24.dp))
+                        MviFormSample()
                     }
                 }
             }

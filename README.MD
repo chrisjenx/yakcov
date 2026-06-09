@@ -74,39 +74,115 @@ The binder above uses the `String` overload of `OutlinedTextField` for brevity. 
 fields (currency, phone) bind a local `TextFieldValue` and push only `.text` to `onChange` so the
 cursor/selection survives — see `ValidatedTextField` in the [sample](sample/src/main/java/com/chrisjenx/yakcov/sample/PresenterSample.kt).
 
-**(b) Reducer-MVI** — keep your `Model` immutable; store the draft + the serializable
-`FieldValidationState` and recompute with the pure `toFieldState` in `reduce()` (no `FieldValidator`):
+**(b) Reducer-MVI** — keep your `Model` immutable; store each field's draft + its serializable
+`FieldValidationState` and recompute with the pure `toFieldState` fold in `reduce()` (no
+`FieldValidator`, no Compose, no IO — so `reduce` is unit-testable without composition). `severity`
+is recomputed on every keystroke and answers *"is it valid?"* (drives `canSubmit`); `showError` only
+flips true on blur/submit and answers *"show the error yet?"* (drives the red text). That split is
+yakcov's whole value. Cross-field rules go the pure way — an inline `ValueValidatorRule` closing over
+the other draft; the built-in `PasswordMatches` couples to a *mutable* validator and does **not** fit
+a reducer.
 
 ```kotlin
-data class Model(
-    val emailDraft: String = "",
-    val emailState: FieldValidationState = FieldValidationState.Pristine,
-)
-sealed interface Event { data class EmailChanged(val text: String) : Event; data object Submit : Event }
 private val emailRules = listOf(Required, Email)
+private val passwordRules = listOf(Required, MinLength(8))
+// PURE cross-field rule: a SAM closing over the current password draft (rebuilt in reduce).
+private fun confirmRules(password: String) = listOf<ValueValidatorRule<String>>(
+    Required,
+    ValueValidatorRule { if (it == password) RegularValidationResult.success()
+                         else RegularValidationResult.error("Passwords do not match") },
+)
 
-fun reduce(model: Model, event: Event): Model = when (event) {
-    is Event.EmailChanged -> model.copy(
-        emailDraft = event.text,
-        emailState = emailRules.toFieldState(event.text, showError = model.emailState.showError),
-    )
-    Event.Submit -> model.copy(
-        emailState = emailRules.toFieldState(model.emailDraft, showError = true), // reveal
-    )
+enum class Field { Email, Password, Confirm }
+
+data class Model(
+    val emailDraft: String = "",    val emailState: FieldValidationState = FieldValidationState.Pristine,
+    val passwordDraft: String = "", val passwordState: FieldValidationState = FieldValidationState.Pristine,
+    val confirmDraft: String = "",  val confirmState: FieldValidationState = FieldValidationState.Pristine,
+    val submitted: Boolean? = null, // null = not attempted, true = accepted, false = blocked
+) {
+    // SEVERITY-only validity (ignores reveal) — live from the first frame (drive a label or disable Submit).
+    val canSubmit get() = listOf(emailState, passwordState, confirmState).hasNoErrors()
 }
 
-fun Model.canSubmit(): Boolean = listOf(emailState).hasNoErrors()
+sealed interface Event {
+    data class Changed(val field: Field, val text: String) : Event
+    data class Blurred(val field: Field) : Event   // reveal one field
+    data object Submit : Event                     // reveal all
+}
+
+// PURE: (Model, Event) -> Model. Copy this into a unit test as-is.
+fun reduce(model: Model, event: Event): Model = when (event) {
+    is Event.Changed -> when (event.field) {
+        // typing: recompute severity live, but PRESERVE showError (no error pops mid-keystroke)
+        Field.Email    -> model.copy(emailDraft = event.text,
+            emailState = emailRules.toFieldState(event.text, model.emailState.showError), submitted = null)
+        Field.Password -> model.copy(passwordDraft = event.text,
+            passwordState = passwordRules.toFieldState(event.text, model.passwordState.showError),
+            // password drives the cross-field rule — re-fold confirm against the new password
+            confirmState = confirmRules(event.text).toFieldState(model.confirmDraft, model.confirmState.showError),
+            submitted = null)
+        Field.Confirm  -> model.copy(confirmDraft = event.text,
+            confirmState = confirmRules(model.passwordDraft).toFieldState(event.text, model.confirmState.showError),
+            submitted = null)
+    }
+    is Event.Blurred -> when (event.field) {  // reveal just that one field (showError = true)
+        Field.Email    -> model.copy(emailState = emailRules.toFieldState(model.emailDraft, showError = true))
+        Field.Password -> model.copy(passwordState = passwordRules.toFieldState(model.passwordDraft, showError = true))
+        Field.Confirm  -> model.copy(confirmState = confirmRules(model.passwordDraft).toFieldState(model.confirmDraft, showError = true))
+    }
+    Event.Submit -> model.copy(  // reveal ALL, then record acceptance off severity
+        emailState    = emailRules.toFieldState(model.emailDraft, showError = true),
+        passwordState = passwordRules.toFieldState(model.passwordDraft, showError = true),
+        confirmState  = confirmRules(model.passwordDraft).toFieldState(model.confirmDraft, showError = true),
+    ).let { it.copy(submitted = it.canSubmit) }
+}
+
+// Seed by running the rules with showError = false (NOT Pristine) so canSubmit is honest at load —
+// hasNoErrors() treats a never-validated Pristine field as valid even if it's required + empty.
+fun initialModel() = Model(
+    emailState = emailRules.toFieldState("", showError = false),
+    passwordState = passwordRules.toFieldState("", showError = false),
+    confirmState = confirmRules("").toFieldState("", showError = false),
+)
+```
+
+A minimal store needs no ViewModel — `mutableStateOf` is already observable. Keep it `@Stable` (it
+owns a `mutableStateOf`); do NOT mark it `@Immutable`:
+
+```kotlin
+@Stable
+class Store(initial: Model) {
+    var model by mutableStateOf(initial); private set
+    fun dispatch(e: Event) { model = reduce(model, e) }
+}
+// UI = f(state). For process-death survival hold the store via rememberSaveable with a Saver that
+// persists the drafts + each field's showError and re-runs the rules on restore (see MviSample.kt
+// for the full storeSaver/modelSaver wiring):
+// val store = rememberSaveable(saver = storeSaver) { Store(initialModel()) }
+// OutlinedTextField(value = store.model.emailDraft,
+//     onValueChange = { store.dispatch(Event.Changed(Field.Email, it)) },
+//     isError = store.model.emailState.isError,                 // gated on showError
+//     supportingText = store.model.emailState.supportingText(), // null until revealed
+//     modifier = Modifier.onFocusLost { store.dispatch(Event.Blurred(Field.Email)) })
+// Button(onClick = { store.dispatch(Event.Submit) }) {         // enabled; Submit reveals untouched fields
+//     Text(if (store.model.canSubmit) "Create account" else "Fix errors") // label is severity-driven
+// }
 ```
 
 **Shake** stays UI-owned: keep a `rememberShakingState()` in the screen and call `shakingState.shake()`
-in response to the presenter's "invalid submit" signal.
+when an invalid submit reduces `submitted` to `false`.
 
-**Persistence:** `FieldValidationState` is `@Immutable @Serializable` — only `severity` + `showError`
-persist; the message (`result`) is `@Transient` and recomputes on restore. Persist with
-kotlinx.serialization into a `SavedStateHandle`/`DataStore`, or use `rememberSaveable(stateSaver =
-FieldValidationState.Saver)`. To restore: persist the draft yourself, reconstruct
-`FieldValidator(initial = restoredDraft, rules)` and call `reveal()`/`onBlur()` (or seed `showError`)
-before first composition so the rules re-run and the message reappears.
+**Persistence (no new dep):** `FieldValidationState` is `@Immutable @Serializable` — only `severity`
++ `showError` persist; the message (`result`) is `@Transient` and recomputes. Persist the whole model
+with `rememberSaveable` and a `Saver` that stores the drafts + each field's `showError`, then
+**rehydrate on restore by re-running the rules through `toFieldState`** so the transient message
+reappears with `showError` preserved (`runtime-saveable` comes transitively with material3). For
+cross-process JSON instead, add a kotlinx-serialization runtime and encode `FieldValidationState`
+directly (it persists `Outcome` by constant *name*).
+
+See the runnable, process-death-surviving multi-field version in the
+[sample](sample/src/main/java/com/chrisjenx/yakcov/sample/MviSample.kt).
 
 > Yakcov declares `kotlinx-serialization-core`, `compose-runtime`, and `compose-runtime-saveable` as
 > `compileOnly`. If you serialize `FieldValidationState`, add a serialization runtime (e.g.
