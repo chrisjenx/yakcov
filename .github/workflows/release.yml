@@ -57,6 +57,9 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+      - name: Select Xcode version
+        if: ${{ matrix.xcode != '' }}
+        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:

@@ -70,7 +70,7 @@ The only expect/actual split in production code is the `phoneUtil: PhoneNumberUt
 
 ## Dual-Channel Releases
 
-The library is published against multiple Compose Multiplatform versions in parallel. `compose-releases.toml` (repo root) is the single source of truth: each `[section]` is a channel (`stable`, `next`) defining `compose` + `compose-material3` (required) and optional `kotlin`/`xcode` overrides. `gradle/libs.versions.toml` holds the working defaults; channels override them at release/CI time. (Deeper release-script docs: `RELEASE_SCRIPT.md`.)
+The library is published against one or more Compose Multiplatform versions in parallel. `compose-releases.toml` (repo root) is the single source of truth: each `[section]` is a channel defining `compose` + `compose-material3` (required) and optional `kotlin`/`xcode` overrides. Currently only `stable` is active; the `next` pre-release channel is retired (commented out) until there's a newer line to ride (e.g. Compose 1.12) — re-enable it by uncommenting its section. `gradle/libs.versions.toml` holds the working defaults; channels override them at release/CI time. (Deeper release-script docs: `RELEASE_SCRIPT.md`.)
 
 Each channel may also set `track` (`stable` | `prerelease`) to declare which upstream Compose channel the version tracker follows; it defaults to `stable` for the `[stable]` section and `prerelease` for any other section.
 

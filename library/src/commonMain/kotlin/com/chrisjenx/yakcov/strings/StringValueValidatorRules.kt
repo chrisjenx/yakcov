@@ -203,7 +203,7 @@ data class DayValidation(val localDate: State<LocalDate>) : ValueValidatorRule<S
         val dayOfMonth = value.toIntOrNull()
             ?: return ResourceValidationResult.error(Res.string.ruleDay)
         runCatching {
-            LocalDate(current.year, current.monthNumber, dayOfMonth)
+            LocalDate(current.year, current.month, dayOfMonth)
         }.onFailure {
             return ResourceValidationResult.error(Res.string.ruleInvalidDate, it.message ?: "")
         }
@@ -220,7 +220,7 @@ data class MonthValidation(val localDate: State<LocalDate>) : ValueValidatorRule
         val monthOfYear = value.toIntOrNull()
             ?: return ResourceValidationResult.error(Res.string.ruleMonth)
         runCatching {
-            LocalDate(current.year, monthOfYear, current.dayOfMonth)
+            LocalDate(current.year, monthOfYear, current.day)
         }.onFailure {
             return ResourceValidationResult.error(Res.string.ruleInvalidDate, it.message ?: "")
         }
@@ -236,7 +236,7 @@ data class YearValidation(val localDate: State<LocalDate>) : ValueValidatorRule<
         val current = localDate.value
         val year = value.toIntOrNull() ?: return ResourceValidationResult.error(Res.string.ruleYear)
         runCatching {
-            LocalDate(year, current.monthNumber, current.dayOfMonth)
+            LocalDate(year, current.month, current.day)
         }.onFailure {
             return ResourceValidationResult.error(Res.string.ruleInvalidDate, it.message ?: "")
         }

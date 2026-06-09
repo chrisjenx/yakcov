@@ -13,13 +13,20 @@
 #                      [stable] section and "prerelease" for any other section)
 
 [stable]
-track = "stable"
-compose = "1.10.3"
-compose-material3 = "1.10.0-alpha05"
-
-[next]
-track = "prerelease"
-compose = "1.11.0-beta02"
-compose-material3 = "1.11.0-alpha06"
-kotlin = "2.3.20"
+compose = "1.11.1"
+compose-material3 = "1.11.0-alpha07"
+# kotlin omitted -> inherits 2.3.21 from libs.versions.toml (>= 2.3.10, required by Compose 1.11 native/web)
+# Required: Compose 1.11's iOS skiko links against a newer SDK than the macos runner
+# default (Xcode 16.4 / iOS 18.5), which fails with "framework 'UIUtilities' not found".
+# Xcode 26.3 is installed on the macos-latest runner and links cleanly. Do not remove.
 xcode = "26.3"
+
+# The [next] (beta) channel is retired for now: Compose 1.11 has shipped (it is the
+# stable channel above) and there is no 1.11.x pre-release ahead of it to track.
+# Re-enable when you want to ride the next development line (e.g. Compose 1.12):
+# [next]
+# track = "prerelease"
+# compose = "1.12.0-alpha01"
+# compose-material3 = "1.12.0-alpha01"
+# kotlin = "2.4.0"
+# xcode = "26.3"

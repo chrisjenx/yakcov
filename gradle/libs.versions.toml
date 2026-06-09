@@ -1,25 +1,28 @@
 [versions]
 agp = "8.12.3"
-androidx-activityCompose = "1.11.0"
-androidx-uiTest = "1.9.4"
+androidx-activityCompose = "1.13.0"
+androidx-uiTest = "1.11.2"
 # https://github.com/JetBrains/compose-multiplatform/releases
-compose = "1.10.0-beta01"
-compose-material3 = "1.10.0-alpha04"
+compose = "1.11.1"
+compose-material3 = "1.11.0-alpha07"
 # https://developer.android.com/develop/ui/compose/bom/bom-mapping
-composeBom = "2025.10.01"
+composeBom = "2026.05.01"
+# androidx.core 1.19.0 requires AGP 9.1+ / compileSdk 37; capped at 1.17.0 until the AGP 9 upgrade
 coreKtx = "1.17.0"
-kotlin = "2.2.21"
-kotlinx-datetime = "0.7.1"
-libphonenumber-kotlin = "0.1.8"
-lifecycleRuntimeKtx = "2.9.4"
+# Compose Multiplatform 1.11 requires Kotlin >= 2.3.10 for native/web targets
+kotlin = "2.3.21"
+kotlinx-datetime = "0.8.0"
+libphonenumber-kotlin = "0.1.9"
+lifecycleRuntimeKtx = "2.10.0"
 startupRuntime = "1.2.0"
 
 [libraries]
 androidx-activityCompose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
-androidx-compose-bom = { group = "androidx.compose", name = "compose-bom-beta", version.ref = "composeBom" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startupRuntime" }
 androidx-testManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-uiTest" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
