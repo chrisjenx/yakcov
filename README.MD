@@ -70,6 +70,12 @@ ValidatedTextField(presenter.email, label = "Email")
 > Construct a `FieldValidator` **once** and hold it (a presenter class / DI / `remember`). Don't
 > construct it inside a recomposing presenter body, and don't copy it — both reset its state.
 
+**Observability:** `FieldValidator` takes an optional `observer` — a `FieldValidatorObserver`
+fired after every mutation commits (`ValueChanged` / `Revealed` / `Reset`) with the post-mutation
+value + state. Handy for analytics, logging, or driving UI like the sample's live state-flow
+visualizer ([StateFlowSample](sample/src/main/java/com/chrisjenx/yakcov/sample/StateFlowSample.kt)).
+No event fires at construction; observers must not throw.
+
 The binder above uses the `String` overload of `OutlinedTextField` for brevity. For reformatting
 fields (currency, phone) bind a local `TextFieldValue` and push only `.text` to `onValueChange` so the
 cursor/selection survives — see `ValidatedTextField` in the [sample](sample/src/main/java/com/chrisjenx/yakcov/sample/PresenterSample.kt).
