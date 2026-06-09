@@ -25,25 +25,25 @@ class FieldValidatorTest {
     }
 
     @Test
-    fun onChange_validatesSilently_doesNotFlagErrorBeforeReveal() {
+    fun onValueChange_validatesSilently_doesNotFlagErrorBeforeReveal() {
         val v = newValidator()
-        v.onChange("")
+        v.onValueChange("")
         assertEquals(Outcome.ERROR, v.state.severity)
         assertFalse(v.state.showError)
         assertFalse(v.state.isError)
     }
 
     @Test
-    fun onChange_updatesValue() {
+    fun onValueChange_updatesValue() {
         val v = newValidator()
-        v.onChange("hello")
+        v.onValueChange("hello")
         assertEquals("hello", v.value)
     }
 
     @Test
     fun onBlur_revealsError() {
         val v = newValidator()
-        v.onChange("")
+        v.onValueChange("")
         v.onBlur()
         assertTrue(v.state.showError)
         assertTrue(v.state.isError)
@@ -61,18 +61,18 @@ class FieldValidatorTest {
     fun showError_isStickyAcrossSubsequentChanges() {
         val v = newValidator()
         v.onBlur()
-        v.onChange("ok")
+        v.onValueChange("ok")
         assertEquals(Outcome.SUCCESS, v.state.severity)
         assertTrue(v.state.showError)
         assertFalse(v.state.isError)
-        v.onChange("")
+        v.onValueChange("")
         assertTrue(v.state.isError)
     }
 
     @Test
     fun reset_reseedsToInitialAndClearsState() {
         val v = newValidator()
-        v.onChange("typed")
+        v.onValueChange("typed")
         v.onBlur()
         v.reset()
         assertEquals("", v.value) // re-seeded to initial
@@ -91,7 +91,7 @@ class FieldValidatorTest {
     @Test
     fun reset_honorsInitialValidate() {
         val v = newValidator(initialValidate = true)
-        v.onChange("ok")
+        v.onValueChange("ok")
         v.reset()
         assertEquals("", v.value)
         assertTrue(v.state.showError)        // initialValidate re-reveals on reset
@@ -125,7 +125,7 @@ class FieldValidatorTest {
         // allValid reveals first, so an untouched-but-empty required field cannot masquerade as valid
         assertFalse(listOf(a, b).allValid())
         assertTrue(a.state.showError) // revealed as a side effect
-        a.onChange("now ok")
+        a.onValueChange("now ok")
         assertTrue(listOf(a, b).allValid())
     }
 }

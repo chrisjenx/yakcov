@@ -56,7 +56,7 @@ class CheckoutPresenter {
 fun ValidatedTextField(field: FieldValidator<String>, label: String, modifier: Modifier = Modifier) {
     OutlinedTextField(
         value = field.value,
-        onValueChange = field::onChange,
+        onValueChange = field::onValueChange,
         label = { Text(label) },
         isError = field.state.isError,
         supportingText = field.state.supportingText(),
@@ -71,7 +71,7 @@ ValidatedTextField(presenter.email, label = "Email")
 > construct it inside a recomposing presenter body, and don't copy it — both reset its state.
 
 The binder above uses the `String` overload of `OutlinedTextField` for brevity. For reformatting
-fields (currency, phone) bind a local `TextFieldValue` and push only `.text` to `onChange` so the
+fields (currency, phone) bind a local `TextFieldValue` and push only `.text` to `onValueChange` so the
 cursor/selection survives — see `ValidatedTextField` in the [sample](sample/src/main/java/com/chrisjenx/yakcov/sample/PresenterSample.kt).
 
 **(b) Reducer-MVI** — keep your `Model` immutable; store each field's draft + its serializable

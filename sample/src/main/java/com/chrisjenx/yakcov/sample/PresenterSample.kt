@@ -50,7 +50,7 @@ fun ValidatedTextField(
     if (tfv.text != field.value) tfv = TextFieldValue(field.value, TextRange(field.value.length))
     OutlinedTextField(
         value = tfv,
-        onValueChange = { tfv = it; field.onChange(it.text) },
+        onValueChange = { tfv = it; field.onValueChange(it.text) },
         label = { Text(label) },
         isError = field.state.isError,
         supportingText = field.state.supportingText(),

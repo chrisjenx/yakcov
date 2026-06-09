@@ -21,11 +21,11 @@ import androidx.compose.runtime.snapshots.Snapshot
  * Construct **once** and hold it (a presenter class, a DI graph, or a `remember`/retained slot).
  * Never construct it inside a recomposing `@Composable` presenter body (e.g. a Molecule
  * `launchMolecule` body) — like [ValueValidator], a new instance resets all draft + validation
- * state. Do not copy it; mutate via [onChange]/[onBlur]/[reveal]/[reset].
+ * state. Do not copy it; mutate via [onValueChange]/[onBlur]/[reveal]/[reset].
  *
  * ### Threading
  * The mutators write Compose snapshot state and should be called on the presenter's confined/main
- * thread. [onChange] and [reset] commit their draft + state writes inside a single mutable snapshot,
+ * thread. [onValueChange] and [reset] commit their draft + state writes inside a single mutable snapshot,
  * so a concurrent observer never sees a torn `value`/`state` pair.
  *
  * ### Not for reducer-MVI Models
@@ -54,7 +54,7 @@ class FieldValidator<V>(
     private val rules: List<ValueValidatorRule<V>>,
     private val initialValidate: Boolean = false,
 ) {
-    /** The field draft — the single source of truth. Mutate it via [onChange]. */
+    /** The field draft — the single source of truth. Mutate it via [onValueChange]. */
     var value: V by mutableStateOf(initial)
         private set
 
@@ -63,7 +63,7 @@ class FieldValidator<V>(
         private set
 
     /** Update the draft and revalidate, keeping the current reveal state (no error pop while typing). */
-    fun onChange(value: V) = Snapshot.withMutableSnapshot {
+    fun onValueChange(value: V) = Snapshot.withMutableSnapshot {
         this.value = value
         revalidate(showError = state.showError)
     }
