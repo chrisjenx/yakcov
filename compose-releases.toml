@@ -8,6 +8,9 @@
 #   compose-material3 - Material3 artifact version (required, often differs from compose)
 #   kotlin           - Kotlin version override (optional, inherits from libs.versions.toml if omitted)
 #   xcode            - Xcode version for Apple CI builds (optional, uses runner default if omitted)
+#   track            - Upstream channel followed by scripts/check-compose-updates.py:
+#                      "stable" or "prerelease" (optional; defaults to "stable" for the
+#                      [stable] section and "prerelease" for any other section)
 
 [stable]
 compose = "1.11.1"
@@ -22,6 +25,7 @@ xcode = "26.3"
 # stable channel above) and there is no 1.11.x pre-release ahead of it to track.
 # Re-enable when you want to ride the next development line (e.g. Compose 1.12):
 # [next]
+# track = "prerelease"
 # compose = "1.12.0-alpha01"
 # compose-material3 = "1.12.0-alpha01"
 # kotlin = "2.4.0"

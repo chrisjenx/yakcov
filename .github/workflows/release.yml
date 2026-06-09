@@ -41,7 +41,10 @@ jobs:
 
   Publish:
     needs: Build-Matrix
-    runs-on: ubuntu-latest
+    # macOS is required: Kotlin/Native cannot build the iOS targets on Linux, so
+    # publishing from ubuntu would silently drop the iOS klibs from the release
+    # (kotlin.native.ignoreDisabledTargets=true). macOS cross-compiles every target.
+    runs-on: macos-latest
     environment: maven-central
     strategy:
       fail-fast: false
@@ -54,6 +57,9 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+      - name: Select Xcode version
+        if: ${{ matrix.xcode != '' }}
+        run: sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
