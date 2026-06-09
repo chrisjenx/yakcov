@@ -41,7 +41,10 @@ jobs:
 
   Publish:
     needs: Build-Matrix
-    runs-on: ubuntu-latest
+    # macOS is required: Kotlin/Native cannot build the iOS targets on Linux, so
+    # publishing from ubuntu would silently drop the iOS klibs from the release
+    # (kotlin.native.ignoreDisabledTargets=true). macOS cross-compiles every target.
+    runs-on: macos-latest
     environment: maven-central
     strategy:
       fail-fast: false

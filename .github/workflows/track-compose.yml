@@ -1,0 +1,42 @@
+name: Track Compose versions
+# Weekly check for newer upstream Compose Multiplatform releases. When a channel
+# in compose-releases.toml is behind, opens/updates a PR with the bump so the
+# existing Checks matrix validates it before you merge and run Release.
+#
+# NOTE: opening PRs with the default GITHUB_TOKEN requires
+# Settings -> Actions -> General -> "Allow GitHub Actions to create and approve
+# pull requests" to be enabled for the repository.
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  Track:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check for upstream Compose updates
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/check-compose-updates.py --write --pr-body "${RUNNER_TEMP}/pr-body.md"
+      - name: Create or update pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/track-compose
+          base: main
+          title: 'chore: track upstream Compose versions'
+          body-path: ${{ runner.temp }}/pr-body.md
+          commit-message: 'chore: bump Compose channels to upstream latest'
+          labels: dependencies
+          delete-branch: true

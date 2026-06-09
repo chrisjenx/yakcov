@@ -23,6 +23,19 @@ jobs:
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "Parsed matrix: $matrix"
 
+  Checks-Scripts:
+    runs-on: ubuntu-latest
+    name: Checks-Scripts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compose tracker self-test (offline)
+        run: python3 scripts/check-compose-updates.py --self-test
+
   Checks-JS:
     needs: Build-Matrix
     runs-on: ubuntu-latest
@@ -133,7 +146,7 @@ jobs:
   # protection rules instead of naming each matrix leg (which change with
   # compose-releases.toml).
   CI-Gate:
-    needs: [Build-Matrix, Checks-JS, Checks-Jvm, Checks-Apple]
+    needs: [Build-Matrix, Checks-Scripts, Checks-JS, Checks-Jvm, Checks-Apple]
     if: always()
     runs-on: ubuntu-latest
     steps:
