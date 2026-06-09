@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.chrisjenx.yakcov.FieldValidator
 import com.chrisjenx.yakcov.allValid
@@ -43,8 +44,10 @@ fun ValidatedTextField(
     modifier: Modifier = Modifier,
 ) {
     var tfv by remember { mutableStateOf(TextFieldValue(field.value)) }
-    // Reflect external/programmatic draft changes while preserving local selection.
-    if (tfv.text != field.value) tfv = tfv.copy(text = field.value)
+    // Reflect external/programmatic draft changes (reset/seed); caret to end of the new text so a
+    // shorter value can't leave the selection past the end. Normal typing keeps them in sync, so
+    // this branch only runs on a presenter-driven change — never mid-keystroke.
+    if (tfv.text != field.value) tfv = TextFieldValue(field.value, TextRange(field.value.length))
     OutlinedTextField(
         value = tfv,
         onValueChange = { tfv = it; field.onChange(it.text) },

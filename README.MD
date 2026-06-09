@@ -108,10 +108,13 @@ FieldValidationState.Saver)`. To restore: persist the draft yourself, reconstruc
 `FieldValidator(initial = restoredDraft, rules)` and call `reveal()`/`onBlur()` (or seed `showError`)
 before first composition so the rules re-run and the message reappears.
 
-> Yakcov declares `kotlinx-serialization-core` and `compose-runtime` as `compileOnly`. If you
-> serialize `FieldValidationState`, add a serialization runtime (e.g. `kotlinx-serialization-json`).
-> If your presenter **unit tests** construct `FieldValidator` or read `.value`/`.state`, add
-> `org.jetbrains.compose:runtime` to your test source set (it is not pulled transitively).
+> Yakcov declares `kotlinx-serialization-core`, `compose-runtime`, and `compose-runtime-saveable` as
+> `compileOnly`. If you serialize `FieldValidationState`, add a serialization runtime (e.g.
+> `kotlinx-serialization-json`). If you use `FieldValidationState.Saver` / `rememberSaveable`, make
+> sure `org.jetbrains.compose.runtime:runtime-saveable` is on the classpath (it comes transitively
+> with `compose-foundation`/`material3`, so any Compose-UI module already has it). If your presenter
+> **unit tests** construct `FieldValidator` or read `.value`/`.state`, add `org.jetbrains.compose:runtime`
+> to your test source set (it is not pulled transitively).
 
 ### Other Features
 

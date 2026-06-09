@@ -89,15 +89,19 @@ fun <V> List<ValueValidatorRule<V>>.toFieldState(value: V, showError: Boolean): 
 fun List<FieldValidationState>.hasNoErrors(): Boolean = none { it.severity == Outcome.ERROR }
 
 /**
- * Resolve the field's message for display. [Composable] because resource-backed results resolve
- * their `StringResource` here. Returns `null` when there is no message (e.g. a passing field).
+ * Resolve the field's message for display, or `null` when there is nothing to show. Gated on
+ * [showError]: returns `null` until errors are revealed (blur/submit), so the message tracks the
+ * same reveal state as [isError]/[isWarning] — no message pops while the user is still typing.
+ * [Composable] because resource-backed results resolve their `StringResource` here. For the raw,
+ * ungated message (regardless of reveal state) use `result?.format()` directly.
  */
 @Composable
-fun FieldValidationState.text(): String? = result?.format()
+fun FieldValidationState.text(): String? = if (showError) result?.format() else null
 
 /**
  * Convenience that mirrors `ValueValidator.supportingText()`: returns a composable that renders the
- * message, or `null` when there is none. Drops the `text()?.let { Text(it) }` boilerplate.
+ * revealed message (see [text]), or `null` when there is none / errors aren't revealed yet. Drops
+ * the `text()?.let { Text(it) }` boilerplate.
  */
 @Composable
 fun FieldValidationState.supportingText(): (@Composable () -> Unit)? {

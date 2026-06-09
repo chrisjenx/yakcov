@@ -56,6 +56,24 @@ class FieldValidationStateComposeTest {
     @Test
     @AndroidJUnitIgnore
     @JSIgnore
+    fun text_isGatedOnShowError() = runComposeUiTest {
+        // An error result that hasn't been revealed yet must not render its message (no pop while typing).
+        val hidden = FieldValidationState(
+            severity = Outcome.ERROR, showError = false,
+            result = RegularValidationResult.error("Bad value"),
+        )
+        val revealed = hidden.copy(showError = true)
+        setContent {
+            assertNull(hidden.text())
+            assertNull(hidden.supportingText())
+            assertEquals("Bad value", revealed.text())
+            assertNotNull(revealed.supportingText())
+        }
+    }
+
+    @Test
+    @AndroidJUnitIgnore
+    @JSIgnore
     fun onFocusLost_invokesCallbackWhenFocusMovesAway() = runComposeUiTest {
         var lostCount = 0
         setContent {

@@ -85,8 +85,8 @@ interface ValidationResult {
 
     /**
      * Non-[Composable] eager message. Returns the string for [RegularValidationResult] and `null`
-     * for resource-backed results, which require composition to resolve. Lets a presenter carry a
-     * plain message in serializable UI state.
+     * for resource-backed results, which require composition to resolve. Lets non-Compose code
+     * (e.g. a presenter or a unit test) read a plain message without entering composition.
      */
     fun messageOrNull(): String? = null
 

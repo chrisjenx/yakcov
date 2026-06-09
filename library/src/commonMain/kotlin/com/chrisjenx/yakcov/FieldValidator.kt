@@ -59,10 +59,7 @@ class FieldValidator<V>(
         private set
 
     /** The current plain validation output. Readable without entering composition. */
-    var state: FieldValidationState by mutableStateOf(
-        if (initialValidate) rules.toFieldState(initial, showError = true)
-        else FieldValidationState.Pristine
-    )
+    var state: FieldValidationState by mutableStateOf(seedState(initial))
         private set
 
     /** Update the draft and revalidate, keeping the current reveal state (no error pop while typing). */
@@ -85,9 +82,13 @@ class FieldValidator<V>(
     /** Re-seed the draft to the given [value] and reset validation (honoring `initialValidate`). */
     fun reset(value: V) = Snapshot.withMutableSnapshot {
         this.value = value
-        state = if (initialValidate) rules.toFieldState(value, showError = true)
-        else FieldValidationState.Pristine
+        state = seedState(value)
     }
+
+    /** Initial state for [value]: revealed if [initialValidate], otherwise [FieldValidationState.Pristine]. */
+    private fun seedState(value: V): FieldValidationState =
+        if (initialValidate) rules.toFieldState(value, showError = true)
+        else FieldValidationState.Pristine
 
     private fun revalidate(showError: Boolean) {
         state = rules.toFieldState(value, showError)
