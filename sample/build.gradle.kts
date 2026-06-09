@@ -60,6 +60,10 @@ kotlin {
 dependencies {
     implementation(project(":library"))
 //    implementation("com.chrisjenx.yakcov:library:+")
+    // yakcov declares libphonenumber-kotlin as compileOnly; the sample uses the Phone() rule (and
+    // the library's androidx-startup PhoneNumberUtilInitializer loads it at launch), so the sample
+    // must supply it at runtime — without it the app crashes on startup with NoClassDefFoundError.
+    implementation(libs.libphonenumber.kotlin)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activityCompose)
