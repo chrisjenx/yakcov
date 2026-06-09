@@ -19,6 +19,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".StateFlowActivity"
+            android:exported="false"
+            android:label="State Flow"
+            android:theme="@style/Theme.Yakcov"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

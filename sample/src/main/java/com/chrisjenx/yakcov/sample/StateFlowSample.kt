@@ -1,18 +1,24 @@
 package com.chrisjenx.yakcov.sample
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
@@ -138,10 +144,10 @@ private fun TickFeed.emitFrom(event: FlowEvent, after: FlowModel) {
     )
 }
 
-// --- The synchronized-split section. -----------------------------------------------------------
+// --- The visualizer screen: one field drives both engines; tabs switch the full-width panel. ----
 
 @Composable
-fun StateFlowSample() {
+fun StateFlowScreen(modifier: Modifier = Modifier) {
     val presenterFeed = remember { TickFeed() }
     val mviFeed = remember { TickFeed() }
 
@@ -156,59 +162,92 @@ fun StateFlowSample() {
         FlowStore(FlowModel()) { event, after -> mviFeed.emitFrom(event, after) }
     }
 
-    Text(text = "State flow — type once, watch both", style = MaterialTheme.typography.headlineSmall)
-    Text(
-        text = "The same input drives a presenter-owned FieldValidator AND a reducer-MVI store.",
-        style = MaterialTheme.typography.bodySmall,
-    )
-
     var tfv by remember { mutableStateOf(TextFieldValue("")) }
     if (tfv.text != validator.value) {
         tfv = TextFieldValue(validator.value, TextRange(validator.value.length))
     }
-    OutlinedTextField(
-        value = tfv,
-        onValueChange = {
-            tfv = it
-            // DEMO-ONLY fan-out: real apps pick ONE mechanism. Driving both lets the panels
-            // below animate the two pipelines from identical input.
-            validator.onValueChange(it.text)
-            store.dispatch(FlowEvent.Changed(it.text))
-        },
-        label = { Text("Email — drives both engines") },
-        isError = validator.state.isError,
-        supportingText = validator.state.supportingText(),
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Email),
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusLost {
-                validator.onBlur()
-                store.dispatch(FlowEvent.Blurred)
-            },
-    )
-    Button(
-        onClick = {
-            listOf(validator).allValid()
-            store.dispatch(FlowEvent.Submit)
-        },
-        modifier = Modifier.fillMaxWidth(),
-    ) { Text("Submit") }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        StateFlowPanel(
-            title = "Presenter",
-            nodes = listOf("TextField", "FieldValidator", "UI"),
-            edgeLabels = listOf("onValueChange()", "mutates .state"),
-            ticks = presenterFeed.ticks,
-            modifier = Modifier.weight(1f),
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = "State flow — type once, watch both",
+            style = MaterialTheme.typography.headlineSmall,
         )
-        StateFlowPanel(
-            title = "Reducer-MVI",
-            nodes = listOf("TextField", "reduce()", "UI"),
-            edgeLabels = listOf("Event", "new Model"),
-            ticks = mviFeed.ticks,
-            modifier = Modifier.weight(1f),
+        Text(
+            text = "The same input drives a presenter-owned FieldValidator AND a reducer-MVI " +
+                "store. Switch tabs to compare how each reacts to the same keystroke, blur, and submit.",
+            style = MaterialTheme.typography.bodySmall,
         )
+
+        // Tabs pinned just under the intro so you can switch flows even with the keyboard open.
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0 },
+                text = { Text("Presenter") },
+            )
+            Tab(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1 },
+                text = { Text("Reducer-MVI") },
+            )
+        }
+
+        // Push the panel + field group to the bottom so the panel sits right above the field.
+        Spacer(modifier = Modifier.weight(1f))
+
+        // One full-width panel for the selected tab (roomier than side-by-side). Both engines keep
+        // running off the field, so each tab's feed already reflects the full history on switch.
+        when (selectedTab) {
+            0 -> StateFlowPanel(
+                title = "FieldValidator · mutates in place",
+                nodes = listOf("TextField", "FieldValidator", "UI"),
+                edgeLabels = listOf("onValueChange()", "mutates .state"),
+                ticks = presenterFeed.ticks,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            else -> StateFlowPanel(
+                title = "reduce() · new Model per event",
+                nodes = listOf("TextField", "reduce()", "UI"),
+                edgeLabels = listOf("Event", "new Model"),
+                ticks = mviFeed.ticks,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        OutlinedTextField(
+            value = tfv,
+            onValueChange = {
+                tfv = it
+                // DEMO-ONLY fan-out: real apps pick ONE mechanism. Driving both lets the panel
+                // above animate whichever pipeline you've selected from identical input.
+                validator.onValueChange(it.text)
+                store.dispatch(FlowEvent.Changed(it.text))
+            },
+            label = { Text("Email — drives both engines") },
+            isError = validator.state.isError,
+            supportingText = validator.state.supportingText(),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Email),
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusLost {
+                    validator.onBlur()
+                    store.dispatch(FlowEvent.Blurred)
+                },
+        )
+        Button(
+            onClick = {
+                listOf(validator).allValid()
+                store.dispatch(FlowEvent.Submit)
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Submit") }
     }
 }
