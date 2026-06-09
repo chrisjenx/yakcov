@@ -179,7 +179,11 @@ with `rememberSaveable` and a `Saver` that stores the drafts + each field's `sho
 **rehydrate on restore by re-running the rules through `toFieldState`** so the transient message
 reappears with `showError` preserved (`runtime-saveable` comes transitively with material3). For
 cross-process JSON instead, add a kotlinx-serialization runtime and encode `FieldValidationState`
-directly (it persists `Outcome` by constant *name*).
+directly (it persists `Outcome` by constant *name*). On the Molecule/`FieldValidator` path (a) the
+same idea applies: persist the draft + `showError` yourself, reconstruct
+`FieldValidator(initial = restoredDraft, rules)` and call `reveal()`/`onBlur()` when `showError` was
+true (or construct with `initialValidate = true`) before first composition, so the rules re-run and
+a previously-revealed message reappears.
 
 See the runnable, process-death-surviving multi-field version in the
 [sample](sample/src/main/java/com/chrisjenx/yakcov/sample/MviSample.kt).
