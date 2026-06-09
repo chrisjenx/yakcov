@@ -4,6 +4,7 @@ import com.chrisjenx.yakcov.ValidationResult.Outcome
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class FieldValidatorTest {
@@ -127,5 +128,75 @@ class FieldValidatorTest {
         assertTrue(a.state.showError) // revealed as a side effect
         a.onValueChange("now ok")
         assertTrue(listOf(a, b).allValid())
+    }
+
+    @Test
+    fun observer_valueChanged_firesWithAfterValueAndState() {
+        val events = mutableListOf<FieldValidatorEvent<String>>()
+        val v = FieldValidator(
+            initial = "", rules = listOf(requiredRule),
+            observer = { events += it },
+        )
+        v.onValueChange("hello")
+        val e = events.single()
+        assertIs<FieldValidatorEvent.ValueChanged<String>>(e)
+        assertEquals("hello", e.value)
+        assertEquals(Outcome.SUCCESS, e.state.severity)
+        assertFalse(e.state.showError)
+    }
+
+    @Test
+    fun observer_revealed_firesOnBlurRevealAndListHelpers() {
+        val events = mutableListOf<FieldValidatorEvent<String>>()
+        val v = FieldValidator("", listOf(requiredRule), observer = { events += it })
+        v.onBlur()
+        v.reveal()
+        listOf(v).allValid() // reveals first -> third Revealed
+        assertEquals(3, events.size)
+        assertTrue(events.all { it is FieldValidatorEvent.Revealed })
+        assertTrue(events.all { it.state.showError })
+    }
+
+    @Test
+    fun observer_reset_firesOnBothOverloads() {
+        val events = mutableListOf<FieldValidatorEvent<String>>()
+        val v = FieldValidator("seed", listOf(requiredRule), observer = { events += it })
+        v.reset()
+        v.reset("other")
+        assertEquals(2, events.size)
+        val first = events[0]
+        assertIs<FieldValidatorEvent.Reset<String>>(first)
+        assertEquals("seed", first.value)
+        val second = events[1]
+        assertIs<FieldValidatorEvent.Reset<String>>(second)
+        assertEquals("other", second.value)
+        assertEquals(FieldValidationState.Pristine, second.state)
+    }
+
+    @Test
+    fun observer_noEventAtConstruction_evenWithInitialValidate() {
+        val events = mutableListOf<FieldValidatorEvent<String>>()
+        FieldValidator("", listOf(requiredRule), initialValidate = true, observer = { events += it })
+        assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun observer_readsConsistentCommittedPair() {
+        var validator: FieldValidator<String>? = null
+        var checked = 0
+        val v = FieldValidator<String>(
+            initial = "", rules = listOf(requiredRule),
+            observer = { e ->
+                val owner = validator!!
+                assertEquals(owner.value, e.value)
+                assertEquals(owner.state, e.state)
+                checked++
+            },
+        )
+        validator = v
+        v.onValueChange("x")
+        v.reveal()
+        v.reset()
+        assertEquals(3, checked)
     }
 }

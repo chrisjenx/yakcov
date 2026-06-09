@@ -25,8 +25,13 @@ import androidx.compose.runtime.snapshots.Snapshot
  *
  * ### Threading
  * The mutators write Compose snapshot state and should be called on the presenter's confined/main
- * thread. [onValueChange] and [reset] commit their draft + state writes inside a single mutable snapshot,
- * so a concurrent observer never sees a torn `value`/`state` pair.
+ * thread. [onValueChange] and [reset] commit their draft + state writes inside a single mutable
+ * snapshot, so a concurrent observer never sees a torn `value`/`state` pair.
+ *
+ * ### Observability
+ * Pass an [observer] to receive a [FieldValidatorEvent] after every mutation commits
+ * ([FieldValidatorEvent.ValueChanged]/[FieldValidatorEvent.Revealed]/[FieldValidatorEvent.Reset]).
+ * No event fires at construction. Observers must not throw — see [FieldValidatorObserver].
  *
  * ### Not for reducer-MVI Models
  * This is a mutable, reference-identity holder. Do **not** place it inside an immutable data-class
@@ -47,12 +52,14 @@ import androidx.compose.runtime.snapshots.Snapshot
  * @param initial the starting draft value (also the value [reset] re-seeds to).
  * @param rules the rules evaluated on every change/blur/reveal.
  * @param initialValidate when true, validates and reveals errors immediately (and on [reset]).
+ * @param observer optional [FieldValidatorObserver] notified after each mutation commits.
  */
 @Stable
 class FieldValidator<V>(
     private val initial: V,
     private val rules: List<ValueValidatorRule<V>>,
     private val initialValidate: Boolean = false,
+    private val observer: FieldValidatorObserver<V>? = null,
 ) {
     /** The field draft — the single source of truth. Mutate it via [onValueChange]. */
     var value: V by mutableStateOf(initial)
@@ -63,9 +70,12 @@ class FieldValidator<V>(
         private set
 
     /** Update the draft and revalidate, keeping the current reveal state (no error pop while typing). */
-    fun onValueChange(value: V) = Snapshot.withMutableSnapshot {
-        this.value = value
-        revalidate(showError = state.showError)
+    fun onValueChange(value: V) {
+        Snapshot.withMutableSnapshot {
+            this.value = value
+            revalidate(showError = state.showError)
+        }
+        observer?.onEvent(FieldValidatorEvent.ValueChanged(this.value, state))
     }
 
     /** Revalidate and reveal errors — call when the field loses focus. Alias for [reveal]. */
@@ -74,15 +84,19 @@ class FieldValidator<V>(
     /** Revalidate and force errors visible — call at submit time. */
     fun reveal() {
         revalidate(showError = true)
+        observer?.onEvent(FieldValidatorEvent.Revealed(value, state))
     }
 
     /** Re-seed the draft to [initial] and reset validation (honoring `initialValidate`). */
     fun reset() = reset(initial)
 
     /** Re-seed the draft to the given [value] and reset validation (honoring `initialValidate`). */
-    fun reset(value: V) = Snapshot.withMutableSnapshot {
-        this.value = value
-        state = seedState(value)
+    fun reset(value: V) {
+        Snapshot.withMutableSnapshot {
+            this.value = value
+            state = seedState(value)
+        }
+        observer?.onEvent(FieldValidatorEvent.Reset(this.value, state))
     }
 
     /** Initial state for [value]: revealed if [initialValidate], otherwise [FieldValidationState.Pristine]. */
