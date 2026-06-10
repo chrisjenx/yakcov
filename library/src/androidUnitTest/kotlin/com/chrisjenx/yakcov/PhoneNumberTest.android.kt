@@ -9,8 +9,9 @@ import java.util.logging.Logger
 
 
 actual fun initPhoneNumberUtil() {
-    PhoneNumberUtilInitializer.phoneNumberUtil =
+    PhoneNumberUtilHolder.inject(
         PhoneNumberUtil.createInstance(ClassPathResourceMetadataLoader())
+    )
 }
 
 class ClassPathResourceMetadataLoader : MetadataLoader {
