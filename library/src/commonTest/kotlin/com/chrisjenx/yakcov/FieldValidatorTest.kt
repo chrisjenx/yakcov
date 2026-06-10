@@ -42,18 +42,18 @@ class FieldValidatorTest {
     }
 
     @Test
-    fun onBlur_revealsError() {
+    fun onFocusLost_revealsError() {
         val v = newValidator()
         v.onValueChange("")
-        v.onBlur()
+        v.onFocusLost()
         assertTrue(v.state.showError)
         assertTrue(v.state.isError)
     }
 
     @Test
-    fun reveal_revealsError() {
+    fun validate_revealsError() {
         val v = newValidator()
-        v.reveal()
+        v.validate()
         assertTrue(v.state.showError)
         assertTrue(v.state.isError)
     }
@@ -61,7 +61,7 @@ class FieldValidatorTest {
     @Test
     fun showError_isStickyAcrossSubsequentChanges() {
         val v = newValidator()
-        v.onBlur()
+        v.onFocusLost()
         v.onValueChange("ok")
         assertEquals(Outcome.SUCCESS, v.state.severity)
         assertTrue(v.state.showError)
@@ -74,7 +74,7 @@ class FieldValidatorTest {
     fun reset_reseedsToInitialAndClearsState() {
         val v = newValidator()
         v.onValueChange("typed")
-        v.onBlur()
+        v.onFocusLost()
         v.reset()
         assertEquals("", v.value) // re-seeded to initial
         assertEquals(FieldValidationState.Pristine, v.state)
@@ -120,14 +120,14 @@ class FieldValidatorTest {
     }
 
     @Test
-    fun listHelpers_revealAndAllValid() {
+    fun listHelpers_validate() {
         val a = newValidator()
         val b = FieldValidator(initial = "ok", rules = listOf(requiredRule))
-        // allValid reveals first, so an untouched-but-empty required field cannot masquerade as valid
-        assertFalse(listOf(a, b).allValid())
+        // validate() reveals first, so an untouched-but-empty required field cannot masquerade as valid
+        assertFalse(listOf(a, b).validate())
         assertTrue(a.state.showError) // revealed as a side effect
         a.onValueChange("now ok")
-        assertTrue(listOf(a, b).allValid())
+        assertTrue(listOf(a, b).validate())
     }
 
     @Test
@@ -146,14 +146,14 @@ class FieldValidatorTest {
     }
 
     @Test
-    fun observer_revealed_firesOnBlurRevealAndListHelpers() {
+    fun observer_validated_firesOnFocusLostValidateAndListHelpers() {
         val events = mutableListOf<FieldValidatorEvent<String>>()
         val v = FieldValidator("", listOf(requiredRule), observer = { events += it })
-        v.onBlur()
-        v.reveal()
-        listOf(v).allValid() // reveals first -> third Revealed
+        v.onFocusLost()
+        v.validate()
+        listOf(v).validate() // reveals first -> third Validated
         assertEquals(3, events.size)
-        assertTrue(events.all { it is FieldValidatorEvent.Revealed })
+        assertTrue(events.all { it is FieldValidatorEvent.Validated })
         assertTrue(events.all { it.state.showError })
     }
 
@@ -195,7 +195,7 @@ class FieldValidatorTest {
         )
         validator = v
         v.onValueChange("x")
-        v.reveal()
+        v.validate()
         v.reset()
         assertEquals(3, checked)
     }

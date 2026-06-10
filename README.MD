@@ -48,7 +48,7 @@ class CheckoutPresenter {
     // CurrencyAmount here is your own ValueValidatorRule — compose built-ins with your domain rules
     val amount = FieldValidator("", listOf(Required, CurrencyAmount))
 
-    fun submit(): Boolean = listOf(email, amount).allValid() // reveals, then checks
+    fun submit(): Boolean = listOf(email, amount).validate() // reveals errors, then checks
 }
 
 // reusable binder, written once in app code (one line per field at the call site)
@@ -60,7 +60,7 @@ fun ValidatedTextField(field: FieldValidator<String>, label: String, modifier: M
         label = { Text(label) },
         isError = field.state.isError,
         supportingText = field.state.supportingText(),
-        modifier = modifier.onFocusLost { field.onBlur() },
+        modifier = modifier.onFocusLost { field.onFocusLost() },
     )
 }
 
@@ -71,7 +71,7 @@ ValidatedTextField(presenter.email, label = "Email")
 > construct it inside a recomposing presenter body, and don't copy it — both reset its state.
 
 **Observability:** `FieldValidator` takes an optional `observer` — a `FieldValidatorObserver`
-fired after every mutation commits (`ValueChanged` / `Revealed` / `Reset`) with the post-mutation
+fired after every mutation commits (`ValueChanged` / `Validated` / `Reset`) with the post-mutation
 value + state. Handy for analytics, logging, or driving UI like the sample's live state-flow
 visualizer ([StateFlowSample](sample/src/main/java/com/chrisjenx/yakcov/sample/StateFlowSample.kt)).
 No event fires at construction; observers must not throw.
@@ -187,11 +187,11 @@ reappears with `showError` preserved (`runtime-saveable` comes transitively with
 cross-process JSON instead, add a kotlinx-serialization runtime and encode `FieldValidationState`
 directly (it persists `Outcome` by constant *name*). On the Molecule/`FieldValidator` path (a) the
 same idea applies: persist the draft + `showError` yourself, reconstruct
-`FieldValidator(initial = restoredDraft, rules)` and call `reveal()`/`onBlur()` when `showError` was
-true (or construct with `initialValidate = true`) before first composition, so the rules re-run and
+`FieldValidator(initial = restoredDraft, rules)` and call `validate()`/`onFocusLost()` when `showError`
+was true (or construct with `initialValidate = true`) before first composition, so the rules re-run and
 a previously-revealed message reappears. If you attach an `observer`, prefer the
-`initialValidate = true` form on restore — it fires no event, whereas `reveal()`/`onBlur()` emit a
-`Revealed` event that an analytics tap would over-count as a real user reveal.
+`initialValidate = true` form on restore — it fires no event, whereas `validate()`/`onFocusLost()` emit
+a `Validated` event that an analytics tap would over-count as a real focus-loss/submit.
 
 See the runnable, process-death-surviving multi-field version in the
 [sample](sample/src/main/java/com/chrisjenx/yakcov/sample/MviSample.kt).

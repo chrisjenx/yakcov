@@ -9,7 +9,7 @@ package com.chrisjenx.yakcov
  * `initialValidate = true`): the caller built the initial state and already knows it.
  *
  * Observers **must not throw** — an exception propagates to whoever called the mutator
- * (`onValueChange`/`reveal`/`reset`); it is not swallowed.
+ * (`onValueChange`/`validate`/`reset`); it is not swallowed.
  *
  * Useful for analytics, logging, or driving UI — e.g. the sample app's live state-flow
  * visualizer (`StateFlowSample.kt`).
@@ -20,7 +20,7 @@ fun interface FieldValidatorObserver<V> {
 
 /**
  * A [FieldValidator] mutation, named after the method vocabulary: `onValueChange` →
- * [ValueChanged], `reveal`/`onBlur` → [Revealed], `reset` → [Reset]. Carries the **after**
+ * [ValueChanged], `validate`/`onFocusLost` → [Validated], `reset` → [Reset]. Carries the **after**
  * picture only — observers wanting deltas track the previous event themselves.
  */
 sealed interface FieldValidatorEvent<V> {
@@ -36,8 +36,8 @@ sealed interface FieldValidatorEvent<V> {
         override val state: FieldValidationState,
     ) : FieldValidatorEvent<V>
 
-    /** Errors were revealed via `reveal()`/`onBlur()` (also via `List.reveal()`/`allValid()`). */
-    data class Revealed<V>(
+    /** Errors were revealed via `validate()`/`onFocusLost()` (also via `List.validate()`). */
+    data class Validated<V>(
         override val value: V,
         override val state: FieldValidationState,
     ) : FieldValidatorEvent<V>

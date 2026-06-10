@@ -29,7 +29,7 @@ import com.chrisjenx.yakcov.FieldValidator
 import com.chrisjenx.yakcov.FieldValidatorEvent
 import com.chrisjenx.yakcov.ValidationResult.Outcome
 import com.chrisjenx.yakcov.ValueValidatorRule
-import com.chrisjenx.yakcov.allValid
+import com.chrisjenx.yakcov.validate
 import com.chrisjenx.yakcov.onFocusLost
 import com.chrisjenx.yakcov.strings.Email
 import com.chrisjenx.yakcov.strings.Required
@@ -123,7 +123,7 @@ private fun chipsOf(state: FieldValidationState, draft: String, identity: String
 private fun TickFeed.emitFrom(event: FieldValidatorEvent<String>) {
     val (edge, call) = when (event) {
         is FieldValidatorEvent.ValueChanged -> Edge.INPUT to "onValueChange(${event.value.quoted()})"
-        is FieldValidatorEvent.Revealed -> Edge.COMMIT to "reveal()"
+        is FieldValidatorEvent.Validated -> Edge.COMMIT to "validate()"
         is FieldValidatorEvent.Reset -> Edge.COMMIT to "reset(${event.value.quoted()})"
     }
     emit(
@@ -243,13 +243,13 @@ fun StateFlowScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusLost {
-                        validator.onBlur()
+                        validator.onFocusLost()
                         store.dispatch(FlowEvent.Blurred)
                     },
             )
             Button(
                 onClick = {
-                    listOf(validator).allValid()
+                    listOf(validator).validate()
                     store.dispatch(FlowEvent.Submit)
                 },
                 modifier = Modifier.fillMaxWidth(),

@@ -17,14 +17,14 @@ import kotlinx.serialization.Transient
  * Only [severity] and [showError] are serialized. [result] is [Transient]: resource-backed results
  * hold a `StringResource` handle that must not be persisted (handles can shift across builds). After
  * restore [result] is `null` and [text] returns `null` until the rules are re-run — see the README
- * "restore" recipe (persist the draft, reconstruct the validator, reveal/revalidate).
+ * "restore" recipe (persist the draft, reconstruct the validator, validate/revalidate).
  *
  * Equality intentionally includes [result] (default data-class behavior): a message-only change at
  * constant [severity]/[showError] must still be observed by `mutableStateOf`/`distinctUntilChanged`,
  * otherwise the UI would show a stale error.
  *
  * @property severity highest [Outcome] across the field's rules (defaults to [Outcome.SUCCESS]).
- * @property showError whether errors should be surfaced to the user yet (revealed on blur/submit).
+ * @property showError whether errors should be surfaced to the user yet (revealed on focus loss/submit).
  * @property result the most-severe [ValidationResult], for rendering the message via [text].
  */
 @Immutable
@@ -84,13 +84,13 @@ fun <V> List<ValueValidatorRule<V>>.toFieldState(value: V, showError: Boolean): 
 /**
  * Pure read: true when no field is currently in error. NOTE this answers "is anything in error
  * right now", NOT "has this been validated" — un-revealed [FieldValidationState.Pristine] fields
- * return true. For submit, reveal first (see [List].`allValid` on `FieldValidator`).
+ * return true. For submit, validate first (see `List<FieldValidator<*>>.validate()`).
  */
 fun List<FieldValidationState>.hasNoErrors(): Boolean = none { it.severity == Outcome.ERROR }
 
 /**
  * Resolve the field's message for display, or `null` when there is nothing to show. Gated on
- * [showError]: returns `null` until errors are revealed (blur/submit), so the message tracks the
+ * [showError]: returns `null` until errors are revealed (focus loss/submit), so the message tracks the
  * same reveal state as [isError]/[isWarning] — no message pops while the user is still typing.
  * [Composable] because resource-backed results resolve their `StringResource` here. For the raw,
  * ungated message (regardless of reveal state) use `result?.format()` directly.

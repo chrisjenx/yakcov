@@ -28,8 +28,8 @@ fun Modifier.validationConfig(
 
 /**
  * Invokes [onLost] when this element loses focus (had focus, then lost it). Pairs with the headless
- * [FieldValidator] — a presenter binder can call `field.onBlur()` here without the validator needing
- * any `Modifier` dependency.
+ * [FieldValidator] — a presenter binder can call `field.onFocusLost()` here without the validator
+ * needing any `Modifier` dependency.
  */
 fun Modifier.onFocusLost(onLost: () -> Unit): Modifier = composed {
     var hadFocus by remember { mutableStateOf(false) }

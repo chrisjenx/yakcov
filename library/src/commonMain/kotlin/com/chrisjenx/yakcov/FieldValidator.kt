@@ -21,7 +21,7 @@ import androidx.compose.runtime.snapshots.Snapshot
  * Construct **once** and hold it (a presenter class, a DI graph, or a `remember`/retained slot).
  * Never construct it inside a recomposing `@Composable` presenter body (e.g. a Molecule
  * `launchMolecule` body) — like [ValueValidator], a new instance resets all draft + validation
- * state. Do not copy it; mutate via [onValueChange]/[onBlur]/[reveal]/[reset].
+ * state. Do not copy it; mutate via [onValueChange]/[onFocusLost]/[validate]/[reset].
  *
  * ### Threading
  * The mutators write Compose snapshot state and should be called on the presenter's confined/main
@@ -30,7 +30,7 @@ import androidx.compose.runtime.snapshots.Snapshot
  *
  * ### Observability
  * Pass an [observer] to receive a [FieldValidatorEvent] after every mutation commits
- * ([FieldValidatorEvent.ValueChanged]/[FieldValidatorEvent.Revealed]/[FieldValidatorEvent.Reset]).
+ * ([FieldValidatorEvent.ValueChanged]/[FieldValidatorEvent.Validated]/[FieldValidatorEvent.Reset]).
  * No event fires at construction. Observers must not throw — see [FieldValidatorObserver].
  *
  * ### Not for reducer-MVI Models
@@ -45,12 +45,12 @@ import androidx.compose.runtime.snapshots.Snapshot
  *     val email = FieldValidator("", listOf(Required, Email))
  *     // CurrencyAmount is your own ValueValidatorRule — compose built-ins with your domain rules
  *     val amount = FieldValidator("", listOf(Required, CurrencyAmount))
- *     fun submit(): Boolean = listOf(email, amount).allValid()   // reveals, then checks
+ *     fun submit(): Boolean = listOf(email, amount).validate()   // reveals errors, then checks
  * }
  * ```
  *
  * @param initial the starting draft value (also the value [reset] re-seeds to).
- * @param rules the rules evaluated on every change/blur/reveal.
+ * @param rules the rules evaluated on every change/focus-loss/validate.
  * @param initialValidate when true, validates and reveals errors immediately (and on [reset]).
  * @param observer optional [FieldValidatorObserver] notified after each mutation commits.
  */
@@ -78,13 +78,19 @@ class FieldValidator<V>(
         observer?.onEvent(FieldValidatorEvent.ValueChanged(this.value, state))
     }
 
-    /** Revalidate and reveal errors — call when the field loses focus. Alias for [reveal]. */
-    fun onBlur() = reveal()
+    /** Revalidate and reveal errors — call when the field loses focus. Alias for [validate]. */
+    fun onFocusLost(): Boolean = validate()
 
-    /** Revalidate and force errors visible — call at submit time. */
-    fun reveal() {
+    /**
+     * Revalidate, force errors visible, and report validity — call at submit time (or on focus loss
+     * via [onFocusLost]). Mirrors [ValueValidator.validate].
+     *
+     * @return `true` when the field is valid (no [ValidationResult.Outcome.ERROR]).
+     */
+    fun validate(): Boolean {
         revalidate(showError = true)
-        observer?.onEvent(FieldValidatorEvent.Revealed(value, state))
+        observer?.onEvent(FieldValidatorEvent.Validated(value, state))
+        return !state.isError
     }
 
     /** Re-seed the draft to [initial] and reset validation (honoring `initialValidate`). */
@@ -109,15 +115,14 @@ class FieldValidator<V>(
     }
 }
 
-/** Reveal errors on every field — e.g. at submit time. */
-fun List<FieldValidator<*>>.reveal() = forEach { it.reveal() }
-
 /**
- * Reveal all fields, then report whether none are in error. Mirrors the safe
+ * Validate every field (revealing errors) and report whether all are valid. Mirrors the safe
  * `List<ValueValidator>.validate()` contract: because it reveals first, an untouched required field
  * cannot masquerade as valid. For a pure (non-revealing) read use `map { it.state }.hasNoErrors()`.
+ *
+ * @return `true` when no field is in error.
  */
-fun List<FieldValidator<*>>.allValid(): Boolean {
-    reveal()
+fun List<FieldValidator<*>>.validate(): Boolean {
+    forEach { it.validate() }
     return map { it.state }.hasNoErrors()
 }
