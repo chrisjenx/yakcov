@@ -46,7 +46,8 @@ enum class Edge { INPUT, COMMIT }
 /** Chip color tone. */
 enum class Tone { ERROR, WARNING, SUCCESS, NEUTRAL }
 
-data class Chip(val label: String, val tone: Tone)
+/** A labeled state box: [name] says WHAT it is (e.g. "severity"), [value] its current state. */
+data class Chip(val name: String, val value: String, val tone: Tone)
 
 /** One observed mutation, in panel-renderable form. */
 data class FlowTick(
@@ -72,7 +73,7 @@ class TickFeed {
     }
 }
 
-private const val PULSE_MILLIS = 450
+private const val PULSE_MILLIS = 700
 
 /**
  * The hybrid visualizer: compact flow diagram (pulse + glow on the edge/node that just fired),
@@ -105,19 +106,28 @@ fun StateFlowPanel(
         Text(text = title, style = MaterialTheme.typography.labelLarge)
 
         // Diagram: node boxes joined by labeled arrows; scrollable as a narrow-screen safety net.
+        // The pulse CASCADES along every edge from the event's start node all the way to the UI
+        // node, so you watch the change flow through to the UI rather than stop halfway. A typed
+        // change (INPUT) sweeps both edges; a blur/submit (COMMIT) sweeps from the engine to the UI.
+        val pulsing = latest != null && pulse.value < 1f
+        val startEdge = latest?.edge?.ordinal ?: 0
+        val sweptCount = (nodes.lastIndex - startEdge).coerceAtLeast(1)
+        val sweptPos = pulse.value * sweptCount
+        val activeSeg = sweptPos.toInt().coerceIn(0, sweptCount - 1)
+        val activeEdge = startEdge + activeSeg
+        val edgeProgress = (sweptPos - activeSeg).coerceIn(0f, 1f)
+        // One travelling highlight: the node the dot is leaving (first half) then arriving at.
+        val hotNode = if (!pulsing) -1 else activeEdge + if (edgeProgress > 0.5f) 1 else 0
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.horizontalScroll(rememberScrollState()),
         ) {
             nodes.forEachIndexed { i, node ->
-                val pulsing = latest != null && pulse.value < 1f
-                // The edge's target node glows for the back half of the pulse (dot "arriving").
-                val incomingActive = pulsing && latest!!.edge.ordinal == i - 1 && pulse.value > 0.5f
-                NodeBox(text = node, hot = incomingActive)
+                NodeBox(text = node, hot = i == hotNode)
                 if (i < nodes.lastIndex) EdgeArrow(
                     label = edgeLabels[i],
-                    active = pulsing && latest!!.edge.ordinal == i,
-                    progress = pulse.value,
+                    active = pulsing && i == activeEdge,
+                    progress = edgeProgress,
                 )
             }
         }
@@ -197,13 +207,20 @@ private fun ChipView(chip: Chip) {
         Tone.SUCCESS -> Color(0xFF2E7D32)
         Tone.NEUTRAL -> MaterialTheme.colorScheme.outline
     }
-    Text(
-        text = chip.label,
-        fontSize = 9.sp,
-        maxLines = 1,
-        color = tint,
+    // "name value" — dim name says WHAT the box is; the tinted value is its current state.
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .border(1.dp, tint.copy(alpha = 0.5f), RoundedCornerShape(50))
             .padding(horizontal = 6.dp, vertical = 1.dp),
-    )
+    ) {
+        Text(
+            text = chip.name,
+            fontSize = 9.sp,
+            maxLines = 1,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(text = chip.value, fontSize = 9.sp, maxLines = 1, color = tint)
+    }
 }

@@ -2,11 +2,12 @@ package com.chrisjenx.yakcov.sample
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -96,14 +97,20 @@ class FlowStore(
 
 // --- Taps: map each mechanism's events into the panels' shared FlowTick currency. -------------
 
-private fun String.quoted(): String = "\"${take(10)}\""
+// Show the TAIL of the draft (what was just typed), with a leading ellipsis when truncated, so
+// consecutive ticker lines differ and the chip matches the end of the field — not a repeated prefix.
+private fun String.quoted(): String {
+    val max = 12
+    return if (length <= max) "\"$this\"" else "\"…${takeLast(max)}\""
+}
 
 private fun FieldValidationState.shortLabel(): String =
     "${severity.name}, ${if (showError) "shown" else "hidden"}"
 
 private fun chipsOf(state: FieldValidationState, draft: String, identity: String): List<Chip> = listOf(
     Chip(
-        label = state.severity.name,
+        name = "severity",
+        value = state.severity.name,
         tone = when (state.severity) {
             Outcome.ERROR -> Tone.ERROR
             Outcome.WARNING -> Tone.WARNING
@@ -111,9 +118,9 @@ private fun chipsOf(state: FieldValidationState, draft: String, identity: String
             Outcome.SUCCESS -> Tone.SUCCESS
         },
     ),
-    Chip(label = if (state.showError) "shown" else "hidden", tone = Tone.NEUTRAL),
-    Chip(label = draft.quoted(), tone = Tone.NEUTRAL),
-    Chip(label = identity, tone = Tone.NEUTRAL),
+    Chip(name = "showError", value = state.showError.toString(), tone = Tone.NEUTRAL),
+    Chip(name = "draft", value = draft.quoted(), tone = Tone.NEUTRAL),
+    Chip(name = "identity", value = identity, tone = Tone.NEUTRAL),
 )
 
 /** Presenter tap: FieldValidatorObserver events -> FlowTicks. */
@@ -199,55 +206,62 @@ fun StateFlowScreen(modifier: Modifier = Modifier) {
             )
         }
 
-        // Push the panel + field group to the bottom so the panel sits right above the field.
-        Spacer(modifier = Modifier.weight(1f))
-
-        // One full-width panel for the selected tab (roomier than side-by-side). Both engines keep
-        // running off the field, so each tab's feed already reflects the full history on switch.
-        when (selectedTab) {
-            0 -> StateFlowPanel(
-                title = "FieldValidator · mutates in place",
-                nodes = listOf("TextField", "FieldValidator", "UI"),
-                edgeLabels = listOf("onValueChange()", "mutates .state"),
-                ticks = presenterFeed.ticks,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            else -> StateFlowPanel(
-                title = "reduce() · new Model per event",
-                nodes = listOf("TextField", "reduce()", "UI"),
-                edgeLabels = listOf("Event", "new Model"),
-                ticks = mviFeed.ticks,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        OutlinedTextField(
-            value = tfv,
-            onValueChange = {
-                tfv = it
-                // DEMO-ONLY fan-out: real apps pick ONE mechanism. Driving both lets the panel
-                // above animate whichever pipeline you've selected from identical input.
-                validator.onValueChange(it.text)
-                store.dispatch(FlowEvent.Changed(it.text))
-            },
-            label = { Text("Email — drives both engines") },
-            isError = validator.state.isError,
-            supportingText = validator.state.supportingText(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Email),
+        // The live panel + field + submit scroll as a group, so the button never gets squashed when
+        // the keyboard is up; the field auto-scrolls into view on focus, keeping the panel above it.
+        Column(
             modifier = Modifier
+                .weight(1f)
                 .fillMaxWidth()
-                .onFocusLost {
-                    validator.onBlur()
-                    store.dispatch(FlowEvent.Blurred)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // One full-width panel for the selected tab (roomier than side-by-side). Both engines
+            // keep running off the field, so each tab's feed reflects the full history on switch.
+            when (selectedTab) {
+                0 -> StateFlowPanel(
+                    title = "FieldValidator · mutates in place",
+                    nodes = listOf("TextField", "FieldValidator", "UI"),
+                    edgeLabels = listOf("onValueChange()", "mutates .state"),
+                    ticks = presenterFeed.ticks,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                else -> StateFlowPanel(
+                    title = "reduce() · new Model per event",
+                    nodes = listOf("TextField", "reduce()", "UI"),
+                    edgeLabels = listOf("Event", "new Model"),
+                    ticks = mviFeed.ticks,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            OutlinedTextField(
+                value = tfv,
+                onValueChange = {
+                    tfv = it
+                    // DEMO-ONLY fan-out: real apps pick ONE mechanism. Driving both lets the panel
+                    // above animate whichever pipeline you've selected from identical input.
+                    validator.onValueChange(it.text)
+                    store.dispatch(FlowEvent.Changed(it.text))
                 },
-        )
-        Button(
-            onClick = {
-                listOf(validator).allValid()
-                store.dispatch(FlowEvent.Submit)
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Submit") }
+                label = { Text("Email — drives both engines") },
+                isError = validator.state.isError,
+                supportingText = validator.state.supportingText(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = KeyboardType.Email),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusLost {
+                        validator.onBlur()
+                        store.dispatch(FlowEvent.Blurred)
+                    },
+            )
+            Button(
+                onClick = {
+                    listOf(validator).allValid()
+                    store.dispatch(FlowEvent.Submit)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Submit") }
+        }
     }
 }
