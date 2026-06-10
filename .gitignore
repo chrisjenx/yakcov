@@ -25,6 +25,7 @@ settings.local.json
 CLAUDE.local.md
 # superpowers brainstorm/plan/spec output
 docs/superpowers/
+.superpowers/
 # superpowers git worktree dirs (.worktrees preferred, worktrees is the fallback)
 .worktrees/
 worktrees/

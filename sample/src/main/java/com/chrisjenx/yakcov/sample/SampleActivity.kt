@@ -1,5 +1,6 @@
 package com.chrisjenx.yakcov.sample
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -73,6 +75,15 @@ class SampleActivity : ComponentActivity() {
                             .padding(innerPadding)
                             .padding(16.dp)
                     ) {
+                        val context = LocalContext.current
+                        Button(
+                            onClick = {
+                                context.startActivity(Intent(context, StateFlowActivity::class.java))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(text = "Open state-flow visualizer →") }
+                        Spacer(modifier = Modifier.height(24.dp))
+
                         Text(text = "Email", style = MaterialTheme.typography.headlineSmall)
                         val emailValidator = rememberTextFieldValueValidator(
                             rules = listOf(Required, Email), alwaysShowRule = true
@@ -350,6 +361,10 @@ class SampleActivity : ComponentActivity() {
                         ) {
                             Text(text = "Validate")
                         }
+                        Spacer(modifier = Modifier.height(24.dp))
+                        PresenterFormSample()
+                        Spacer(modifier = Modifier.height(24.dp))
+                        MviFormSample()
                     }
                 }
             }

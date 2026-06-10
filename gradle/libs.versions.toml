@@ -12,6 +12,7 @@ coreKtx = "1.17.0"
 # Compose Multiplatform 1.11 requires Kotlin >= 2.3.10 for native/web targets
 kotlin = "2.3.21"
 kotlinx-datetime = "0.8.0"
+kotlinx-serialization = "1.11.0"
 libphonenumber-kotlin = "0.1.9"
 lifecycleRuntimeKtx = "2.10.0"
 startupRuntime = "1.2.0"
@@ -38,6 +39,9 @@ jetbrains-compose-ui-test = { group = "org.jetbrains.compose.ui", name = "ui-tes
 jetbrains-compose-ui-tooling = { group = "org.jetbrains.compose.ui", name = "ui-tooling", version.ref = "compose" }
 jetbrains-compose-ui-tooling-preview = { group = "org.jetbrains.compose.ui", name = "ui-tooling-preview", version.ref = "compose" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+jetbrains-compose-runtime-saveable = { group = "org.jetbrains.compose.runtime", name = "runtime-saveable", version.ref = "compose" }
 libphonenumber-kotlin = { module = "io.github.luca992.libphonenumber-kotlin:libphonenumber", version.ref = "libphonenumber-kotlin" }
 
 [plugins]
@@ -46,5 +50,6 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 maven-publish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }
 multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
