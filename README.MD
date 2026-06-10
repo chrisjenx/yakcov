@@ -189,7 +189,9 @@ directly (it persists `Outcome` by constant *name*). On the Molecule/`FieldValid
 same idea applies: persist the draft + `showError` yourself, reconstruct
 `FieldValidator(initial = restoredDraft, rules)` and call `reveal()`/`onBlur()` when `showError` was
 true (or construct with `initialValidate = true`) before first composition, so the rules re-run and
-a previously-revealed message reappears.
+a previously-revealed message reappears. If you attach an `observer`, prefer the
+`initialValidate = true` form on restore — it fires no event, whereas `reveal()`/`onBlur()` emit a
+`Revealed` event that an analytics tap would over-count as a real user reveal.
 
 See the runnable, process-death-surviving multi-field version in the
 [sample](sample/src/main/java/com/chrisjenx/yakcov/sample/MviSample.kt).

@@ -22,9 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.chrisjenx.yakcov.FieldValidationState
 import com.chrisjenx.yakcov.FieldValidator
@@ -70,11 +68,9 @@ fun flowReduce(model: FlowModel, event: FlowEvent): FlowModel = when (event) {
         state = flowRules.toFieldState(event.text, showError = model.state.showError),
         generation = model.generation + 1,
     )
-    FlowEvent.Blurred -> model.copy(
-        state = flowRules.toFieldState(model.draft, showError = true),
-        generation = model.generation + 1,
-    )
-    FlowEvent.Submit -> model.copy(
+    // Blur and submit are the same transform here: reveal errors on the current draft. The ticker
+    // still labels them apart (see emitFrom) — only the model math is shared.
+    FlowEvent.Blurred, FlowEvent.Submit -> model.copy(
         state = flowRules.toFieldState(model.draft, showError = true),
         generation = model.generation + 1,
     )
@@ -169,11 +165,6 @@ fun StateFlowScreen(modifier: Modifier = Modifier) {
         FlowStore(FlowModel()) { event, after -> mviFeed.emitFrom(event, after) }
     }
 
-    var tfv by remember { mutableStateOf(TextFieldValue("")) }
-    if (tfv.text != validator.value) {
-        tfv = TextFieldValue(validator.value, TextRange(validator.value.length))
-    }
-
     var selectedTab by rememberSaveable { mutableStateOf(0) }
 
     Column(
@@ -235,13 +226,14 @@ fun StateFlowScreen(modifier: Modifier = Modifier) {
             }
 
             OutlinedTextField(
-                value = tfv,
+                // validator.value is the single source of truth; the String overload keeps the cursor
+                // at the end on external changes, so no separate TextFieldValue state is needed.
+                value = validator.value,
                 onValueChange = {
-                    tfv = it
                     // DEMO-ONLY fan-out: real apps pick ONE mechanism. Driving both lets the panel
                     // above animate whichever pipeline you've selected from identical input.
-                    validator.onValueChange(it.text)
-                    store.dispatch(FlowEvent.Changed(it.text))
+                    validator.onValueChange(it)
+                    store.dispatch(FlowEvent.Changed(it))
                 },
                 label = { Text("Email — drives both engines") },
                 isError = validator.state.isError,
