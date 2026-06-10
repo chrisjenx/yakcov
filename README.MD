@@ -48,7 +48,7 @@ class CheckoutPresenter {
     // CurrencyAmount here is your own ValueValidatorRule — compose built-ins with your domain rules
     val amount = FieldValidator("", listOf(Required, CurrencyAmount))
 
-    fun submit(): Boolean = listOf(email, amount).validate() // reveals errors, then checks
+    fun submit(): Boolean = listOf(email, amount).validate() // shows errors, then checks
 }
 
 // reusable binder, written once in app code (one line per field at the call site)
@@ -84,7 +84,7 @@ cursor/selection survives — see `ValidatedTextField` in the [sample](sample/sr
 `FieldValidationState` and recompute with the pure `toFieldState` fold in `reduce()` (no
 `FieldValidator`, no Compose, no IO — so `reduce` is unit-testable without composition). `severity`
 is recomputed on every keystroke and answers *"is it valid?"* (drives `canSubmit`); `showError` only
-flips true on blur/submit and answers *"show the error yet?"* (drives the red text). That split is
+flips true on focus-loss/submit and answers *"show the error yet?"* (drives the red text). That split is
 yakcov's whole value. Cross-field rules go the pure way — an inline `ValueValidatorRule` closing over
 the other draft; the built-in `PasswordMatches` couples to a *mutable* validator and does **not** fit
 a reducer.
@@ -107,14 +107,14 @@ data class Model(
     val confirmDraft: String = "",  val confirmState: FieldValidationState = FieldValidationState.Pristine,
     val submitted: Boolean? = null, // null = not attempted, true = accepted, false = blocked
 ) {
-    // SEVERITY-only validity (ignores reveal) — live from the first frame (drive a label or disable Submit).
+    // SEVERITY-only validity (ignores showError) — live from the first frame (drive a label or disable Submit).
     val canSubmit get() = listOf(emailState, passwordState, confirmState).hasNoErrors()
 }
 
 sealed interface Event {
     data class Changed(val field: Field, val text: String) : Event
-    data class Blurred(val field: Field) : Event   // reveal one field
-    data object Submit : Event                     // reveal all
+    data class FocusLost(val field: Field) : Event // show errors on one field
+    data object Submit : Event                     // show errors on all
 }
 
 // PURE: (Model, Event) -> Model. Copy this into a unit test as-is.
@@ -132,12 +132,12 @@ fun reduce(model: Model, event: Event): Model = when (event) {
             confirmState = confirmRules(model.passwordDraft).toFieldState(event.text, model.confirmState.showError),
             submitted = null)
     }
-    is Event.Blurred -> when (event.field) {  // reveal just that one field (showError = true)
+    is Event.FocusLost -> when (event.field) {  // show errors on just that one field (showError = true)
         Field.Email    -> model.copy(emailState = emailRules.toFieldState(model.emailDraft, showError = true))
         Field.Password -> model.copy(passwordState = passwordRules.toFieldState(model.passwordDraft, showError = true))
         Field.Confirm  -> model.copy(confirmState = confirmRules(model.passwordDraft).toFieldState(model.confirmDraft, showError = true))
     }
-    Event.Submit -> model.copy(  // reveal ALL, then record acceptance off severity
+    Event.Submit -> model.copy(  // show errors on ALL, then record acceptance off severity
         emailState    = emailRules.toFieldState(model.emailDraft, showError = true),
         passwordState = passwordRules.toFieldState(model.passwordDraft, showError = true),
         confirmState  = confirmRules(model.passwordDraft).toFieldState(model.confirmDraft, showError = true),
@@ -169,9 +169,9 @@ class Store(initial: Model) {
 // OutlinedTextField(value = store.model.emailDraft,
 //     onValueChange = { store.dispatch(Event.Changed(Field.Email, it)) },
 //     isError = store.model.emailState.isError,                 // gated on showError
-//     supportingText = store.model.emailState.supportingText(), // null until revealed
-//     modifier = Modifier.onFocusLost { store.dispatch(Event.Blurred(Field.Email)) })
-// Button(onClick = { store.dispatch(Event.Submit) }) {         // enabled; Submit reveals untouched fields
+//     supportingText = store.model.emailState.supportingText(), // null until shown
+//     modifier = Modifier.onFocusLost { store.dispatch(Event.FocusLost(Field.Email)) })
+// Button(onClick = { store.dispatch(Event.Submit) }) {         // enabled; Submit shows errors on untouched fields
 //     Text(if (store.model.canSubmit) "Create account" else "Fix errors") // label is severity-driven
 // }
 ```
@@ -189,7 +189,7 @@ directly (it persists `Outcome` by constant *name*). On the Molecule/`FieldValid
 same idea applies: persist the draft + `showError` yourself, reconstruct
 `FieldValidator(initial = restoredDraft, rules)` and call `validate()`/`onFocusLost()` when `showError`
 was true (or construct with `initialValidate = true`) before first composition, so the rules re-run and
-a previously-revealed message reappears. If you attach an `observer`, prefer the
+a previously-shown message reappears. If you attach an `observer`, prefer the
 `initialValidate = true` form on restore — it fires no event, whereas `validate()`/`onFocusLost()` emit
 a `Validated` event that an analytics tap would over-count as a real focus-loss/submit.
 

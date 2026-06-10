@@ -45,13 +45,13 @@ import androidx.compose.runtime.snapshots.Snapshot
  *     val email = FieldValidator("", listOf(Required, Email))
  *     // CurrencyAmount is your own ValueValidatorRule — compose built-ins with your domain rules
  *     val amount = FieldValidator("", listOf(Required, CurrencyAmount))
- *     fun submit(): Boolean = listOf(email, amount).validate()   // reveals errors, then checks
+ *     fun submit(): Boolean = listOf(email, amount).validate()   // shows errors, then checks
  * }
  * ```
  *
  * @param initial the starting draft value (also the value [reset] re-seeds to).
  * @param rules the rules evaluated on every change/focus-loss/validate.
- * @param initialValidate when true, validates and reveals errors immediately (and on [reset]).
+ * @param initialValidate when true, validates and shows errors immediately (and on [reset]).
  * @param observer optional [FieldValidatorObserver] notified after each mutation commits.
  */
 @Stable
@@ -69,7 +69,7 @@ class FieldValidator<V>(
     var state: FieldValidationState by mutableStateOf(seedState(initial))
         private set
 
-    /** Update the draft and revalidate, keeping the current reveal state (no error pop while typing). */
+    /** Update the draft and revalidate, keeping the current showError (no error pop while typing). */
     fun onValueChange(value: V) {
         Snapshot.withMutableSnapshot {
             this.value = value
@@ -78,7 +78,7 @@ class FieldValidator<V>(
         observer?.onEvent(FieldValidatorEvent.ValueChanged(this.value, state))
     }
 
-    /** Revalidate and reveal errors — call when the field loses focus. Alias for [validate]. */
+    /** Revalidate and show errors — call when the field loses focus. Alias for [validate]. */
     fun onFocusLost(): Boolean = validate()
 
     /**
@@ -105,7 +105,7 @@ class FieldValidator<V>(
         observer?.onEvent(FieldValidatorEvent.Reset(this.value, state))
     }
 
-    /** Initial state for [value]: revealed if [initialValidate], otherwise [FieldValidationState.Pristine]. */
+    /** Initial state for [value]: errors shown if [initialValidate], otherwise [FieldValidationState.Pristine]. */
     private fun seedState(value: V): FieldValidationState =
         if (initialValidate) rules.toFieldState(value, showError = true)
         else FieldValidationState.Pristine
@@ -116,9 +116,9 @@ class FieldValidator<V>(
 }
 
 /**
- * Validate every field (revealing errors) and report whether all are valid. Mirrors the safe
- * `List<ValueValidator>.validate()` contract: because it reveals first, an untouched required field
- * cannot masquerade as valid. For a pure (non-revealing) read use `map { it.state }.hasNoErrors()`.
+ * Validate every field (showing errors) and report whether all are valid. Mirrors the safe
+ * `List<ValueValidator>.validate()` contract: because it shows errors first, an untouched required
+ * field cannot masquerade as valid. For a pure read that shows nothing use `map { it.state }.hasNoErrors()`.
  *
  * @return `true` when no field is in error.
  */

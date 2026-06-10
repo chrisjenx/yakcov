@@ -24,7 +24,7 @@ import kotlinx.serialization.Transient
  * otherwise the UI would show a stale error.
  *
  * @property severity highest [Outcome] across the field's rules (defaults to [Outcome.SUCCESS]).
- * @property showError whether errors should be surfaced to the user yet (revealed on focus loss/submit).
+ * @property showError whether errors should be surfaced to the user yet (shown on focus loss/submit).
  * @property result the most-severe [ValidationResult], for rendering the message via [text].
  */
 @Immutable
@@ -34,10 +34,10 @@ data class FieldValidationState(
     val showError: Boolean = false,
     @Transient val result: ValidationResult? = null,
 ) {
-    /** True only once errors are revealed AND the severity is [Outcome.ERROR]. */
+    /** True only once errors are shown AND the severity is [Outcome.ERROR]. */
     val isError: Boolean get() = showError && severity == Outcome.ERROR
 
-    /** True only once errors are revealed AND the severity is [Outcome.WARNING]. */
+    /** True only once errors are shown AND the severity is [Outcome.WARNING]. */
     val isWarning: Boolean get() = showError && severity == Outcome.WARNING
 
     companion object {
@@ -83,24 +83,24 @@ fun <V> List<ValueValidatorRule<V>>.toFieldState(value: V, showError: Boolean): 
 
 /**
  * Pure read: true when no field is currently in error. NOTE this answers "is anything in error
- * right now", NOT "has this been validated" — un-revealed [FieldValidationState.Pristine] fields
+ * right now", NOT "has this been validated" — not-yet-shown [FieldValidationState.Pristine] fields
  * return true. For submit, validate first (see `List<FieldValidator<*>>.validate()`).
  */
 fun List<FieldValidationState>.hasNoErrors(): Boolean = none { it.severity == Outcome.ERROR }
 
 /**
  * Resolve the field's message for display, or `null` when there is nothing to show. Gated on
- * [showError]: returns `null` until errors are revealed (focus loss/submit), so the message tracks the
- * same reveal state as [isError]/[isWarning] — no message pops while the user is still typing.
+ * [showError]: returns `null` until errors are shown (focus loss/submit), so the message tracks the
+ * same showError gating as [isError]/[isWarning] — no message pops while the user is still typing.
  * [Composable] because resource-backed results resolve their `StringResource` here. For the raw,
- * ungated message (regardless of reveal state) use `result?.format()` directly.
+ * ungated message (regardless of showError) use `result?.format()` directly.
  */
 @Composable
 fun FieldValidationState.text(): String? = if (showError) result?.format() else null
 
 /**
  * Convenience that mirrors `ValueValidator.supportingText()`: returns a composable that renders the
- * revealed message (see [text]), or `null` when there is none / errors aren't revealed yet. Drops
+ * shown message (see [text]), or `null` when there is none / errors aren't shown yet. Drops
  * the `text()?.let { Text(it) }` boilerplate.
  */
 @Composable

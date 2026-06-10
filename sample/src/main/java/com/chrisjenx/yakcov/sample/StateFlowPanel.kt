@@ -108,7 +108,7 @@ fun StateFlowPanel(
         // Diagram: node boxes joined by labeled arrows; scrollable as a narrow-screen safety net.
         // The pulse CASCADES along every edge from the event's start node all the way to the UI
         // node, so you watch the change flow through to the UI rather than stop halfway. A typed
-        // change (INPUT) sweeps both edges; a blur/submit (COMMIT) sweeps from the engine to the UI.
+        // change (INPUT) sweeps both edges; a focus-loss/submit (COMMIT) sweeps from the engine to the UI.
         val pulsing = latest != null && pulse.value < 1f
         val startEdge = latest?.edge?.ordinal ?: 0
         val sweptCount = (nodes.lastIndex - startEdge).coerceAtLeast(1)

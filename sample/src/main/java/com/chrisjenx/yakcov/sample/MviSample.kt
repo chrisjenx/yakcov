@@ -42,7 +42,7 @@ import com.chrisjenx.yakcov.toFieldState
  *
  * The library's key value is one state with TWO independent channels:
  *   - severity  : recomputed on EVERY keystroke. Answers "is it valid?"   -> drives canSubmit.
- *   - showError : only flips true on blur/submit.  Answers "show it yet?"  -> drives the red text.
+ *   - showError : only flips true on focus-loss/submit. Answers "show it yet?" -> drives the red text.
  * ===================================================================================== */
 
 // --- Rules: plain top-level lists, declared once, shared by reduce() AND any unit test. --------
@@ -76,7 +76,7 @@ data class Model(
     val passwordState: FieldValidationState = FieldValidationState.Pristine,
     val confirmDraft: String = "",
     val confirmState: FieldValidationState = FieldValidationState.Pristine,
-    /** Submit outcome: null = not attempted, true = accepted, false = blocked (reveal + shake). */
+    /** Submit outcome: null = not attempted, true = accepted, false = blocked (show errors + shake). */
     val submitted: Boolean? = null,
 ) {
     /**
@@ -102,17 +102,17 @@ sealed interface Event {
     /** Typing. Recompute severity live, but PRESERVE this field's showError (no error pops early). */
     data class Changed(val field: Field, val text: String) : Event
 
-    /** Focus left a field — reveal just that one field (reveal-on-blur). */
-    data class Blurred(val field: Field) : Event
+    /** Focus left a field — show errors on just that one field (show-on-focus-loss). */
+    data class FocusLost(val field: Field) : Event
 
-    /** Submit — reveal ALL fields, then record acceptance off severity (reveal-on-submit). */
+    /** Submit — show errors on ALL fields, then record acceptance off severity (show-on-submit). */
     data object Submit : Event
 }
 
 // --- reduce(): THE pure core. No Compose, no coroutines, no IO, no Android. --------------------
 /**
  * `(Model, Event) -> Model`. `showError` is *threaded*, not recomputed: Changed keeps the prior
- * reveal state; Blurred/Submit force it true. Because the confirm rule closes over the password
+ * showError; FocusLost/Submit force it true. Because the confirm rule closes over the password
  * draft, a password change also re-validates confirm (otherwise a stale match would stay green).
  */
 fun reduce(model: Model, event: Event): Model = when (event) {
@@ -138,7 +138,7 @@ fun reduce(model: Model, event: Event): Model = when (event) {
         )
     }
 
-    is Event.Blurred -> when (event.field) {
+    is Event.FocusLost -> when (event.field) {
         Field.Email -> model.copy(
             emailState = emailRules.toFieldState(model.emailDraft, showError = true),
         )
@@ -151,13 +151,13 @@ fun reduce(model: Model, event: Event): Model = when (event) {
     }
 
     Event.Submit -> {
-        // Reveal every field (force showError = true), then read validity off severity.
-        val revealed = model.copy(
+        // Show errors on every field (force showError = true), then read validity off severity.
+        val surfaced = model.copy(
             emailState = emailRules.toFieldState(model.emailDraft, showError = true),
             passwordState = passwordRules.toFieldState(model.passwordDraft, showError = true),
             confirmState = confirmRules(model.passwordDraft).toFieldState(model.confirmDraft, showError = true),
         )
-        revealed.copy(submitted = revealed.canSubmit)
+        surfaced.copy(submitted = surfaced.canSubmit)
     }
 }
 
@@ -181,7 +181,7 @@ class Store(initial: Model) {
  * THE serializable payoff. We persist only the three drafts + each field's showError flag (the same
  * data `FieldValidationState.Saver` carries; `result` is `@Transient`). On restore we RE-RUN the
  * rules through `toFieldState` to repopulate the transient message while preserving showError — so a
- * revealed error survives process death with its text intact. Zero new deps (runtime-saveable comes
+ * surfaced error survives process death with its text intact. Zero new deps (runtime-saveable comes
  * transitively with material3). The whole [Store] round-trips from one `rememberSaveable`.
  */
 private val modelSaver: Saver<Model, Any> = listSaver(
@@ -224,7 +224,7 @@ private fun MviTextField(
     draft: String,
     state: FieldValidationState,
     onChanged: (String) -> Unit,
-    onBlurred: () -> Unit,
+    onFocusLost: () -> Unit,
     keyboardType: KeyboardType = KeyboardType.Text,
     mask: Boolean = false,
 ) {
@@ -237,14 +237,14 @@ private fun MviTextField(
         value = tfv,
         onValueChange = { tfv = it; onChanged(it.text) },
         label = { Text(label) },
-        isError = state.isError,                 // showError && severity == ERROR (gated on reveal)
-        supportingText = state.supportingText(), // null until revealed -> no message while typing
+        isError = state.isError,                 // showError && severity == ERROR (gated on showError)
+        supportingText = state.supportingText(), // null until shown -> no message while typing
         singleLine = true,
         keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, keyboardType = keyboardType),
         visualTransformation = if (mask) PasswordVisualTransformation() else VisualTransformation.None,
         modifier = Modifier
             .fillMaxWidth()
-            .onFocusLost(onBlurred),             // reveal-on-blur for this field
+            .onFocusLost(onFocusLost),             // show-on-focus-loss for this field
     )
 }
 
@@ -263,7 +263,7 @@ fun MviFormSample() {
         draft = model.emailDraft,
         state = model.emailState,
         onChanged = { store.dispatch(Event.Changed(Field.Email, it)) },
-        onBlurred = { store.dispatch(Event.Blurred(Field.Email)) },
+        onFocusLost = { store.dispatch(Event.FocusLost(Field.Email)) },
         keyboardType = KeyboardType.Email,
     )
     MviTextField(
@@ -271,7 +271,7 @@ fun MviFormSample() {
         draft = model.passwordDraft,
         state = model.passwordState,
         onChanged = { store.dispatch(Event.Changed(Field.Password, it)) },
-        onBlurred = { store.dispatch(Event.Blurred(Field.Password)) },
+        onFocusLost = { store.dispatch(Event.FocusLost(Field.Password)) },
         keyboardType = KeyboardType.Password,
         mask = true,
     )
@@ -280,23 +280,23 @@ fun MviFormSample() {
         draft = model.confirmDraft,
         state = model.confirmState,
         onChanged = { store.dispatch(Event.Changed(Field.Confirm, it)) },
-        onBlurred = { store.dispatch(Event.Blurred(Field.Confirm)) },
+        onFocusLost = { store.dispatch(Event.FocusLost(Field.Confirm)) },
         keyboardType = KeyboardType.Password,
         mask = true,
     )
 
     // SEVERITY drives this label live (it flips as you type, BEFORE any error text shows) — the
     // clearest view of the "is it valid?" channel. The button stays enabled so Submit can act as the
-    // reveal-all BACKSTOP for fields the user never focused (so onFocusLost never fired) — e.g.
-    // tapping Submit on a fresh form, or skipping a required field. Per-field blur already reveals
-    // touched fields; Submit guarantees the rest. Prefer disable-on-invalid instead? Set
-    // `enabled = model.canSubmit` — but then you lose that backstop (you can't submit to reveal).
+    // show-all-errors BACKSTOP for fields the user never focused (so onFocusLost never fired) — e.g.
+    // tapping Submit on a fresh form, or skipping a required field. Per-field focus-loss already shows
+    // errors on touched fields; Submit guarantees the rest. Prefer disable-on-invalid instead? Set
+    // `enabled = model.canSubmit` — but then you lose that backstop (you can't submit to show errors).
     Button(
-        onClick = { store.dispatch(Event.Submit) },   // reveal-all backstop, then check
+        onClick = { store.dispatch(Event.Submit) },   // show-all-errors backstop, then check
         modifier = Modifier.fillMaxWidth(),
     ) { Text(if (model.canSubmit) "Create account" else "Fix errors to submit") }
 
-    // Submit outcome. `false` occurs when Submit reveals a still-invalid field the user never blurred
+    // Submit outcome. `false` occurs when Submit surfaces a still-invalid field the user never focused
     // (submit-first, or an untouched required field) — a clean point to drive a shake on `false`
     // (keep ShakingState UI-owned).
     model.submitted?.let { Text(if (it) "Valid — proceeding" else "Fix the errors above") }

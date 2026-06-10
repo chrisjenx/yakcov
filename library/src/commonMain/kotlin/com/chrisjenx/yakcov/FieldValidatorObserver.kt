@@ -30,13 +30,13 @@ sealed interface FieldValidatorEvent<V> {
     /** The validation state after the mutation. */
     val state: FieldValidationState
 
-    /** The draft changed via `onValueChange` (reveal state preserved — no error pop). */
+    /** The draft changed via `onValueChange` (showError preserved — no error pop). */
     data class ValueChanged<V>(
         override val value: V,
         override val state: FieldValidationState,
     ) : FieldValidatorEvent<V>
 
-    /** Errors were revealed via `validate()`/`onFocusLost()` (also via `List.validate()`). */
+    /** Errors were shown via `validate()`/`onFocusLost()` (also via `List.validate()`). */
     data class Validated<V>(
         override val value: V,
         override val state: FieldValidationState,

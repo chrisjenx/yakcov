@@ -58,7 +58,7 @@ data class FlowModel(
 
 sealed interface FlowEvent {
     data class Changed(val text: String) : FlowEvent
-    data object Blurred : FlowEvent
+    data object FocusLost : FlowEvent
     data object Submit : FlowEvent
 }
 
@@ -68,9 +68,9 @@ fun flowReduce(model: FlowModel, event: FlowEvent): FlowModel = when (event) {
         state = flowRules.toFieldState(event.text, showError = model.state.showError),
         generation = model.generation + 1,
     )
-    // Blur and submit are the same transform here: reveal errors on the current draft. The ticker
+    // Focus-loss and submit are the same transform here: show errors on the current draft. The ticker
     // still labels them apart (see emitFrom) — only the model math is shared.
-    FlowEvent.Blurred, FlowEvent.Submit -> model.copy(
+    FlowEvent.FocusLost, FlowEvent.Submit -> model.copy(
         state = flowRules.toFieldState(model.draft, showError = true),
         generation = model.generation + 1,
     )
@@ -137,7 +137,7 @@ private fun TickFeed.emitFrom(event: FieldValidatorEvent<String>) {
 private fun TickFeed.emitFrom(event: FlowEvent, after: FlowModel) {
     val (edge, call) = when (event) {
         is FlowEvent.Changed -> Edge.INPUT to "Changed(${event.text.quoted()})"
-        FlowEvent.Blurred -> Edge.COMMIT to "Blurred"
+        FlowEvent.FocusLost -> Edge.COMMIT to "FocusLost"
         FlowEvent.Submit -> Edge.COMMIT to "Submit"
     }
     emit(
@@ -179,7 +179,7 @@ fun StateFlowScreen(modifier: Modifier = Modifier) {
         )
         Text(
             text = "The same input drives a presenter-owned FieldValidator AND a reducer-MVI " +
-                "store. Switch tabs to compare how each reacts to the same keystroke, blur, and submit.",
+                "store. Switch tabs to compare how each reacts to the same keystroke, focus loss, and submit.",
             style = MaterialTheme.typography.bodySmall,
         )
 
@@ -244,7 +244,7 @@ fun StateFlowScreen(modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .onFocusLost {
                         validator.onFocusLost()
-                        store.dispatch(FlowEvent.Blurred)
+                        store.dispatch(FlowEvent.FocusLost)
                     },
             )
             Button(

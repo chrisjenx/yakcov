@@ -28,7 +28,7 @@ import com.chrisjenx.yakcov.strings.Required
 class FormPresenter {
     val email = FieldValidator(initial = "", rules = listOf(Required, Email))
 
-    /** Validates every field (revealing errors), then reports whether the form may proceed. */
+    /** Validates every field (showing errors), then reports whether the form may proceed. */
     fun submit(): Boolean = listOf(email).validate()
 }
 
