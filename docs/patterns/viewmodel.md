@@ -34,3 +34,26 @@ the ViewModel pure at the cost of more plumbing per field.
     is a plain property the VM *can* read; `supportingText()` resolves string resources
     and must be called from the UI, in composition. Keep severity logic in the state
     holder and rendering in the composable.
+
+!!! warning "Construct once, never copy"
+    Construct a `FieldValidator` **once** and hold it (a VM/presenter field, DI, or
+    `remember`). Don't construct it inside a recomposing body and don't copy it — both
+    reset its validation state.
+
+## Observability
+
+`FieldValidator` takes an optional `observer` — a `FieldValidatorObserver` fired after
+every mutation commits (`ValueChanged` / `Validated` / `Reset`) with the post-mutation
+value + state. Handy for analytics, logging, or driving UI like the sample's live
+state-flow visualizer
+([`StateFlowSample.kt`](https://github.com/chrisjenx/yakcov/blob/main/sample/src/main/java/com/chrisjenx/yakcov/sample/StateFlowSample.kt)).
+No event fires at construction; observers must not throw.
+
+On restore-from-persistence, prefer `FieldValidator(initial = restoredDraft, rules,
+initialValidate = true)` over calling `validate()` — it re-runs the rules without
+emitting a `Validated` event an analytics tap would over-count.
+
+!!! info "Unit-testing presenters"
+    If presenter/VM unit tests construct `FieldValidator` or read `.value`/`.state`,
+    add `org.jetbrains.compose:runtime` to the test source set — it is not pulled in
+    transitively.

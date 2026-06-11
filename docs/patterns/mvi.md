@@ -42,4 +42,18 @@ Notes on the wiring:
   `StateFlow<SignUpModel>` (or your MVI framework's container) without touching
   `reduce`, the model, or the events.
 - Cross-field rules (confirm-password, etc.) are SAM lambdas closing over the model —
-  see [custom rules](../recipes/custom-rules.md).
+  see [custom rules](../recipes/custom-rules.md). The built-in `PasswordMatches` couples
+  to a *mutable* validator and does **not** fit a reducer.
+- **Shake stays UI-owned:** keep a `rememberShakingState()` in the screen and call
+  `shakingState.shake()` when an invalid submit reduces `submitted` to `false`.
+
+## Persistence & process death
+
+`FieldValidationState` is `@Immutable @Serializable` — `severity` + `showError`
+persist, the message (`result`) is `@Transient` and recomputes. Persist the drafts plus
+each field's `showError` with `rememberSaveable` (a `FieldValidationState.Saver` is
+provided), then **rehydrate on restore by re-running the rules through `toFieldState`**
+so the message reappears with `showError` preserved. For cross-process JSON, add a
+kotlinx-serialization runtime and encode `FieldValidationState` directly (it persists
+`Outcome` by constant name). See the runnable, process-death-surviving version in
+[`MviSample.kt`](https://github.com/chrisjenx/yakcov/blob/main/sample/src/main/java/com/chrisjenx/yakcov/sample/MviSample.kt).
