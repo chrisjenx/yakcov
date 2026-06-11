@@ -29,3 +29,6 @@ docs/superpowers/
 # superpowers git worktree dirs (.worktrees preferred, worktrees is the fallback)
 .worktrees/
 worktrees/
+
+# MkDocs build output
+site/
