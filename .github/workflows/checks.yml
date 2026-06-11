@@ -97,7 +97,7 @@ jobs:
       - name: Patch Compose versions
         run: ./scripts/lib-release.sh --patch "${{ matrix.channel }}"
       - name: Run Android and JVM tests
-        run: ./gradlew :library:testDebugUnitTest :library:jvmTest --warn --continue
+        run: ./gradlew :library:testDebugUnitTest :library:jvmTest :docs-examples:compileDebugKotlinAndroid :docs-examples:compileKotlinJvm --warn --continue
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v4
         if: success() || failure()
