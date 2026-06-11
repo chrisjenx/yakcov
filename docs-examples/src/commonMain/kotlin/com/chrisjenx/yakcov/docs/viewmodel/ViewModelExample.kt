@@ -44,12 +44,16 @@ class SignUpViewModel : ViewModel() {
 
 // --8<-- [start:vm-ui]
 @Composable
-fun SignUpScreen(viewModel: SignUpViewModel = viewModel { SignUpViewModel() }) {
+fun SignUpScreen(
+    onSubmit: () -> Unit,
+    viewModel: SignUpViewModel = viewModel { SignUpViewModel() },
+) {
     Column {
         ValidatedField(viewModel.email, label = "Email")
         ValidatedField(viewModel.password, label = "Password")
         Button(
-            onClick = { viewModel.submit() },
+            // submit() surfaces errors on every field and returns true only when all pass.
+            onClick = { if (viewModel.submit()) onSubmit() },
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Create account") }
     }

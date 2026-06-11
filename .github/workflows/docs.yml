@@ -8,13 +8,22 @@ on:
       - 'docs-examples/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
+  # Validate (strict build) on PRs too — snippet markers are comments, so a renamed
+  # marker or moved file compiles green; only `mkdocs build --strict` catches the
+  # broken include. Without this the drift only surfaces post-merge on the deploy run.
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'docs-examples/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 permissions:
   contents: write  # mkdocs gh-deploy pushes the gh-pages branch
 
 jobs:
-  deploy:
+  docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -25,11 +34,16 @@ jobs:
           python-version: '3.12'
       - name: Install MkDocs Material
         run: pip install mkdocs-material
-      - name: Build (strict — fails on broken snippet includes)
+      # PRs validate only; push to main builds-and-deploys in one step (gh-deploy
+      # builds internally, so a separate `mkdocs build` would build the site twice).
+      - name: Validate (strict — fails on broken snippet includes)
+        if: github.event_name != 'push'
         run: mkdocs build --strict
       - name: Configure git for gh-pages push
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
       - name: Deploy to GitHub Pages
-        run: mkdocs gh-deploy --force
+        if: github.event_name == 'push'
+        run: mkdocs gh-deploy --strict --force

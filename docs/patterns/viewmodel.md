@@ -40,6 +40,14 @@ the ViewModel pure at the cost of more plumbing per field.
     `remember`). Don't construct it inside a recomposing body and don't copy it — both
     reset its validation state.
 
+!!! note "Reformatting fields keep the cursor"
+    The `ValidatedField` binder above uses the plain `String` overload of
+    `OutlinedTextField` for brevity. For fields that **reformat** as the user types
+    (currency, phone), bind a local `TextFieldValue` and push only `.text` to
+    `field.onValueChange`, so the cursor/selection survives the reformat — otherwise the
+    caret jumps to the end on every keystroke. See `ValidatedTextField` in the
+    [PresenterSample](https://github.com/chrisjenx/yakcov/blob/main/sample/src/main/java/com/chrisjenx/yakcov/sample/PresenterSample.kt).
+
 ## Observability
 
 `FieldValidator` takes an optional `observer` — a `FieldValidatorObserver` fired after
