@@ -2,6 +2,7 @@
 agp = "8.12.3"
 androidx-activityCompose = "1.13.0"
 androidx-uiTest = "1.11.2"
+circuit = "0.33.1"
 # https://github.com/JetBrains/compose-multiplatform/releases
 compose = "1.11.1"
 compose-material3 = "1.11.0-alpha07"
@@ -9,6 +10,8 @@ compose-material3 = "1.11.0-alpha07"
 composeBom = "2026.05.01"
 # androidx.core 1.19.0 requires AGP 9.1+ / compileSdk 37; capped at 1.17.0 until the AGP 9 upgrade
 coreKtx = "1.17.0"
+# org.jetbrains.androidx.lifecycle KMP artifacts (desktop + android), used by docs-examples
+jetbrains-lifecycle = "2.10.0"
 # Compose Multiplatform 1.11 requires Kotlin >= 2.3.10 for native/web targets
 kotlin = "2.3.21"
 kotlinx-datetime = "0.8.0"
@@ -27,12 +30,14 @@ androidx-material-icons-core = { group = "androidx.compose.material", name = "ma
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startupRuntime" }
 androidx-testManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-uiTest" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+circuit-foundation = { module = "com.slack.circuit:circuit-foundation", version.ref = "circuit" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 jetbrains-compose-components-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose" }
 jetbrains-compose-foundation = { group = "org.jetbrains.compose.foundation", name = "foundation", version.ref = "compose" }
 jetbrains-compose-html-core = { group = "org.jetbrains.compose.html", name = "html-core", version.ref = "compose" }
+jetbrains-lifecycle-viewmodel-compose = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "jetbrains-lifecycle" }
 jetbrains-compose-material3 = { group = "org.jetbrains.compose.material3", name = "material3", version.ref = "compose-material3" }
 jetbrains-compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose" }
 jetbrains-compose-ui-test = { group = "org.jetbrains.compose.ui", name = "ui-test", version.ref = "compose" }

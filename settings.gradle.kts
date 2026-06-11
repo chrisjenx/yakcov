@@ -20,3 +20,4 @@ dependencyResolutionManagement {
 
 include(":library")
 include(":sample")
+include(":docs-examples")
