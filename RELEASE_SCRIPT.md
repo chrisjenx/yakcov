@@ -27,12 +27,12 @@ compose = "1.11.1"
 compose-material3 = "1.11.0-alpha07"
 xcode = "26.3"  # Compose 1.11 iOS needs a newer Xcode than the runner default
 
-# The [next] beta channel is optional. Re-enable it to also build/publish against
-# the next development line (e.g. Compose 1.12):
-# [next]
-# compose = "1.12.0-alpha01"
-# compose-material3 = "1.12.0-alpha01"
-# kotlin = "2.4.0"
+[next]
+track = "prerelease"
+compose = "1.12.0-alpha01"
+compose-material3 = "1.12.0-alpha01"
+kotlin = "2.4.0"          # Compose 1.12 bundles the compose-compiler with Kotlin 2.4.0
+xcode = "26.3"
 ```
 
 | Key | Required | Description |
@@ -40,8 +40,10 @@ xcode = "26.3"  # Compose 1.11 iOS needs a newer Xcode than the runner default
 | `compose` | Yes | Compose Multiplatform plugin + dependency version |
 | `compose-material3` | Yes | Material3 artifact version (often differs from compose) |
 | `kotlin` | No | Kotlin version override. Omit to inherit from `libs.versions.toml` |
+| `track` | No | Upstream channel the version tracker follows: `stable` or `prerelease`. Defaults to `stable` for `[stable]`, `prerelease` otherwise |
+| `xcode` | No | Xcode version for the Apple CI/publish job. Omit to use the runner default |
 
-Remove a section to skip that channel. For example, removing `[next]` releases only the stable channel.
+Comment out a section to skip that channel (e.g. retire `[next]` to release only stable). Note that `compose` is shared but **AGP and the Gradle wrapper are not per-channel** — a channel needing a newer AGP/compileSdk (as Compose 1.12 does: AGP ≥ 9.1.0 / compileSdk 37) raises the floor for the whole repo. See CLAUDE.md → Dual-Channel Releases → *Toolchain coupling*.
 
 ## Usage
 
@@ -75,6 +77,8 @@ Remove a section to skip that channel. For example, removing `[next]` releases o
 
 [stable] compose=1.11.1  material3=1.11.0-alpha07  kotlin=<inherited>
 [stable] tag=1.11.1
+[next] compose=1.12.0-alpha01  material3=1.12.0-alpha01  kotlin=2.4.0
+[next] tag=1.12.0-alpha01
 
 Continue with release? (y/N):
 ```
@@ -84,7 +88,7 @@ Continue with release? (y/N):
 | Channel | First release | Subsequent releases |
 |---------|--------------|---------------------|
 | stable | `1.11.1` | `1.11.1-1`, `1.11.1-2` |
-| next (when enabled) | `1.12.0-alpha01` | `1.12.0-alpha01-1`, `1.12.0-alpha01-2` |
+| next | `1.12.0-alpha01` | `1.12.0-alpha01-1`, `1.12.0-alpha01-2` |
 
 The script automatically detects existing tags and increments.
 
