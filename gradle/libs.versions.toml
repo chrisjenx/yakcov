@@ -1,5 +1,9 @@
 [versions]
-agp = "8.12.3"
+# AGP 9.1.1 requires Gradle 9.3.1+ and supports compileSdk 37. Needed by Compose 1.12
+# (the [next] channel): its androidx artifacts demand AGP >= 9.1.0 / compileSdk 37.
+# Shared by both channels; stable (Kotlin 2.3.21) runs slightly beyond its KGP-tested
+# AGP/Gradle range but builds cleanly (verified in CI).
+agp = "9.1.1"
 androidx-activityCompose = "1.13.0"
 androidx-uiTest = "1.11.2"
 circuit = "0.33.1"
@@ -8,8 +12,7 @@ compose = "1.11.1"
 compose-material3 = "1.11.0-alpha07"
 # https://developer.android.com/develop/ui/compose/bom/bom-mapping
 composeBom = "2026.05.01"
-# androidx.core 1.19.0 requires AGP 9.1+ / compileSdk 37; capped at 1.17.0 until the AGP 9 upgrade
-coreKtx = "1.17.0"
+coreKtx = "1.19.0"
 # org.jetbrains.androidx.lifecycle KMP artifacts (desktop + android), used by docs-examples
 jetbrains-lifecycle = "2.10.0"
 # Compose Multiplatform 1.11 requires Kotlin >= 2.3.10 for native/web targets

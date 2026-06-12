@@ -149,7 +149,7 @@ compose.resources {
 
 android {
     namespace = "com.chrisjenx.yakcov"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 23
@@ -161,7 +161,7 @@ android {
     }
     //https://developer.android.com/studio/test/gradle-managed-devices
     testOptions {
-        targetSdk = 36
+        targetSdk = 37
         unitTests {
             isIncludeAndroidResources = true
         }
