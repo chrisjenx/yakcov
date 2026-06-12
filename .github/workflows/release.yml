@@ -68,9 +68,19 @@ jobs:
           cache: 'gradle'
       - name: Patch Compose versions
         run: ./scripts/lib-release.sh --patch "${{ matrix.channel }}"
+      # TEMP DEBUG: prints only integer counts (never the key) to tell whether the
+      # armored key kept its newlines — a stripped-newline key is the usual cause of
+      # "Could not read PGP secret key". Remove once signing is sorted.
+      - name: Debug signing key shape (counts only, no secret values)
+        if: ${{ inputs.dry-run == false }}
+        env:
+          K: ${{ secrets.SIGNING_KEY }}
+        run: |
+          echo "key bytes=$(printf '%s' "$K" | wc -c | tr -d ' ') newlines=$(printf '%s' "$K" | wc -l | tr -d ' ')"
+          echo "first line is armor header: $(printf '%s' "$K" | head -1 | grep -c 'BEGIN PGP PRIVATE KEY BLOCK')"
       - name: Publish to Maven Central
         if: ${{ inputs.dry-run == false }}
-        run: ./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache -PpublishVersion="${{ matrix.tag }}"
+        run: ./gradlew :library:publishAndReleaseToMavenCentral --no-configuration-cache --stacktrace -PpublishVersion="${{ matrix.tag }}"
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
