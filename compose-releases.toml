@@ -21,12 +21,14 @@ compose-material3 = "1.11.0-alpha07"
 # Xcode 26.3 is installed on the macos-latest runner and links cleanly. Do not remove.
 xcode = "26.3"
 
-# The [next] (beta) channel is retired for now: Compose 1.11 has shipped (it is the
-# stable channel above) and there is no 1.11.x pre-release ahead of it to track.
-# Re-enable when you want to ride the next development line (e.g. Compose 1.12):
-# [next]
-# track = "prerelease"
-# compose = "1.12.0-alpha01"
-# compose-material3 = "1.12.0-alpha01"
-# kotlin = "2.4.0"
-# xcode = "26.3"
+# The [next] (beta) channel rides the next Compose development line ahead of stable.
+# Its CI matrix leg is continue-on-error (keyed on channel == "next" in checks.yml),
+# so a broken pre-release surfaces without blocking the CI-Gate / merges.
+[next]
+track = "prerelease"
+compose = "1.12.0-alpha01"
+compose-material3 = "1.12.0-alpha01"
+# Compose 1.12 bundles the compose-compiler with Kotlin 2.4.0 (latest GA); the
+# release/CI patch rewrites `kotlin` in libs.versions.toml for this channel only.
+kotlin = "2.4.0"
+xcode = "26.3"
