@@ -15,6 +15,42 @@ fun String?.isEmail(): Boolean {
     return matches(emailRegex)
 }
 
+/**
+ * Lenient, dependency-free "looks like a phone number" check (issue #29). The server is
+ * authoritative and normalizes to E.164; this only gates obviously-wrong input client-side.
+ * For region-aware validity (rejecting wrong-region/structurally-invalid numbers), use the
+ * opt-in libphonenumber path ([isPhoneNumber]) instead.
+ *
+ * Accepts an optional leading `+`, then ASCII digits and the separators `space ( ) . / -`,
+ * with a total ASCII-digit count in the E.164-sane range 7..15.
+ *
+ * **Portability is load-bearing** — this runs on three regex engines (java.util.regex on
+ * JVM/Android, the JetBrains Kotlin engine on Native+WasmJS, and ECMAScript `RegExp(…, 'u')`
+ * on Kotlin/JS). Every construct here is in the portable intersection:
+ * - explicit `[0-9]` (never `\d`) and counting via `it in '0'..'9'` (never `Char.isDigit()`),
+ *   because `\d`/`Char.isDigit()` are Unicode-aware on some targets and would count
+ *   Arabic-Indic/fullwidth digits, diverging per platform;
+ * - `-` is **last** in the class (literal) and only `+` is escaped — under the JS `'u'` flag,
+ *   escaping a non-syntax char (e.g. `\-`) throws a runtime `SyntaxError`. Do not "tidy" it;
+ * - a fixed ASCII end-trim (not `String.trim()`, which is Unicode-aware/expect-actual and has
+ *   diverged on JS for NBSP);
+ * - `matches()` for full-string anchoring (no `^`/`$`, which differ under ECMAScript);
+ * - a 40-char input cap to avoid the Kotlin engine's pathological-backtracking crashes
+ *   (KT-46211 on Native + WasmJS).
+ */
+fun String?.isPhoneNumberFormat(): Boolean {
+    val raw = this ?: return false
+    val trimmed = raw.trim { it == ' ' || it == '\t' || it == '\n' || it == '\r' }
+    if (trimmed.isEmpty() || trimmed.length > PHONE_FORMAT_MAX_LEN) return false
+    if (!trimmed.matches(phoneFormatRegex)) return false
+    return trimmed.count { it in '0'..'9' } in 7..15
+}
+
+private const val PHONE_FORMAT_MAX_LEN = 40
+
+// hyphen LAST (literal); only '+' escaped — see isPhoneNumberFormat() for why this exact form.
+private val phoneFormatRegex = Regex("""\+?[0-9 ()./-]{6,}""")
+
 internal expect val phoneUtil: PhoneNumberUtil
 
 
