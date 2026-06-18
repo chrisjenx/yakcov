@@ -53,7 +53,7 @@ class PhoneFormatTest {
         "0011 61 4 1234 5678", "+888 1234 5678 9012", // exactly 15 digits
         "+1 868 123 4567 8",
         // Whitespace / '+'-spacing handling
-        "  650 899 1234  ", "+ 1 650 899 1234",
+        "  650 899 1234  ", "+ 1 650 899 1234", // space after leading '+' is intentionally accepted
         // International toll-free / UAN
         "+800 345 600",
     )
@@ -93,8 +93,10 @@ class PhoneFormatTest {
      */
     private val strictOnlyAccepted = listOf(
         "65025300001", "650253000", "+1 (123) 456 7890", "+1 (071) 255 1234", "234 911 5678",
-        "+1 000 000 0000", "0000000000", "1234567890", "2024-06-18", "20240618",
-        "192.168.1.100", "10.0.0.138", ")))1234567(((", "-1234567", "1234 5678 9012",
+        "+1 000 000 0000", "0000000000", "1234567890",
+        "2024-06-18", "20240618",               // date-like false-positives; only StrictPhone rejects
+        "192.168.1.100", "10.0.0.138",          // IPv4 false-positives; only StrictPhone rejects
+        ")))1234567(((", "-1234567", "1234 5678 9012",
         "00 49 1609 1234567", "07745973912",
     )
 

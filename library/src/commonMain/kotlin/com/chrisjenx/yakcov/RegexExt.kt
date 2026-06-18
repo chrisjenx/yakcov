@@ -31,8 +31,11 @@ fun String?.isEmail(): Boolean {
  * - explicit `[0-9]` (never `\d`) and counting via `it in '0'..'9'` (never `Char.isDigit()`),
  *   because `\d`/`Char.isDigit()` are Unicode-aware on some targets and would count
  *   Arabic-Indic/fullwidth digits, diverging per platform;
- * - `-` is **last** in the class (literal) and only `+` is escaped — under the JS `'u'` flag,
- *   escaping a non-syntax char (e.g. `\-`) throws a runtime `SyntaxError`. Do not "tidy" it;
+ * - `-` is **last** in the class (literal) and only `+` is escaped — under the JS
+ *   `'u'` flag, an identity-escape of a non-syntax char throws a runtime `SyntaxError`
+ *   (always outside a character class; inside a class most escapes are needless anyway).
+ *   Keeping `-` last-and-unescaped and escaping only `+` stays valid under `'u'`; do not
+ *   "tidy" it by adding escapes;
  * - a fixed ASCII end-trim (not `String.trim()`, which is Unicode-aware/expect-actual and has
  *   diverged on JS for NBSP);
  * - `matches()` for full-string anchoring (no `^`/`$`, which differ under ECMAScript);
