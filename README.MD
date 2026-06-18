@@ -92,7 +92,8 @@ dependencies {
 }
 ```
 
-Phone-number rules need the (compileOnly) libphonenumber dependency added to your app —
+The `PhoneFormat` rule validates phone-number format with no extra dependencies. The
+region-aware `Phone` rule needs the (compileOnly) libphonenumber dependency added to your app —
 see [phone validation](https://chrisjenx.github.io/yakcov/recipes/phone/).
 
 ## Build locally

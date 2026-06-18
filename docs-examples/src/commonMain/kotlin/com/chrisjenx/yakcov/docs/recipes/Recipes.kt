@@ -9,6 +9,7 @@ import com.chrisjenx.yakcov.RegularValidationResult
 import com.chrisjenx.yakcov.ValidationResult
 import com.chrisjenx.yakcov.ValueValidatorRule
 import com.chrisjenx.yakcov.strings.Phone
+import com.chrisjenx.yakcov.strings.PhoneFormat
 import com.chrisjenx.yakcov.strings.Required
 import com.chrisjenx.yakcov.strings.rememberTextFieldValueValidator
 
@@ -55,3 +56,24 @@ fun PhoneField() {
     }
 }
 // --8<-- [end:phone]
+// --8<-- [start:phoneFormat]
+@Composable
+fun PhoneFormatField() {
+    // PhoneFormat is a lenient, dependency-free format check — no libphonenumber needed.
+    // The server stays authoritative and normalizes to E.164.
+    val phone = rememberTextFieldValueValidator(rules = listOf(Required, PhoneFormat))
+    with(phone) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = ::onValueChange,
+            label = { Text("Phone") },
+            isError = isError(),
+            supportingText = supportingText(),
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .validationConfig(validateOnFocusLost = true),
+        )
+    }
+}
+// --8<-- [end:phoneFormat]
