@@ -101,23 +101,21 @@ class PhoneFormatTest {
     )
 
     @Test
-    fun acceptsEveryMustPass() {
-        val rejected = mustPass.filterNot { it.isPhoneNumberFormat() }
-        assertTrue(rejected.isEmpty(), "lenient gate should ACCEPT these but rejected: $rejected")
-    }
+    fun acceptsEveryMustPass() = assertGate(shouldAccept = true, label = "mustPass", inputs = mustPass)
 
     @Test
-    fun rejectsEveryMustFail() {
-        val accepted = mustFail.filter { it.isPhoneNumberFormat() }
-        assertTrue(accepted.isEmpty(), "lenient gate should REJECT these but accepted: $accepted")
-    }
+    fun rejectsEveryMustFail() = assertGate(shouldAccept = false, label = "mustFail", inputs = mustFail)
 
     @Test
-    fun acceptsStrictOnlyDivergences() {
-        val rejected = strictOnlyAccepted.filterNot { it.isPhoneNumberFormat() }
+    fun acceptsStrictOnlyDivergences() =
+        assertGate(shouldAccept = true, label = "strictOnly (only StrictPhone rejects)", inputs = strictOnlyAccepted)
+
+    /** Asserts every input maps to the expected accept/reject outcome, naming the offenders on failure. */
+    private fun assertGate(shouldAccept: Boolean, label: String, inputs: List<String>) {
+        val wrong = inputs.filter { it.isPhoneNumberFormat() != shouldAccept }
         assertTrue(
-            rejected.isEmpty(),
-            "lenient gate should ACCEPT these (only StrictPhone rejects) but rejected: $rejected",
+            wrong.isEmpty(),
+            "lenient gate should ${if (shouldAccept) "ACCEPT" else "REJECT"} these ($label) but didn't: $wrong",
         )
     }
 

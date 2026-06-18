@@ -51,8 +51,8 @@ fun String?.isPhoneNumberFormat(): Boolean {
 
 private const val PHONE_FORMAT_MAX_LEN = 40
 
-// hyphen LAST (literal); only '+' escaped — see isPhoneNumberFormat() for why this exact form.
-private val phoneFormatRegex = Regex("""\+?[0-9 ()./-]{6,}""")
+// '-' LAST (literal), only '+' escaped; {7,} mirrors the 7-digit floor — see isPhoneNumberFormat().
+private val phoneFormatRegex = Regex("""\+?[0-9 ()./-]{7,}""")
 
 internal expect val phoneUtil: PhoneNumberUtil
 
@@ -77,6 +77,7 @@ fun String?.isPhoneNumber(defaultRegion: String? = "US"): Boolean {
         // the class — breaking the "missing dep degrades, doesn't crash" guarantee that the
         // androidMain PhoneNumberUtilHolder relies on. Other throwables (e.g. the missing-dep
         // error itself) still log so the actionable message is not silently swallowed.
+        // (simpleName, not qualifiedName: the latter is unsupported on Kotlin/JS.)
         if (t::class.simpleName != "NumberParseException") t.printStackTrace()
         false
     }

@@ -197,8 +197,8 @@ data class Phone(
 
 // PhoneFormat
 /**
- * Lenient, **dependency-free** phone-number *format* check (no libphonenumber). Accepts an
- * optional leading `+`, ASCII digits and the separators `space ( ) . / -`, with 7..15 digits.
+ * Lenient, **dependency-free** phone-number *format* rule (no libphonenumber): delegates to
+ * [isPhoneNumberFormat] (optional leading `+`, ASCII digits and `space ( ) . / -`, 7..15 digits).
  *
  * Use when the server is authoritative (normalizes to E.164 / verifies with a provider) and the
  * client only needs a cheap "looks like a phone number" gate. For region-aware validity, use the
@@ -209,10 +209,10 @@ data object PhoneFormat : ValueValidatorRule<String> {
     override fun validate(value: String): ValidationResult {
         // only validate if not empty as Required will check if not empty
         if (value.isBlank()) return ResourceValidationResult.success()
-        return if (value.isPhoneNumberFormat()) {
-            ResourceValidationResult.success()
-        } else {
+        return if (!value.isPhoneNumberFormat()) {
             ResourceValidationResult.error(Res.string.rulePhone)
+        } else {
+            ResourceValidationResult.success()
         }
     }
 }
