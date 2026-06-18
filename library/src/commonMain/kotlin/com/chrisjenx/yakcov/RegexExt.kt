@@ -15,6 +15,45 @@ fun String?.isEmail(): Boolean {
     return matches(emailRegex)
 }
 
+/**
+ * Lenient, dependency-free "looks like a phone number" check (issue #29). The server is
+ * authoritative and normalizes to E.164; this only gates obviously-wrong input client-side.
+ * For region-aware validity (rejecting wrong-region/structurally-invalid numbers), use the
+ * opt-in libphonenumber path ([isPhoneNumber]) instead.
+ *
+ * Accepts an optional leading `+`, then ASCII digits and the separators `space ( ) . / -`,
+ * with a total ASCII-digit count in the E.164-sane range 7..15.
+ *
+ * **Portability is load-bearing** — this runs on three regex engines (java.util.regex on
+ * JVM/Android, the JetBrains Kotlin engine on Native+WasmJS, and ECMAScript `RegExp(…, 'u')`
+ * on Kotlin/JS). Every construct here is in the portable intersection:
+ * - explicit `[0-9]` (never `\d`) and counting via `it in '0'..'9'` (never `Char.isDigit()`),
+ *   because `\d`/`Char.isDigit()` are Unicode-aware on some targets and would count
+ *   Arabic-Indic/fullwidth digits, diverging per platform;
+ * - `-` is **last** in the class (literal) and only `+` is escaped — under the JS
+ *   `'u'` flag, an identity-escape of a non-syntax char throws a runtime `SyntaxError`
+ *   (always outside a character class; inside a class most escapes are needless anyway).
+ *   Keeping `-` last-and-unescaped and escaping only `+` stays valid under `'u'`; do not
+ *   "tidy" it by adding escapes;
+ * - a fixed ASCII end-trim (not `String.trim()`, which is Unicode-aware/expect-actual and has
+ *   diverged on JS for NBSP);
+ * - `matches()` for full-string anchoring (no `^`/`$`, which differ under ECMAScript);
+ * - a 40-char input cap to avoid the Kotlin engine's pathological-backtracking crashes
+ *   (KT-46211 on Native + WasmJS).
+ */
+fun String?.isPhoneNumberFormat(): Boolean {
+    val raw = this ?: return false
+    val trimmed = raw.trim { it == ' ' || it == '\t' || it == '\n' || it == '\r' }
+    if (trimmed.isEmpty() || trimmed.length > PHONE_FORMAT_MAX_LEN) return false
+    if (!trimmed.matches(phoneFormatRegex)) return false
+    return trimmed.count { it in '0'..'9' } in 7..15
+}
+
+private const val PHONE_FORMAT_MAX_LEN = 40
+
+// '-' LAST (literal), only '+' escaped; {7,} mirrors the 7-digit floor — see isPhoneNumberFormat().
+private val phoneFormatRegex = Regex("""\+?[0-9 ()./-]{7,}""")
+
 internal expect val phoneUtil: PhoneNumberUtil
 
 
@@ -30,7 +69,16 @@ fun String?.isPhoneNumber(defaultRegion: String? = "US"): Boolean {
         val result = phoneUtil.parse(this, defaultRegion?.uppercase())
         phoneUtil.isValidNumber(result)
     } catch (t: Throwable) {
-        t.printStackTrace()
+        // A NumberParseException is thrown on every partial/invalid keystroke (e.g. "6", "65"):
+        // expected and harmless, so don't log it (issue #29: it spammed the Wasm/JS console).
+        // Match it by NAME, never with `catch (NumberParseException)`: naming the type would put
+        // the compileOnly libphonenumber class into this method's exception table, and when a
+        // consumer omits that optional dependency the JVM handler search would fail to resolve
+        // the class — breaking the "missing dep degrades, doesn't crash" guarantee that the
+        // androidMain PhoneNumberUtilHolder relies on. Other throwables (e.g. the missing-dep
+        // error itself) still log so the actionable message is not silently swallowed.
+        // (simpleName, not qualifiedName: the latter is unsupported on Kotlin/JS.)
+        if (t::class.simpleName != "NumberParseException") t.printStackTrace()
         false
     }
 }
