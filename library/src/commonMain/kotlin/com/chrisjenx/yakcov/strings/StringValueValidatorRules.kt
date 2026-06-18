@@ -17,6 +17,7 @@ import com.chrisjenx.yakcov.ValueValidator
 import com.chrisjenx.yakcov.ValueValidatorRule
 import com.chrisjenx.yakcov.isEmail
 import com.chrisjenx.yakcov.isPhoneNumber
+import com.chrisjenx.yakcov.isPhoneNumberFormat
 import kotlinx.datetime.LocalDate
 import yakcov.library.generated.resources.Res
 import yakcov.library.generated.resources.ruleDay
@@ -190,6 +191,28 @@ data class Phone(
             ResourceValidationResult.error(Res.string.rulePhone)
         } else {
             ResourceValidationResult.success()
+        }
+    }
+}
+
+// PhoneFormat
+/**
+ * Lenient, **dependency-free** phone-number *format* check (no libphonenumber). Accepts an
+ * optional leading `+`, ASCII digits and the separators `space ( ) . / -`, with 7..15 digits.
+ *
+ * Use when the server is authoritative (normalizes to E.164 / verifies with a provider) and the
+ * client only needs a cheap "looks like a phone number" gate. For region-aware validity, use the
+ * opt-in [Phone] rule (which requires the libphonenumber dependency).
+ */
+@Stable
+data object PhoneFormat : ValueValidatorRule<String> {
+    override fun validate(value: String): ValidationResult {
+        // only validate if not empty as Required will check if not empty
+        if (value.isBlank()) return ResourceValidationResult.success()
+        return if (value.isPhoneNumberFormat()) {
+            ResourceValidationResult.success()
+        } else {
+            ResourceValidationResult.error(Res.string.rulePhone)
         }
     }
 }
