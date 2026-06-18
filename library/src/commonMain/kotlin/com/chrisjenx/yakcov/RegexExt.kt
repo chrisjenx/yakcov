@@ -1,5 +1,6 @@
 package com.chrisjenx.yakcov
 
+import io.michaelrocks.libphonenumber.kotlin.NumberParseException
 import io.michaelrocks.libphonenumber.kotlin.PhoneNumberUtil
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -65,7 +66,13 @@ fun String?.isPhoneNumber(defaultRegion: String? = "US"): Boolean {
     return try {
         val result = phoneUtil.parse(this, defaultRegion?.uppercase())
         phoneUtil.isValidNumber(result)
+    } catch (expected: NumberParseException) {
+        // Thrown on every partial/invalid keystroke (e.g. "6", "65"). Expected and harmless —
+        // do NOT log it (issue #29: this spammed the browser console on Kotlin/Wasm).
+        false
     } catch (t: Throwable) {
+        // Unexpected — e.g. libphonenumber missing at runtime (it is compileOnly). Keep it
+        // visible so the actionable "add the dependency" message is not silently swallowed.
         t.printStackTrace()
         false
     }
