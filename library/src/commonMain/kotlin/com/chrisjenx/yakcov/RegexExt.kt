@@ -1,6 +1,5 @@
 package com.chrisjenx.yakcov
 
-import io.michaelrocks.libphonenumber.kotlin.NumberParseException
 import io.michaelrocks.libphonenumber.kotlin.PhoneNumberUtil
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -69,14 +68,16 @@ fun String?.isPhoneNumber(defaultRegion: String? = "US"): Boolean {
     return try {
         val result = phoneUtil.parse(this, defaultRegion?.uppercase())
         phoneUtil.isValidNumber(result)
-    } catch (expected: NumberParseException) {
-        // Thrown on every partial/invalid keystroke (e.g. "6", "65"). Expected and harmless —
-        // do NOT log it (issue #29: this spammed the browser console on Kotlin/Wasm).
-        false
     } catch (t: Throwable) {
-        // Unexpected — e.g. libphonenumber missing at runtime (it is compileOnly). Keep it
-        // visible so the actionable "add the dependency" message is not silently swallowed.
-        t.printStackTrace()
+        // A NumberParseException is thrown on every partial/invalid keystroke (e.g. "6", "65"):
+        // expected and harmless, so don't log it (issue #29: it spammed the Wasm/JS console).
+        // Match it by NAME, never with `catch (NumberParseException)`: naming the type would put
+        // the compileOnly libphonenumber class into this method's exception table, and when a
+        // consumer omits that optional dependency the JVM handler search would fail to resolve
+        // the class — breaking the "missing dep degrades, doesn't crash" guarantee that the
+        // androidMain PhoneNumberUtilHolder relies on. Other throwables (e.g. the missing-dep
+        // error itself) still log so the actionable message is not silently swallowed.
+        if (t::class.simpleName != "NumberParseException") t.printStackTrace()
         false
     }
 }
