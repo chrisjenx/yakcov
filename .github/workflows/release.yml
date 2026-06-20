@@ -87,6 +87,21 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag "${{ matrix.tag }}"
           git push origin "${{ matrix.tag }}"
+      - name: Create GitHub Release
+        if: ${{ inputs.dry-run == false }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A pushed tag is not a Release on its own — create one so the Releases page tracks
+          # what's on Maven Central. Prerelease keys off the channel (the next/prerelease channel),
+          # NOT the tag suffix (stable's "-N" is just collision-avoidance, not a prerelease marker).
+          prerelease=""
+          if [ "${{ matrix.channel }}" != "stable" ]; then prerelease="--prerelease"; fi
+          gh release create "${{ matrix.tag }}" \
+            --title "${{ matrix.tag }}" \
+            --generate-notes \
+            --verify-tag \
+            $prerelease
 
   Summary:
     if: always()
