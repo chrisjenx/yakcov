@@ -49,5 +49,6 @@ nav:
       - MVI / UDF: patterns/mvi.md
       - Circuit: patterns/circuit.md
   - Recipes:
+      - Built-in rules: recipes/built-in-rules.md
       - Custom rules: recipes/custom-rules.md
       - Phone validation: recipes/phone.md

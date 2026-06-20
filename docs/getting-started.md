@@ -17,7 +17,8 @@ rule only while the flag is `true` and passes otherwise.
 --8<-- "docs-examples/src/commonMain/kotlin/com/chrisjenx/yakcov/docs/recipes/Recipes.kt:custom-rule-sam"
 ```
 
-See [custom rules](recipes/custom-rules.md) for reusable rule types and severity grading.
+See the [built-in rules](recipes/built-in-rules.md) reference for the full catalog, and
+[custom rules](recipes/custom-rules.md) for reusable rule types and severity grading.
 
 ## Two validator families
 
@@ -40,7 +41,9 @@ typing.
 - `isError()` / `FieldValidationState.isError` — true once errors are shown **and**
   severity is `ERROR`
 - `supportingText()` — a ready-made slot value for Material `TextField`s; renders the
-  most severe message, or `null` when nothing should show
+  most severe message, or `null` when nothing should show. Pass `supportingText(default =
+  "…")` to show a plain hint while the field has no message (e.g. a pristine field); the
+  same `default` works on `FieldValidationState.text()`/`supportingText()`
 - `Outcome` severities: `ERROR` > `WARNING` > `INFO` > `SUCCESS`. Warnings and info
   messages flow through the same display channel without blocking submission.
 
