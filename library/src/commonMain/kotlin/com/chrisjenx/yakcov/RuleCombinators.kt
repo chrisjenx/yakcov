@@ -33,7 +33,8 @@ fun <V> ValueValidatorRule<V>.onlyWhen(enabled: State<Boolean>): ValueValidatorR
     Optional(enabled, this)
 
 /**
- * Applies this rule only when [enabled] is `true`. See [Optional].
+ * Applies this rule only when [enabled] is `true`. [enabled] is captured once; for a flag that
+ * changes at runtime pass the [State] overload so the rule re-evaluates. See [Optional].
  */
 fun <V> ValueValidatorRule<V>.onlyWhen(enabled: Boolean): ValueValidatorRule<V> =
     Optional(enabled, this)
