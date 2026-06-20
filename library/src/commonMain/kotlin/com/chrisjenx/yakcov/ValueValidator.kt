@@ -164,14 +164,19 @@ abstract class ValueValidator<V, R>(
      * Generates a supporting error text for your TextField.
      *
      * @param severity the minimum severity to show, defaults to [Outcome.SUCCESS.severity]
+     * @param default a plain hint shown when there is no validation message to display (e.g. a
+     *  pristine field that isn't validating yet). Defaults to `null`, preserving the prior
+     *  return-`null`-when-nothing-to-show behavior.
      */
     @Composable
-    fun supportingText(severity: Short = Outcome.SUCCESS.severity): (@Composable () -> Unit)? {
+    fun supportingText(
+        severity: Short = Outcome.SUCCESS.severity,
+        default: String? = null,
+    ): (@Composable () -> Unit)? {
         val isValidating = internalState is InternalState.Validating
-        if (alwaysShowRule || isValidating) getValidationResultString(severity)?.let { validations ->
-            return { Text(validations) }
-        }
-        return null
+        val message = if (alwaysShowRule || isValidating) getValidationResultString(severity) else null
+        val text = message ?: default ?: return null
+        return { Text(text) }
     }
 
     /**

@@ -94,17 +94,23 @@ fun List<FieldValidationState>.hasNoErrors(): Boolean = none { it.severity == Ou
  * same showError gating as [isError]/[isWarning] — no message pops while the user is still typing.
  * [Composable] because resource-backed results resolve their `StringResource` here. For the raw,
  * ungated message (regardless of showError) use `result?.format()` directly.
+ *
+ * @param default a plain hint shown when there is no message to display (e.g. a pristine field).
+ *  Defaults to `null`, preserving the prior return-`null`-when-nothing-to-show behavior.
  */
 @Composable
-fun FieldValidationState.text(): String? = if (showError) result?.format() else null
+fun FieldValidationState.text(default: String? = null): String? =
+    (if (showError) result?.format() else null) ?: default
 
 /**
  * Convenience that mirrors `ValueValidator.supportingText()`: returns a composable that renders the
- * shown message (see [text]), or `null` when there is none / errors aren't shown yet. Drops
+ * shown message (see [text]) or the [default] hint, or `null` when there is neither. Drops
  * the `text()?.let { Text(it) }` boilerplate.
+ *
+ * @param default a plain hint shown when there is no validation message (see [text]).
  */
 @Composable
-fun FieldValidationState.supportingText(): (@Composable () -> Unit)? {
-    val message = text() ?: return null
+fun FieldValidationState.supportingText(default: String? = null): (@Composable () -> Unit)? {
+    val message = text(default) ?: return null
     return { Text(message) }
 }
