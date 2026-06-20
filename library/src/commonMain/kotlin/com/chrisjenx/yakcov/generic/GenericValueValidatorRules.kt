@@ -32,8 +32,9 @@ class InList<T>(list: State<List<T>>) : ValueValidatorRule<T?> {
 
     private val list: List<T> by list
     override fun validate(value: T?): ValidationResult {
-        return if (value in list) ResourceValidationResult.error(Res.string.ruleInList)
-        else RegularValidationResult.success()
+        // value must be one of the allowed values; null passes (Required owns presence)
+        return if (value == null || value in list) RegularValidationResult.success()
+        else ResourceValidationResult.error(Res.string.ruleInList)
     }
 }
 
