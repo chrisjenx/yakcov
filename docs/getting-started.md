@@ -4,8 +4,12 @@
 
 Validation is composed from `ValueValidatorRule`s. Built-ins cover the common cases —
 `Required`, `Email`, `MinLength(n)`, `MaxLength(n)`, `Phone(region)` (see
-[phone validation](recipes/phone.md)), and more in
-`com.chrisjenx.yakcov.strings` / `com.chrisjenx.yakcov.generic`.
+[phone validation](recipes/phone.md)), `HexColor`, `OneOf(allowed)`, typed numeric
+`Min`/`Max`/`InRange`, and more in `com.chrisjenx.yakcov.strings` /
+`com.chrisjenx.yakcov.generic`.
+
+Apply any rule conditionally with `onlyWhen`: `Required.onlyWhen(isBusiness)` runs the
+rule only while the flag is `true` and passes otherwise.
 
 `ValueValidatorRule` is a `fun interface`, so one-off rules are a lambda away:
 
