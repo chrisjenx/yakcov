@@ -1,7 +1,9 @@
 # Custom rules
 
 A rule is anything implementing `ValueValidatorRule<V>` — return a `ValidationResult`
-from `validate(value)`.
+from `validate(value)`. For the rules that already ship, see
+[built-in rules](built-in-rules.md); to run an existing rule only sometimes, see
+[`onlyWhen`](built-in-rules.md#conditional-rules).
 
 ## Reusable rule types
 

@@ -20,4 +20,5 @@
     <string name="ruleYear">Invalid year</string>
     <string name="ruleInvalidDate">Invalid date %1$s</string>
     <string name="rulePasswords">Passwords do not match</string>
+    <string name="ruleHexColor">Invalid hex color</string>
 </resources>

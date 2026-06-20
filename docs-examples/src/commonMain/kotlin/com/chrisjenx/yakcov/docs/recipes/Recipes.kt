@@ -4,10 +4,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import com.chrisjenx.yakcov.RegularValidationResult
 import com.chrisjenx.yakcov.ValidationResult
 import com.chrisjenx.yakcov.ValueValidatorRule
+import com.chrisjenx.yakcov.onlyWhen
+import com.chrisjenx.yakcov.generic.Max
+import com.chrisjenx.yakcov.generic.Min
+import com.chrisjenx.yakcov.generic.rememberGenericValueValidator
+import com.chrisjenx.yakcov.strings.MinLength
 import com.chrisjenx.yakcov.strings.Phone
 import com.chrisjenx.yakcov.strings.PhoneFormat
 import com.chrisjenx.yakcov.strings.Required
@@ -77,3 +83,25 @@ fun PhoneFormatField() {
     }
 }
 // --8<-- [end:phoneFormat]
+
+// --8<-- [start:conditional]
+// onlyWhen wraps any rule so it runs only while a State<Boolean> is true; otherwise the
+// value passes. Collapses conditionally-required / optional-when-hidden fields into the
+// existing rules instead of a bespoke rule per case.
+fun taxIdRules(isBusiness: State<Boolean>): List<ValueValidatorRule<String>> =
+    listOf(Required.onlyWhen(isBusiness), MinLength(9).onlyWhen(isBusiness))
+// --8<-- [end:conditional]
+
+// --8<-- [start:generic-bounds]
+@Composable
+fun QuantityField() {
+    // Typed numeric bounds validate the value directly (no string parsing). null and NaN
+    // pass — pair with generic Required for presence. The value type must be nullable
+    // (Int?) so the bounds' null pass-through type-checks.
+    val quantity = rememberGenericValueValidator<Int?>(
+        state = 1,
+        rules = listOf(Min(1), Max(99)),
+    )
+    Text(if (quantity.isValid) "OK" else "Enter 1–99")
+}
+// --8<-- [end:generic-bounds]

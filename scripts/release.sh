@@ -78,6 +78,7 @@ release_channel() {
         print_channel "$channel" "[DRY RUN] Would patch libs.versions.toml"
         print_channel "$channel" "[DRY RUN] Would build and publish with version: $tag"
         print_channel "$channel" "[DRY RUN] Would create and push git tag: $tag"
+        print_channel "$channel" "[DRY RUN] Would create GitHub Release: $tag"
         return 0
     fi
 
@@ -108,6 +109,19 @@ release_channel() {
     git tag "$tag"
     print_channel "$channel" "Pushing tag to remote"
     git push origin "$tag"
+
+    # Create a GitHub Release for the tag — a pushed tag is not a Release on its own. Prerelease
+    # keys off the channel (the next/prerelease channel), not the tag's "-N" collision suffix.
+    # Non-fatal: the artifact is already on Maven Central and the tag is pushed.
+    if command -v gh >/dev/null 2>&1; then
+        local prerelease=""
+        if [ "$channel" != "stable" ]; then prerelease="--prerelease"; fi
+        print_channel "$channel" "Creating GitHub Release: $tag"
+        gh release create "$tag" --title "$tag" --generate-notes --verify-tag $prerelease \
+            || print_channel "$channel" "WARN: gh release create failed — tag is pushed, create the Release manually"
+    else
+        print_channel "$channel" "gh CLI not found — skipping GitHub Release (tag pushed); install gh or create it manually"
+    fi
 
     print_channel "$channel" "Released successfully: $tag"
     return 0

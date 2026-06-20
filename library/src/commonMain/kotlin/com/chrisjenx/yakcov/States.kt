@@ -21,3 +21,6 @@ internal class ImmutableLocalDateState(override val value: LocalDate) : State<Lo
 
 @Immutable
 internal class ImmutableListState<T>(override val value: List<T>) : State<List<T>>
+
+@Immutable
+internal class ImmutableValueState<T>(override val value: T) : State<T>
