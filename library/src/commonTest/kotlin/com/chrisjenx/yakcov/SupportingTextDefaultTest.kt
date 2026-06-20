@@ -2,6 +2,8 @@ package com.chrisjenx.yakcov
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import com.chrisjenx.yakcov.ValidationResult.Outcome
 import kotlin.test.Test
@@ -53,6 +55,32 @@ class SupportingTextDefaultTest {
             assertNotNull(FieldValidationState.Pristine.supportingText(default = "hint"))
             assertNull(FieldValidationState.Pristine.supportingText())
         }
+    }
+
+    @Test
+    @AndroidJUnitIgnore
+    @JSIgnore
+    fun fieldState_supportingText_rendersDefaultHint() = runComposeUiTest {
+        setContent {
+            FieldValidationState.Pristine.supportingText(default = "hint")?.invoke()
+        }
+        onNodeWithText("hint").assertIsDisplayed()
+    }
+
+    @Test
+    @AndroidJUnitIgnore
+    @JSIgnore
+    fun fieldState_supportingText_rendersMessageNotDefault() = runComposeUiTest {
+        val withMsg = FieldValidationState(
+            severity = Outcome.ERROR, showError = true,
+            result = RegularValidationResult.error("Bad value"),
+        )
+        setContent {
+            withMsg.supportingText(default = "hint")?.invoke()
+        }
+        // message wins over the default (string-level precedence is pinned by
+        // fieldState_text_prefersMessageOverDefault)
+        onNodeWithText("Bad value").assertIsDisplayed()
     }
 
     @Test

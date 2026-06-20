@@ -63,8 +63,9 @@ data object IsNotChecked : ValueValidatorRule<Boolean?> {
 }
 
 /**
- * Typed lower bound for a numeric field, complementing the String-based [strings.MinValue].
- * `null` passes through (use [Required] for presence), otherwise the value must be `>= min`.
+ * Typed lower bound for a numeric field, complementing the String-based
+ * [com.chrisjenx.yakcov.strings.MinValue]. `null` and `NaN` pass through (use [Required] for
+ * presence), otherwise the value must be `>= min`.
  */
 @Stable
 class Min<N>(min: State<N>) : ValueValidatorRule<N?> where N : Number, N : Comparable<N> {
@@ -73,7 +74,7 @@ class Min<N>(min: State<N>) : ValueValidatorRule<N?> where N : Number, N : Compa
     private val _min: N by min
     override fun validate(value: N?): ValidationResult {
         return when {
-            value == null -> RegularValidationResult.success()
+            value == null || value.toDouble().isNaN() -> RegularValidationResult.success()
             value < _min -> ResourceValidationResult.error(Res.string.ruleMinValue, _min)
             else -> RegularValidationResult.success()
         }
@@ -81,8 +82,9 @@ class Min<N>(min: State<N>) : ValueValidatorRule<N?> where N : Number, N : Compa
 }
 
 /**
- * Typed upper bound for a numeric field, complementing the String-based [strings.MaxValue].
- * `null` passes through (use [Required] for presence), otherwise the value must be `<= max`.
+ * Typed upper bound for a numeric field, complementing the String-based
+ * [com.chrisjenx.yakcov.strings.MaxValue]. `null` and `NaN` pass through (use [Required] for
+ * presence), otherwise the value must be `<= max`.
  */
 @Stable
 class Max<N>(max: State<N>) : ValueValidatorRule<N?> where N : Number, N : Comparable<N> {
@@ -91,7 +93,7 @@ class Max<N>(max: State<N>) : ValueValidatorRule<N?> where N : Number, N : Compa
     private val _max: N by max
     override fun validate(value: N?): ValidationResult {
         return when {
-            value == null -> RegularValidationResult.success()
+            value == null || value.toDouble().isNaN() -> RegularValidationResult.success()
             value > _max -> ResourceValidationResult.error(Res.string.ruleMaxValue, _max)
             else -> RegularValidationResult.success()
         }
@@ -99,8 +101,8 @@ class Max<N>(max: State<N>) : ValueValidatorRule<N?> where N : Number, N : Compa
 }
 
 /**
- * Typed inclusive range `[min, max]` for a numeric field. `null` passes through; below [min]
- * reports the min message, above [max] the max message.
+ * Typed inclusive range `[min, max]` for a numeric field. `null` and `NaN` pass through; below
+ * [min] reports the min message, above [max] the max message.
  */
 @Stable
 class InRange<N>(min: State<N>, max: State<N>) : ValueValidatorRule<N?> where N : Number, N : Comparable<N> {
@@ -110,7 +112,7 @@ class InRange<N>(min: State<N>, max: State<N>) : ValueValidatorRule<N?> where N 
     private val _max: N by max
     override fun validate(value: N?): ValidationResult {
         return when {
-            value == null -> RegularValidationResult.success()
+            value == null || value.toDouble().isNaN() -> RegularValidationResult.success()
             value < _min -> ResourceValidationResult.error(Res.string.ruleMinValue, _min)
             value > _max -> ResourceValidationResult.error(Res.string.ruleMaxValue, _max)
             else -> RegularValidationResult.success()

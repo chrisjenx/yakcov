@@ -45,6 +45,17 @@ class NumericBoundRuleTest {
         assertEquals(Outcome.SUCCESS, Min(2.5).validate(2.5).outcome())
     }
 
+    @Test
+    fun bounds_treat_nan_as_passthrough_consistently() {
+        // NaN is not meaningfully comparable; treat it like null/absent across all three rules
+        // (also matches the String MinValue/MaxValue behavior) so Min/Max/InRange agree.
+        assertEquals(Outcome.SUCCESS, Min(0.0).validate(Double.NaN).outcome())
+        assertEquals(Outcome.SUCCESS, Max(100.0).validate(Double.NaN).outcome())
+        assertEquals(Outcome.SUCCESS, InRange(1.0, 10.0).validate(Double.NaN).outcome())
+        assertEquals(Outcome.SUCCESS, Min(0f).validate(Float.NaN).outcome())
+        assertEquals(Outcome.SUCCESS, Max(0f).validate(Float.NaN).outcome())
+    }
+
     // --- Max ---
 
     @Test
@@ -62,6 +73,20 @@ class NumericBoundRuleTest {
         assertEquals(Outcome.ERROR, Max(10).validate(11).outcome())
     }
 
+    @Test
+    fun max_below_bound_success() {
+        assertEquals(Outcome.SUCCESS, Max(10).validate(5).outcome())
+    }
+
+    @Test
+    fun max_reacts_to_state() {
+        val bound = mutableStateOf(10)
+        val rule = Max(bound)
+        assertEquals(Outcome.ERROR, rule.validate(11).outcome())
+        bound.value = 12
+        assertEquals(Outcome.SUCCESS, rule.validate(11).outcome())
+    }
+
     // --- InRange ---
 
     @Test
@@ -72,6 +97,18 @@ class NumericBoundRuleTest {
     @Test
     fun inRange_within_success() {
         assertEquals(Outcome.SUCCESS, InRange(1, 10).validate(5).outcome())
+    }
+
+    @Test
+    fun inRange_at_min_success() {
+        // inclusive lower bound — pins < vs <=
+        assertEquals(Outcome.SUCCESS, InRange(1, 10).validate(1).outcome())
+    }
+
+    @Test
+    fun inRange_at_max_success() {
+        // inclusive upper bound — pins > vs >=
+        assertEquals(Outcome.SUCCESS, InRange(1, 10).validate(10).outcome())
     }
 
     @Test

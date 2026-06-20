@@ -27,6 +27,12 @@ class InListRuleTest {
     }
 
     @Test
+    fun inList_empty_list_value_error_but_null_success() {
+        assertEquals(Outcome.ERROR, InList(emptyList<String>()).validate("a").outcome())
+        assertEquals(Outcome.SUCCESS, InList(emptyList<String>()).validate(null).outcome())
+    }
+
+    @Test
     fun inList_reacts_to_state() {
         val allowed = mutableStateOf(listOf("a"))
         val rule = InList(allowed)

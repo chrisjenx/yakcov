@@ -39,6 +39,18 @@ class OneOfRuleTest {
     }
 
     @Test
+    fun oneOf_case_sensitive_exact_match_success() {
+        // ignoreCase=false must still succeed on an exact-case match (not just error)
+        assertEquals(Outcome.SUCCESS, OneOf(setOf("US"), ignoreCase = false).validate("US").outcome())
+    }
+
+    @Test
+    fun oneOf_trims_allowed_entries_too_success() {
+        // trim applies to both the input and each allowed entry
+        assertEquals(Outcome.SUCCESS, OneOf(setOf("  US  ")).validate("US").outcome())
+    }
+
+    @Test
     fun oneOf_no_trim_error() {
         assertEquals(Outcome.ERROR, OneOf(setOf("US"), trim = false).validate(" US ").outcome())
     }

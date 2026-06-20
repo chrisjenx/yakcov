@@ -38,6 +38,19 @@ class HexColorRuleTest {
     }
 
     @Test
+    fun hexColor_whitespace_only_success() {
+        // pins isBlank() (not isEmpty()) short-circuit
+        assertEquals(Outcome.SUCCESS, HexColor.validate("   ").outcome())
+    }
+
+    @Test
+    fun hexColor_leading_space_error() {
+        // the regex is anchored; surrounding whitespace is not trimmed
+        assertEquals(Outcome.ERROR, HexColor.validate(" #ff8800").outcome())
+        assertEquals(Outcome.ERROR, HexColor.validate("#ff8800 ").outcome())
+    }
+
+    @Test
     fun hexColor_missing_hash_error() {
         assertEquals(Outcome.ERROR, HexColor.validate("ff8800").outcome())
     }
