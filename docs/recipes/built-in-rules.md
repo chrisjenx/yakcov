@@ -5,9 +5,11 @@ implements `ValueValidatorRule<V>`; drop them into a validator's `rules` list. T
 own, see [custom rules](custom-rules.md).
 
 !!! note "Blank / null pass through"
-    The string rules treat **blank** input as valid and the generic rules treat **null** as
-    valid, so `Required` (or generic `Required`) is the single source of presence-checking.
-    `listOf(Email)` accepts an empty field; `listOf(Required, Email)` doesn't.
+    The string rules treat **blank** input as valid, and the value-membership/bounds generic
+    rules (`InList`, `Min`, `Max`, `InRange`) treat **null** as valid — so `Required` (or
+    generic `Required`) is the single source of presence-checking. `listOf(Email)` accepts an
+    empty field; `listOf(Required, Email)` doesn't. (`ListNotEmpty` and `IsChecked` are
+    themselves presence/state checks and reject null.)
 
 ## String rules
 
