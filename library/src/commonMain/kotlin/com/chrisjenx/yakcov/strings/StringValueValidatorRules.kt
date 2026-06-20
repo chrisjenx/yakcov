@@ -11,6 +11,7 @@ import com.chrisjenx.yakcov.ImmutableIntState
 import com.chrisjenx.yakcov.ImmutableLocalDateState
 import com.chrisjenx.yakcov.ImmutableNumberState
 import com.chrisjenx.yakcov.ImmutableStringState
+import com.chrisjenx.yakcov.ImmutableValueState
 import com.chrisjenx.yakcov.ResourceValidationResult
 import com.chrisjenx.yakcov.ValidationResult
 import com.chrisjenx.yakcov.ValueValidator
@@ -24,6 +25,7 @@ import yakcov.library.generated.resources.ruleDay
 import yakcov.library.generated.resources.ruleDecimal
 import yakcov.library.generated.resources.ruleEmail
 import yakcov.library.generated.resources.ruleHexColor
+import yakcov.library.generated.resources.ruleInList
 import yakcov.library.generated.resources.ruleInvalidDate
 import yakcov.library.generated.resources.ruleMaxLength
 import yakcov.library.generated.resources.ruleMaxValue
@@ -190,6 +192,38 @@ data object HexColor : ValueValidatorRule<String> {
             ResourceValidationResult.success()
         } else {
             ResourceValidationResult.error(Res.string.ruleHexColor)
+        }
+    }
+}
+
+// OneOf
+/**
+ * Validates that the value is one of [allowed]. By default the comparison ignores case ([ignoreCase])
+ * and [trim]s the value and each allowed entry — covering enum-ish string fields, ISO country codes,
+ * etc. Blank passes ([Required] owns emptiness).
+ */
+@Stable
+data class OneOf(
+    val allowed: State<Set<String>>,
+    val ignoreCase: Boolean = true,
+    val trim: Boolean = true,
+) : ValueValidatorRule<String> {
+    constructor(allowed: Set<String>, ignoreCase: Boolean = true, trim: Boolean = true) :
+        this(ImmutableValueState(allowed), ignoreCase, trim)
+
+    private val _allowed by allowed
+    override fun validate(value: String): ValidationResult {
+        // only validate if not empty as Required will check if not empty
+        if (value.isBlank()) return ResourceValidationResult.success()
+        val candidate = if (trim) value.trim() else value
+        val match = _allowed.any { entry ->
+            val allowedEntry = if (trim) entry.trim() else entry
+            allowedEntry.equals(candidate, ignoreCase = ignoreCase)
+        }
+        return if (match) {
+            ResourceValidationResult.success()
+        } else {
+            ResourceValidationResult.error(Res.string.ruleInList)
         }
     }
 }
