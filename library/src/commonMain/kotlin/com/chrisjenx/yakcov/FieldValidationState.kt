@@ -89,14 +89,15 @@ fun <V> List<ValueValidatorRule<V>>.toFieldState(value: V, showError: Boolean): 
 fun List<FieldValidationState>.hasNoErrors(): Boolean = none { it.severity == Outcome.ERROR }
 
 /**
- * Resolve the field's message for display, or `null` when there is nothing to show. Gated on
- * [showError]: returns `null` until errors are shown (focus loss/submit), so the message tracks the
- * same showError gating as [isError]/[isWarning] — no message pops while the user is still typing.
- * [Composable] because resource-backed results resolve their `StringResource` here. For the raw,
- * ungated message (regardless of showError) use `result?.format()` directly.
+ * Resolve the field's message for display, falling back to [default] (or `null`) when there is no
+ * message to show. Only the *validation message* is gated on [showError]: it stays hidden until
+ * errors are shown (focus loss/submit) — the same gating as [isError]/[isWarning], so no message
+ * pops while the user is still typing — whereas [default] is shown whenever no message is displayed,
+ * including on a pristine (`showError == false`) field. [Composable] because resource-backed results
+ * resolve their `StringResource` here. For the raw, ungated message use `result?.format()` directly.
  *
- * @param default a plain hint shown when there is no message to display (e.g. a pristine field).
- *  Defaults to `null`, preserving the prior return-`null`-when-nothing-to-show behavior.
+ * @param default a plain hint shown when there is no validation message to display (e.g. a pristine
+ *  field). Defaults to `null`, preserving the prior return-`null`-when-nothing-to-show behavior.
  */
 @Composable
 fun FieldValidationState.text(default: String? = null): String? =

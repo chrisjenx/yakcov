@@ -161,7 +161,9 @@ abstract class ValueValidator<V, R>(
     }
 
     /**
-     * Generates a supporting error text for your TextField.
+     * Builds the supporting-text slot for your TextField: the most-severe validation message when
+     * one should show, otherwise the [default] hint (or `null`). Not limited to errors — warning,
+     * info, and the [default] hint all render through this same slot.
      *
      * @param severity the minimum severity to show, defaults to [Outcome.SUCCESS.severity]
      * @param default a plain hint shown when there is no validation message to display (e.g. a
