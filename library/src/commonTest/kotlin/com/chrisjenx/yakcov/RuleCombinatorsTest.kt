@@ -53,4 +53,22 @@ class RuleCombinatorsTest {
         enabled.value = false
         assertEquals(Outcome.SUCCESS, MinLength(8).onlyWhen(enabled).validate("abc").outcome())
     }
+
+    @Test
+    fun optionalMinLength_idiom_blankPassesButShortValueStillFails() {
+        // "optional, but >= 3 chars if typed" = Required gated by `required` + an ungated MinLength.
+        // Required.onlyWhen owns the empty case; the ungated MinLength always enforces length once typed.
+        val required = mutableStateOf(false)
+        val gate = Required.onlyWhen(required)
+        val min = MinLength(3)
+        // not required + blank -> both rules pass
+        assertEquals(Outcome.SUCCESS, gate.validate("").outcome())
+        assertEquals(Outcome.SUCCESS, min.validate("").outcome())
+        // not required + a short value typed -> MinLength still rejects it
+        assertEquals(Outcome.SUCCESS, gate.validate("ab").outcome())
+        assertEquals(Outcome.ERROR, min.validate("ab").outcome())
+        // becomes required -> Required catches the empty case
+        required.value = true
+        assertEquals(Outcome.ERROR, gate.validate("").outcome())
+    }
 }

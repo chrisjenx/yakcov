@@ -92,6 +92,15 @@ fun taxIdRules(isBusiness: State<Boolean>): List<ValueValidatorRule<String>> =
     listOf(Required.onlyWhen(isBusiness), MinLength(9).onlyWhen(isBusiness))
 // --8<-- [end:conditional]
 
+// --8<-- [start:optional-min-length]
+// "Optional, but at least N chars if the user types something." Gate only Required by the
+// state; leave MinLength ungated. Required.onlyWhen owns the empty case (blank passes when
+// not required), while the ungated MinLength still rejects a too-short value once typed —
+// because every string rule treats blank as valid and defers emptiness to Required.
+fun nicknameRules(required: State<Boolean>): List<ValueValidatorRule<String>> =
+    listOf(Required.onlyWhen(required), MinLength(3))
+// --8<-- [end:optional-min-length]
+
 // --8<-- [start:generic-bounds]
 @Composable
 fun QuantityField() {

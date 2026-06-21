@@ -106,6 +106,11 @@ data class MaxValue(val maxValue: State<Number>) : ValueValidatorRule<String> {
 }
 
 /**
+ * Validates that the string is at least [minLength] long. Blank passes ([Required] owns
+ * emptiness) — compose with [Required] to reject blank, or use `Required.onlyWhen(state)`
+ * alongside `MinLength(n)` for an optional field that must be at least `n` chars *if* the user
+ * types something.
+ *
  * @param trim if true will trim the start and end before checking the length
  * @param includeWhiteSpace if false will not count white space chars in this string.
  *  As defined by [Char.isWhitespace]
@@ -126,6 +131,8 @@ data class MinLength(
     private val _trim by trim
     private val _includeWhiteSpace by includeWhiteSpace
     override fun validate(value: String): ValidationResult {
+        // only validate if not empty as Required will check if not empty
+        if (value.isBlank()) return ResourceValidationResult.success()
         val trimmed = value.let { if (_trim) it.trim() else it }
         return when {
             _includeWhiteSpace && trimmed.length < _minLength -> {
