@@ -115,6 +115,8 @@ kotlin {
         }
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
+            // Classpath scanning for RuleRegistryGuardTest (rule-convention discovery guard)
+            implementation(libs.classgraph)
         }
 
         jsMain.dependencies {

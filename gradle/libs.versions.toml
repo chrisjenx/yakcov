@@ -7,6 +7,8 @@ agp = "9.1.1"
 androidx-activityCompose = "1.13.0"
 androidx-uiTest = "1.11.2"
 circuit = "0.33.1"
+# JVM-test-only: classpath scanning for the rule-convention discovery guard (RuleRegistryGuardTest)
+classgraph = "4.8.179"
 # https://github.com/JetBrains/compose-multiplatform/releases
 compose = "1.11.1"
 compose-material3 = "1.11.0-alpha07"
@@ -34,6 +36,7 @@ androidx-startup-runtime = { module = "androidx.startup:startup-runtime", versio
 androidx-testManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-uiTest" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui" }
 circuit-foundation = { module = "com.slack.circuit:circuit-foundation", version.ref = "circuit" }
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
