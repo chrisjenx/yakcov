@@ -51,10 +51,14 @@ class RuleConventionsTest {
 
     @Test
     fun emptyRejectedStringRules_rejectBlank() {
+        // The convention is about *blank* (isBlank), so presence rules must reject both an empty
+        // string and a whitespace-only one.
         RuleConventions.emptyRejectedStringRules.forEach { rule ->
+            val name = rule::class.simpleName
+            assertEquals(Outcome.ERROR, rule.validate("").outcome(), "$name should reject an empty string")
             assertEquals(
-                Outcome.ERROR, rule.validate("").outcome(),
-                "${rule::class.simpleName} should reject an empty string"
+                Outcome.ERROR, rule.validate("   ").outcome(),
+                "$name should reject a whitespace-only string (blank, not just empty)"
             )
         }
     }

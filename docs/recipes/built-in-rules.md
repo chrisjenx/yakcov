@@ -5,8 +5,8 @@ implements `ValueValidatorRule<V>`; drop them into a validator's `rules` list. T
 own, see [custom rules](custom-rules.md).
 
 !!! note "Blank / null pass through"
-    The string **format** rules treat **blank** input as valid (`MinLength` included, as of this
-    fix), and the value-membership/bounds generic rules (`InList`, `Min`, `Max`, `InRange`) treat
+    The string **format** rules treat **blank** input as valid (`MinLength` included), and the
+    value-membership/bounds generic rules (`InList`, `Min`, `Max`, `InRange`) treat
     **null** as valid — so `Required` (or generic `Required`) is the single source of
     presence-checking. Compose it alongside the rule whenever an empty field should be rejected:
     `listOf(Email)` accepts an empty field, `listOf(Required, Email)` doesn't. The presence/state

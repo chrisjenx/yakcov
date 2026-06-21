@@ -107,7 +107,7 @@ data class MaxValue(val maxValue: State<Number>) : ValueValidatorRule<String> {
 
 /**
  * Validates that the string is at least [minLength] long. Blank passes ([Required] owns
- * emptiness) — compose with [Required] to reject empty, or use `Required.onlyWhen(state)`
+ * emptiness) — compose with [Required] to reject blank, or use `Required.onlyWhen(state)`
  * alongside `MinLength(n)` for an optional field that must be at least `n` chars *if* the user
  * types something.
  *
