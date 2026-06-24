@@ -101,11 +101,12 @@ _sed_inplace() {
 # Usage: patch_versions <channel>
 patch_versions() {
     local channel="$1"
-    local compose_ver material3_ver kotlin_ver
+    local compose_ver material3_ver kotlin_ver jvm_target_ver
 
     compose_ver=$(read_channel_key "$channel" "compose")
     material3_ver=$(read_channel_key "$channel" "compose-material3")
     kotlin_ver=$(read_channel_key "$channel" "kotlin")
+    jvm_target_ver=$(read_channel_key "$channel" "jvm-target")
 
     if [ -z "$compose_ver" ]; then
         print_error "Channel '$channel' missing required 'compose' key"
@@ -123,6 +124,11 @@ patch_versions() {
     if [ -n "$kotlin_ver" ]; then
         print_channel "$channel" "Patching kotlin=$kotlin_ver"
         _sed_inplace "s/^kotlin = \".*\"/kotlin = \"$kotlin_ver\"/" gradle/libs.versions.toml
+    fi
+
+    if [ -n "$jvm_target_ver" ]; then
+        print_channel "$channel" "Patching jvmTarget=$jvm_target_ver"
+        _sed_inplace "s/^jvmTarget = \".*\"/jvmTarget = \"$jvm_target_ver\"/" gradle/libs.versions.toml
     fi
 }
 
@@ -145,10 +151,11 @@ _json_matrix() {
             continue
         fi
 
-        local compose_ver material3_ver kotlin_ver xcode_ver tag
+        local compose_ver material3_ver kotlin_ver jvm_target_ver xcode_ver tag
         compose_ver=$(read_channel_key "$channel" "compose")
         material3_ver=$(read_channel_key "$channel" "compose-material3")
         kotlin_ver=$(read_channel_key "$channel" "kotlin")
+        jvm_target_ver=$(read_channel_key "$channel" "jvm-target")
         xcode_ver=$(read_channel_key "$channel" "xcode")
 
         # Skip channels missing required compose key
@@ -160,7 +167,7 @@ _json_matrix() {
 
         $first || matrix+=","
         first=false
-        matrix+="{\"channel\":\"$channel\",\"compose\":\"$compose_ver\",\"material3\":\"$material3_ver\",\"kotlin\":\"${kotlin_ver:-}\",\"xcode\":\"${xcode_ver:-}\",\"tag\":\"$tag\"}"
+        matrix+="{\"channel\":\"$channel\",\"compose\":\"$compose_ver\",\"material3\":\"$material3_ver\",\"kotlin\":\"${kotlin_ver:-}\",\"jvmTarget\":\"${jvm_target_ver:-}\",\"xcode\":\"${xcode_ver:-}\",\"tag\":\"$tag\"}"
     done
 
     matrix+="]"

@@ -7,6 +7,7 @@
 #   compose          - Compose Multiplatform plugin + dependency version (required)
 #   compose-material3 - Material3 artifact version (required, often differs from compose)
 #   kotlin           - Kotlin version override (optional, inherits from libs.versions.toml if omitted)
+#   jvm-target       - Android JVM bytecode target override (optional, inherits "1.8" from libs.versions.toml)
 #   xcode            - Xcode version for Apple CI builds (optional, uses runner default if omitted)
 #   track            - Upstream channel followed by scripts/check-compose-updates.py:
 #                      "stable" or "prerelease" (optional; defaults to "stable" for the
@@ -26,9 +27,12 @@ xcode = "26.3"
 # so a broken pre-release surfaces without blocking the CI-Gate / merges.
 [next]
 track = "prerelease"
-compose = "1.12.0-alpha01"
-compose-material3 = "1.12.0-alpha01"
+compose = "1.12.0-alpha02"
+compose-material3 = "1.12.0-alpha02"
 # Compose 1.12 bundles the compose-compiler with Kotlin 2.4.0 (latest GA); the
 # release/CI patch rewrites `kotlin` in libs.versions.toml for this channel only.
 kotlin = "2.4.0"
+# Compose 1.12 androidx artifacts are JVM 11 bytecode; the library's Android target
+# must inline into 11. [stable] omits this and inherits jvmTarget=1.8 from libs.versions.toml.
+jvm-target = "11"
 xcode = "26.3"

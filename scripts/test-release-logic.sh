@@ -127,6 +127,34 @@ for channel in $CHANNELS; do
     restore_versions
 done
 
+# Test 4b: jvm-target patching (next overrides to 11, stable inherits default)
+print_info ""
+print_info "Test 4b: jvm-target patching"
+ORIGINAL_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
+assert_not_empty "Original jvmTarget" "$ORIGINAL_JVMTARGET"
+
+patch_versions "next"
+PATCHED_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
+if [ "$PATCHED_JVMTARGET" = "11" ]; then
+    print_info "✓ [next] jvmTarget patched to 11"
+    PASS=$((PASS + 1))
+else
+    print_error "✗ [next] jvmTarget expected 11, got $PATCHED_JVMTARGET"
+    FAIL=$((FAIL + 1))
+fi
+restore_versions
+
+patch_versions "stable"
+STABLE_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
+if [ "$STABLE_JVMTARGET" = "$ORIGINAL_JVMTARGET" ]; then
+    print_info "✓ [stable] jvmTarget inherits default ($STABLE_JVMTARGET)"
+    PASS=$((PASS + 1))
+else
+    print_error "✗ [stable] jvmTarget changed to $STABLE_JVMTARGET (expected $ORIGINAL_JVMTARGET)"
+    FAIL=$((FAIL + 1))
+fi
+restore_versions
+
 # Verify restore worked
 RESTORED_COMPOSE=$(grep "^compose = " gradle/libs.versions.toml | head -1 | sed 's/compose = "\(.*\)"/\1/')
 if [ "$RESTORED_COMPOSE" = "$ORIGINAL_COMPOSE" ]; then
@@ -142,8 +170,14 @@ print_info ""
 print_info "Test 5: JSON matrix output"
 MATRIX=$("$SCRIPT_DIR/lib-release.sh" --json-matrix)
 if echo "$MATRIX" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-    print_info "✓ JSON matrix is valid: $MATRIX"
-    PASS=$((PASS + 1))
+    NEXT_JVMTARGET=$(echo "$MATRIX" | python3 -c "import sys,json; m={d['channel']:d for d in json.load(sys.stdin)}; print(m.get('next',{}).get('jvmTarget',''))")
+    if [ "$NEXT_JVMTARGET" = "11" ]; then
+        print_info "✓ JSON matrix is valid and [next] jvmTarget=11: $MATRIX"
+        PASS=$((PASS + 1))
+    else
+        print_error "✗ JSON matrix missing [next] jvmTarget=11 (got '$NEXT_JVMTARGET'): $MATRIX"
+        FAIL=$((FAIL + 1))
+    fi
 else
     print_error "✗ JSON matrix is invalid: $MATRIX"
     FAIL=$((FAIL + 1))

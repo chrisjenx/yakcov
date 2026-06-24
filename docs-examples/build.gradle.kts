@@ -18,12 +18,15 @@ plugins {
     alias(libs.plugins.compose)
 }
 
+// Android JVM bytecode target — per-channel via compose-releases.toml (see libs.versions.toml).
+val jvmTargetVersion = libs.versions.jvmTarget.get()
+
 kotlin {
     androidTarget {
         compilations.all {
             compileTaskProvider {
                 compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_1_8)
+                    jvmTarget.set(JvmTarget.fromTarget(jvmTargetVersion))
                 }
             }
         }
@@ -58,7 +61,7 @@ android {
         minSdk = 23
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.toVersion(jvmTargetVersion)
+        targetCompatibility = JavaVersion.toVersion(jvmTargetVersion)
     }
 }

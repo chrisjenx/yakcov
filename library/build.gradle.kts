@@ -13,6 +13,9 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Android JVM bytecode target — per-channel via compose-releases.toml (see libs.versions.toml).
+val jvmTargetVersion = libs.versions.jvmTarget.get()
+
 kotlin {
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
@@ -24,8 +27,8 @@ kotlin {
         compilations.all {
             compileTaskProvider {
                 compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_1_8)
-                    freeCompilerArgs.add("-Xjdk-release=${JavaVersion.VERSION_1_8}")
+                    jvmTarget.set(JvmTarget.fromTarget(jvmTargetVersion))
+                    freeCompilerArgs.add("-Xjdk-release=${JavaVersion.toVersion(jvmTargetVersion)}")
                 }
             }
         }
@@ -169,8 +172,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.toVersion(jvmTargetVersion)
+        targetCompatibility = JavaVersion.toVersion(jvmTargetVersion)
     }
     buildFeatures {
         //enables a Compose tooling support in the AndroidStudio
