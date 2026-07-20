@@ -2,7 +2,7 @@ package com.chrisjenx.yakcov
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import com.chrisjenx.yakcov.strings.Required
 import org.jetbrains.compose.resources.stringResource
 import yakcov.library.generated.resources.Res

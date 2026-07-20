@@ -7,7 +7,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.requestFocus
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import com.chrisjenx.yakcov.ValidationResult.Outcome
 import org.jetbrains.compose.resources.stringResource
 import yakcov.library.generated.resources.Res
