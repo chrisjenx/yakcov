@@ -45,6 +45,9 @@ kotlin {
                 }
             }
         }
+        // Compose 1.12+ gates browser Compose UI tests on an executable binary so the
+        // Skiko runtime can be bundled by webpack (CMP-4906). Harmless on older Compose.
+        binaries.executable()
         useEsModules()
     }
 
@@ -57,6 +60,7 @@ kotlin {
                 }
             }
         }
+        binaries.executable()
     }
 
 
