@@ -1,33 +1,8 @@
 package com.chrisjenx.yakcov
 
-import io.michaelrocks.libphonenumber.kotlin.MetadataLoader
-import io.michaelrocks.libphonenumber.kotlin.PhoneNumberUtil
-import io.michaelrocks.libphonenumber.kotlin.io.InputStream
-import io.michaelrocks.libphonenumber.kotlin.io.JavaInputStream
-import java.util.logging.Level
-import java.util.logging.Logger
-
-
-actual fun initPhoneNumberUtil() {
-    PhoneNumberUtilHolder.inject(
-        PhoneNumberUtil.createInstance(ClassPathResourceMetadataLoader())
-    )
-}
-
-class ClassPathResourceMetadataLoader : MetadataLoader {
-    override fun loadMetadata(phoneMetadataResource: String): InputStream? {
-        val inputStream: java.io.InputStream? =
-            ClassPathResourceMetadataLoader::class.java.getResourceAsStream(phoneMetadataResource)
-        if (inputStream == null) {
-            logger.log(Level.WARNING, String.format("File %s not found", phoneMetadataResource))
-            return null
-        }
-        return JavaInputStream(inputStream)
-    }
-
-    companion object {
-        private val logger: Logger =
-            Logger.getLogger(ClassPathResourceMetadataLoader::class.java.getName())
-    }
-}
-
+/**
+ * Dogfoods the public test seam consumers use (#41). Before it existed this file carried a private
+ * copy of libphonenumber's `ClassPathResourceMetadataLoader` plus two hand-copied metadata protos
+ * under `androidUnitTest/resources`, so Android unit tests could only ever validate US and GB.
+ */
+actual fun initPhoneNumberUtil() = initPhoneNumberUtilForTest()

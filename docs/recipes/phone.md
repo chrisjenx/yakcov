@@ -48,6 +48,48 @@ country picker: `Phone(defaultRegion = countryState)`.
 Without the dependency, using `Phone` fails at runtime with a missing-class error — everything
 else in Yakcov (including `PhoneFormat`) works without it.
 
+### Testing `Phone` on Android
+
+In an Android **local unit test** (plain JVM or Robolectric) `Phone` reports every number invalid
+until you configure it. On Android the `PhoneNumberUtil` is built from an application `Context`
+captured by an androidx.startup provider, and libphonenumber reads its metadata through
+compose-resources — a local unit test creates neither `ContentProvider`
+([robolectric#9603](https://github.com/robolectric/robolectric/issues/9603),
+[CMP-6612](https://youtrack.jetbrains.com/issue/CMP-6612)).
+
+This fails **silently**: `isPhoneNumber` degrades to `false` rather than throwing, so
+`assertFalse("abc".isPhoneNumber())` passes whether or not validation actually works, while the
+positive path is never exercised. One call fixes it:
+
+```kotlin
+class PhoneFieldTest {
+    @Before fun setUp() = initPhoneNumberUtilForTest()
+    @After fun tearDown() = resetPhoneNumberUtilForTest()
+
+    @Test fun acceptsAFrenchNumber() {
+        assertTrue("+33 1 42 68 53 00".isPhoneNumber("FR"))
+    }
+}
+```
+
+`initPhoneNumberUtilForTest()` needs no `Context` and loads libphonenumber's real metadata, so
+**every** region validates. It only requires that your module keeps Android resources available to
+unit tests — which is also what Robolectric needs:
+
+```kotlin
+android { testOptions { unitTests { isIncludeAndroidResources = true } } }
+```
+
+Call `resetPhoneNumberUtilForTest()` from `@After`. The util is a per-JVM singleton, so without it a
+configured test class silently decides whether a later class that *forgot* to configure passes —
+making a suite's result depend on execution order within the shard.
+
+To manage metadata loading yourself, pass your own instance:
+`initPhoneNumberUtilForTest(PhoneNumberUtil.createInstance(myLoader))`.
+
+Other targets need no setup: JVM, iOS, JS and WasmJS resolve metadata without a `Context`. Android
+*instrumented* tests need no setup either, since androidx.startup runs there.
+
 ## Roll your own
 
 Need a specific national format or an extension field? Write a `ValueValidatorRule<String>` —
