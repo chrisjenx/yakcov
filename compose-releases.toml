@@ -27,7 +27,7 @@ xcode = "26.3"
 # so a broken pre-release surfaces without blocking the CI-Gate / merges.
 [next]
 track = "prerelease"
-compose = "1.12.0-beta02"
+compose = "1.12.0-beta03"
 compose-material3 = "1.12.0-alpha03"
 # Compose 1.12 bundles the compose-compiler with Kotlin 2.4.0 (latest GA); the
 # release/CI patch rewrites `kotlin` in libs.versions.toml for this channel only.
