@@ -6,6 +6,7 @@ import io.michaelrocks.libphonenumber.kotlin.createInstance
 import io.michaelrocks.libphonenumber.kotlin.io.InputStream
 import io.michaelrocks.libphonenumber.kotlin.io.JavaInputStream
 import java.io.File
+import java.net.URL
 import java.util.Properties
 
 /**
@@ -139,14 +140,39 @@ internal class UnitTestMetadataLoader : MetadataLoader {
         val mergedAssetResourceDirs: List<File> by lazy { findMergedAssetResourceDirs() }
 
         fun findMergedAssetResourceDirs(): List<File> {
-            val config = classLoader.getResourceAsStream(AGP_TEST_CONFIG) ?: return emptyList()
-            val properties = Properties().also { props -> config.use(props::load) }
+            val config = classLoader.getResource(AGP_TEST_CONFIG) ?: return emptyList()
+            val properties = Properties().also { props -> config.openStream().use(props::load) }
             val merged = properties.getProperty("android_merged_assets") ?: return emptyList()
-            // AGP writes this path relative to the module directory, which is the test's working
-            // directory; absolute in some AGP versions, so honour both.
-            val assets = File(merged).takeIf(File::isAbsolute)
-                ?: File(System.getProperty("user.dir").orEmpty(), merged)
-            return File(assets, "composeResources").listFiles().orEmpty().filter(File::isDirectory)
+
+            // Absolute in some AGP versions; otherwise relative to the module directory.
+            val assetRoots = File(merged).takeIf(File::isAbsolute)?.let(::listOf)
+                ?: moduleDirCandidates(config).map { dir -> File(dir, merged) }
+
+            return assetRoots.map { root -> File(root, "composeResources") }
+                .filter(File::isDirectory)
+                .flatMap { it.listFiles().orEmpty().filter(File::isDirectory) }
+        }
+
+        /**
+         * Where a module-relative `android_merged_assets` might be anchored.
+         *
+         * Normally the test JVM's working directory *is* the module directory, but a build that sets
+         * `Test.workingDir` — common in multi-module repos, to make fixture paths uniform — breaks
+         * that, and the miss would surface as [verifyMetadataDiscoverable]'s error pointing at a
+         * remedy the user has already applied. So also derive it from where AGP put
+         * `test_config.properties`: that always lands under `<module>/build/…`, so the `build`
+         * ancestor's parent is the module directory, whatever the working directory happens to be.
+         */
+        private fun moduleDirCandidates(config: URL): List<File> {
+            val fromWorkingDir = System.getProperty("user.dir")?.let(::File)
+            val fromConfigLocation = config.takeIf { it.protocol == "file" }
+                ?.let { url -> runCatching { File(url.toURI()) }.getOrNull() }
+                ?.let { file ->
+                    generateSequence(file.parentFile) { it.parentFile }
+                        .firstOrNull { it.name == "build" }
+                        ?.parentFile
+                }
+            return listOfNotNull(fromWorkingDir, fromConfigLocation).distinct()
         }
 
         const val AGP_TEST_CONFIG = "com/android/tools/test_config.properties"

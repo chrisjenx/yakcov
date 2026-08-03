@@ -2,6 +2,7 @@ package com.chrisjenx.yakcov
 
 import io.michaelrocks.libphonenumber.kotlin.PhoneNumberUtil
 import io.michaelrocks.libphonenumber.kotlin.createInstance
+import java.io.File
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -89,20 +90,44 @@ class PhoneNumberUtilTestSupportTest {
     }
 
     /**
-     * The ordering hazard called out in #41: without a reset, one configured test class decides
-     * whether a later class that forgot to configure passes. Unconfigured means no `Context` was
-     * captured by androidx.startup, so validation degrades to `false` (and logs) rather than
-     * silently reusing a previous test's util.
+     * AGP writes `android_merged_assets` relative to the module directory, which is only *usually*
+     * the test JVM's working directory — a build that sets `Test.workingDir` would otherwise get the
+     * "metadata not found" error while `isIncludeAndroidResources` was set all along.
      */
     @Test
-    fun resetRestoresTheUnconfiguredState() {
-        assertTrue("+16508991234".isPhoneNumber("US"), "sanity: configured before reset")
+    fun discoveryIsIndependentOfWorkingDirectory() {
+        val original = System.getProperty("user.dir")
+        try {
+            System.setProperty("user.dir", File(original, "not-the-module-dir").path)
+            val dirs = UnitTestMetadataLoader.findMergedAssetResourceDirs()
+            assertTrue(
+                dirs.any { File(it, "files/PhoneNumberMetadataProto_US").isFile },
+                "discovery must survive a build that overrides the test working directory",
+            )
+        } finally {
+            System.setProperty("user.dir", original)
+        }
+    }
+
+    /**
+     * The ordering hazard called out in #41: without a reset, one configured test class decides
+     * whether a later class that forgot to configure passes, so a suite's result depends on
+     * execution order within the shard.
+     */
+    @Test
+    fun resetDropsTheInstalledUtil() {
+        val installed = PhoneNumberUtil.createInstance(UnitTestMetadataLoader())
+        initPhoneNumberUtilForTest(installed)
+        assertTrue(installed === phoneUtil, "sanity: installed before reset")
 
         resetPhoneNumberUtilForTest()
-        assertFalse(
-            "+16508991234".isPhoneNumber("US"),
-            "after reset there is no util and no Context, so validation must degrade to false",
-        )
+        // Assert on identity, not on what the fallback does. After a reset `phoneUtil` falls through
+        // to the Context-derived util, which throws here (a local unit test captures no Context) but
+        // would succeed the day this module gains Robolectric — asserting "degrades to false" would
+        // then flip to a failure looking like the seam broke, and it also drives isPhoneNumber's
+        // catch/printStackTrace, spilling a fake-looking trace into every CI run.
+        val afterReset = runCatching { phoneUtil }.getOrNull()
+        assertTrue(afterReset !== installed, "reset must drop the installed util")
 
         initPhoneNumberUtilForTest()
         assertTrue("+16508991234".isPhoneNumber("US"), "re-init after reset should work")
