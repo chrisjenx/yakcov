@@ -25,7 +25,11 @@ internal object PhoneNumberUtilHolder {
     @Volatile
     internal var appContext: Context? = null
 
-    /** Test seam: inject a pre-built util (e.g. one using a classpath metadata loader). */
+    /**
+     * Test seam: a pre-built util that wins over [lazyUtil], so unit tests need no `Context`.
+     * Published to consumers as [initPhoneNumberUtilForTest] / [resetPhoneNumberUtilForTest] (#41)
+     * rather than by exposing this object, which would also expose [appContext].
+     */
     @Volatile
     private var injected: PhoneNumberUtil? = null
 
@@ -33,6 +37,14 @@ internal object PhoneNumberUtilHolder {
 
     internal fun inject(util: PhoneNumberUtil) {
         injected = util
+    }
+
+    /**
+     * Drops any [inject]ed util, restoring the unconfigured state so test order can't decide
+     * outcomes. [appContext] is deliberately left alone — see [resetPhoneNumberUtilForTest].
+     */
+    internal fun reset() {
+        injected = null
     }
 
     fun get(): PhoneNumberUtil = injected ?: lazyUtil
