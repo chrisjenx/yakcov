@@ -77,6 +77,7 @@ fun resetPhoneNumberUtilForTest() {
  * "very expensive", and tests call [initPhoneNumberUtilForTest] from every `@Before`.
  */
 private val sharedTestUtil: PhoneNumberUtil by lazy {
+    UnitTestMetadataLoader.verifyMetadataDiscoverable()
     PhoneNumberUtil.createInstance(UnitTestMetadataLoader())
 }
 
@@ -115,19 +116,14 @@ internal class UnitTestMetadataLoader : MetadataLoader {
             if (file.isFile) return JavaInputStream(file.inputStream())
         }
 
-        // libphonenumber maps a null to MissingMetadataException per region, which surfaces as
-        // "everything is invalid" again. Fail loudly instead, naming both remedies.
-        error(
-            "yakcov: could not find libphonenumber metadata ($phoneMetadataResource) for this unit " +
-                "test. Either enable Android resources for unit tests — " +
-                "android { testOptions { unitTests { isIncludeAndroidResources = true } } } — and " +
-                "make sure the module depends on " +
-                "io.github.luca992.libphonenumber-kotlin:libphonenumber, or build the util " +
-                "yourself and pass it to initPhoneNumberUtilForTest(util)."
-        )
+        // `null` is libphonenumber's "this resource isn't available", and plenty of the files it asks
+        // for are genuinely optional — most country codes ship no PhoneNumberAlternateFormatsProto_*,
+        // for instance — so throwing here would break formatting for all of them. A wholesale
+        // discovery failure is caught up front instead, by [verifyMetadataDiscoverable].
+        return null
     }
 
-    private companion object {
+    internal companion object {
         /**
          * Where the `-jvm` variant keeps the metadata on the classpath. Only a fallback, and only
          * reached when that variant is present, so a rename upstream degrades to route (2).
@@ -154,5 +150,34 @@ internal class UnitTestMetadataLoader : MetadataLoader {
         }
 
         const val AGP_TEST_CONFIG = "com/android/tools/test_config.properties"
+
+        /**
+         * Fails fast, once, when neither route can see libphonenumber's metadata at all.
+         *
+         * [loadMetadata] must answer `null` for a genuinely optional file, so it cannot tell a
+         * misconfigured module from a region that simply has no alternate formats. Left to itself
+         * libphonenumber would turn the former into a per-region `MissingMetadataException`, which
+         * `isPhoneNumber` swallows — reproducing the silent "every number is invalid" this seam
+         * exists to end. So probe one file that libphonenumber always ships and complain loudly.
+         */
+        fun verifyMetadataDiscoverable() {
+            if (exists(CANARY)) return
+            error(
+                "yakcov: could not find libphonenumber's metadata ($CANARY) from this unit test, so " +
+                    "phone validation would report every number invalid. Either keep Android " +
+                    "resources available to unit tests — android { testOptions { unitTests { " +
+                    "isIncludeAndroidResources = true } } } — and make sure the module depends on " +
+                    "io.github.luca992.libphonenumber-kotlin:libphonenumber, or build the util " +
+                    "yourself and pass it to initPhoneNumberUtilForTest(util)."
+            )
+        }
+
+        /** Existence check that avoids opening a stream the caller would have to close. */
+        private fun exists(phoneMetadataResource: String): Boolean =
+            classLoader.getResource(CLASSPATH_PREFIX + phoneMetadataResource) != null ||
+                mergedAssetResourceDirs.any { File(it, "files/$phoneMetadataResource").isFile }
+
+        /** US metadata is always present in libphonenumber's bundle; only used as a probe. */
+        private const val CANARY = "PhoneNumberMetadataProto_US"
     }
 }

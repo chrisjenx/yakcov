@@ -6,6 +6,8 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -58,6 +60,32 @@ class PhoneNumberUtilTestSupportTest {
         initPhoneNumberUtilForTest(custom)
         assertTrue(custom === phoneUtil, "the explicitly installed util should be used")
         assertTrue("+16508991234".isPhoneNumber("US"))
+    }
+
+    /**
+     * `null` is libphonenumber's "not available", and it asks for optional files: only a subset of
+     * country codes ship a `PhoneNumberAlternateFormatsProto_*`. Throwing for a miss would break
+     * formatting for every country without one, so a miss must stay a `null`.
+     */
+    @Test
+    fun missingOptionalResourceIsNullNotAnError() {
+        val loader = UnitTestMetadataLoader()
+        assertNull(
+            loader.loadMetadata("PhoneNumberAlternateFormatsProto_999"),
+            "an absent optional resource must be reported as null",
+        )
+        assertNull(
+            loader.loadMetadata("PhoneNumberMetadataProto_ZZTOP"),
+            "an unknown region must be reported as null",
+        )
+        // ...while a real one still resolves, so the null above isn't just a broken loader.
+        assertNotNull(loader.loadMetadata("PhoneNumberMetadataProto_US"))
+    }
+
+    /** The wholesale-misconfiguration guard that replaced per-resource throwing. */
+    @Test
+    fun discoveryVerificationPassesInThisModule() {
+        UnitTestMetadataLoader.verifyMetadataDiscoverable()
     }
 
     /**
