@@ -14,6 +14,7 @@ import androidx.compose.ui.test.v2.runComposeUiTest
 import com.chrisjenx.yakcov.strings.TextFieldValueValidator
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class ModifiersShakeTest {
@@ -220,5 +221,94 @@ class ModifiersShakeTest {
         // crashing composition (a throw there would have already failed at setContent /
         // waitForIdle above); requestFocus() re-confirms the node is still alive afterward.
         onNodeWithTag("a").requestFocus()
+    }
+
+    @Test
+    @AndroidJUnitIgnore
+    @JSIgnore
+    fun shakeOnInvalid_actuallyAnimatesXPosition() = runComposeUiTest {
+        // The wiring proof the parked finding asked for: with an injected ShakingState we can see
+        // that shakeOnInvalid really drives ShakingState.shake(), i.e. that translationX moves.
+        // Deleting shakable()/shake() from the modifier makes this fail instead of passing silently.
+        val shakingState = ShakingState(ShakingState.Strength.Custom(20f), ShakingState.Direction.LEFT_THEN_RIGHT)
+        var trigger by mutableStateOf(0)
+        mainClock.autoAdvance = false
+        setContent {
+            TextField(
+                value = "", onValueChange = {},
+                modifier = Modifier
+                    .testTag("a")
+                    .shakeOnInvalid(isError = true, trigger = trigger, shakingState = shakingState),
+            )
+        }
+        mainClock.advanceTimeByFrame()
+        assertEquals(0f, shakingState.xPosition.value, "must be at rest before any trigger change")
+        trigger = 1
+        // Sample the first stretch of the shake: each animateTo leg is 20ms, so within the first
+        // ~10ms of an animation the value must have left 0f. Take the max magnitude across a few
+        // frames so we don't land exactly on a 0-crossing.
+        var maxAbs = 0f
+        var maxBoundsShift = 0f
+        repeat(3) {
+            mainClock.advanceTimeBy(10L)
+            val x = shakingState.xPosition.value
+            if (x < 0f) { if (-x > maxAbs) maxAbs = -x } else if (x > maxAbs) maxAbs = x
+            // Also observe the node's on-screen bounds: graphicsLayer translationX shows up in
+            // boundsInRoot, so this half fails if shakable(shakingState) is ever dropped from the
+            // chain (asserting on xPosition alone would not notice).
+            val shift = onNodeWithTag("a").fetchSemanticsNode().boundsInRoot.left
+            if (shift < 0f) { if (-shift > maxBoundsShift) maxBoundsShift = -shift }
+            else if (shift > maxBoundsShift) maxBoundsShift = shift
+        }
+        assertTrue(maxAbs > 0f, "xPosition must move while shaking, was max |x| = $maxAbs")
+        assertTrue(
+            maxBoundsShift > 0f,
+            "the node must actually be translated on screen (shakable must be in the chain), " +
+                "was max |shift| = $maxBoundsShift",
+        )
+    }
+
+    @Test
+    @AndroidJUnitIgnore
+    @JSIgnore
+    fun shakeOnInvalid_newTriggerMidShakeDoesNotLeaveTheFieldOffset() = runComposeUiTest {
+        // Regression: LaunchedEffect(trigger) CANCELS the in-flight shake when trigger changes. If
+        // the restart's isError guard then skips (the value was corrected mid-animation, e.g. by
+        // autofill), xPosition is stranded wherever animateTo was interrupted and the field renders
+        // permanently offset. The shake must always unwind to 0f.
+        val shakingState = ShakingState(ShakingState.Strength.Custom(20f), ShakingState.Direction.LEFT_THEN_RIGHT)
+        var trigger by mutableStateOf(0)
+        var isError by mutableStateOf(true)
+        mainClock.autoAdvance = false
+        setContent {
+            TextField(
+                value = "", onValueChange = {},
+                modifier = Modifier
+                    .testTag("a")
+                    .shakeOnInvalid(isError = isError, trigger = trigger, shakingState = shakingState),
+            )
+        }
+        mainClock.advanceTimeByFrame()
+        trigger = 1
+        // Step forward until the shake has actually left 0f, so the cancellation below happens
+        // mid-animateTo (the whole point). Small steps avoid landing on a 0-crossing.
+        var offset = 0f
+        repeat(20) {
+            if (offset != 0f) return@repeat
+            mainClock.advanceTimeBy(5L)
+            offset = shakingState.xPosition.value
+        }
+        assertTrue(
+            offset != 0f,
+            "precondition: the shake must be mid-flight (off 0f) for this test to be meaningful",
+        )
+        // Value corrected + re-submitted inside the ~240ms shake window.
+        isError = false
+        trigger = 2
+        repeat(4) { mainClock.advanceTimeByFrame() }
+        assertEquals(
+            0f, shakingState.xPosition.value,
+            "a cancelled shake must snap back to 0f, not strand the field offset",
+        )
     }
 }

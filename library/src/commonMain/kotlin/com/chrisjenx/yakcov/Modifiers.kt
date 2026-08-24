@@ -14,7 +14,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Returns a [Modifier] that will modify how the field acts to user interaction and validation
@@ -86,8 +88,39 @@ internal fun ShakeOnTriggerEffect(
  */
 fun Modifier.shakeOnInvalid(isError: Boolean, trigger: Int): Modifier = composed {
     val shakingState = remember { ShakingState(ShakeStrength, ShakeDirection) }
-    ShakeOnTriggerEffect(isError, trigger) { shakingState.shake(animationDuration = ShakeDurationMs) }
-    shakable(shakingState)
+    shakeOnInvalidImpl(isError, trigger, shakingState)
+}
+
+/**
+ * [shakeOnInvalid] with an injected [shakingState], so tests can observe `xPosition` — the animated
+ * offset is otherwise trapped inside a `remember` no test can reach. Internal, not public: callers
+ * who want to own the state should use [shakable] + [ShakingState.shake] directly.
+ */
+internal fun Modifier.shakeOnInvalid(
+    isError: Boolean,
+    trigger: Int,
+    shakingState: ShakingState,
+): Modifier = composed { shakeOnInvalidImpl(isError, trigger, shakingState) }
+
+/** The single shake implementation shared by both [shakeOnInvalid] overloads. */
+@Composable
+private fun Modifier.shakeOnInvalidImpl(
+    isError: Boolean,
+    trigger: Int,
+    shakingState: ShakingState,
+): Modifier {
+    ShakeOnTriggerEffect(isError, trigger) {
+        try {
+            shakingState.shake(animationDuration = ShakeDurationMs)
+        } finally {
+            // ShakeOnTriggerEffect keys its LaunchedEffect on `trigger`, so a new trigger CANCELS
+            // this coroutine mid-animateTo. If the restart's isError guard then skips (the value
+            // was corrected inside the ~240ms shake window — autofill, paste, programmatic set),
+            // nothing would animate xPosition home and the field would render permanently offset.
+            withContext(NonCancellable) { shakingState.xPosition.snapTo(0f) }
+        }
+    }
+    return shakable(shakingState)
 }
 
 /**
@@ -98,7 +131,9 @@ fun Modifier.shakeOnInvalid(isError: Boolean, trigger: Int): Modifier = composed
  * a leading `Boolean`, and Kotlin resolves members over extensions, so a same-named free function
  * would silently bind to the member inside `with(validator) { }`.
  *
- * @param isError whether the field is currently showing an error — gates the shake.
+ * @param isError whether the field is currently showing an error. It gates *only* the shake, so with
+ *  the default `shakeTrigger = null` it is inert — passing your error state here without a trigger
+ *  reads as though it were wired up but changes nothing.
  * @param shakeTrigger a monotonic counter; `null` disables shake entirely.
  * @param onFocusLost invoked when the element loses focus; `null` adds no focus handling. Equivalent
  *  to chaining [onFocusLost] yourself.
