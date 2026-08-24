@@ -199,4 +199,41 @@ class FieldValidatorTest {
         v.reset()
         assertEquals(3, checked)
     }
+
+    @Test
+    fun attempts_incrementsOnValidateOnly() {
+        val field = newValidator()
+        assertEquals(0, field.attempts)
+
+        field.onValueChange("a")
+        assertEquals(0, field.attempts, "typing must not count as a submit attempt")
+
+        field.onFocusLost()
+        assertEquals(0, field.attempts, "focus loss shows the error but must not shake")
+
+        field.validate()
+        assertEquals(1, field.attempts)
+        field.validate()
+        assertEquals(2, field.attempts, "each submit attempt must be distinguishable")
+    }
+
+    @Test
+    fun attempts_survivesReset() {
+        // attempts counts events, not state. Resetting it would itself register as a
+        // trigger change and fire a spurious shake on an initialValidate field.
+        val field = newValidator()
+        field.validate()
+        assertEquals(1, field.attempts)
+        field.reset()
+        assertEquals(1, field.attempts)
+    }
+
+    @Test
+    fun onFocusLost_stillRevealsErrorsAndReportsValidity() {
+        val field = newValidator()
+        assertFalse(field.state.showError)
+        assertFalse(field.onFocusLost(), "blank required field is invalid")
+        assertTrue(field.state.showError)
+        assertTrue(field.state.isError)
+    }
 }

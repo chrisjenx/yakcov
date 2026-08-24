@@ -22,6 +22,39 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
+    // Public API drift gate: `checkKotlinAbi` fails CI when the committed dump under
+    // library/api/ doesn't match the current public surface; `updateKotlinAbi` regenerates it.
+    //
+    // `enabled` must be set REFLECTIVELY, and the two channels are why. Kotlin 2.4 (`[next]`)
+    // removed both `enabled` and `klib`; naming either one statically is a deprecation *error*
+    // that fails this script's own compilation — breaking not just the continue-on-error `next`
+    // CI legs but `release.yml`'s next-channel publish. Kotlin 2.3 (`[stable]`) has the opposite
+    // requirement: without `enabled = true` the check task is SKIPPED, so an empty block leaves
+    // a gate that always passes and validates nothing. Verified both directions by mutation test
+    // (add a public symbol; the check must FAIL) — an empty block passed it vacuously.
+    //
+    // `klib` is not set at all: klib validation already defaults to on.
+    //
+    // On 2.4 the reflective lookup finds nothing and no-ops, but the block's presence auto-enables
+    // validation there — and the committed dump, generated on stable's compiler, will NOT match it
+    // (2.4 stops emitting the synthetic DefaultConstructorMarker bridge constructors). The dump is
+    // therefore toolchain-specific by nature and `Checks-Api` (unmatrixed, stable-only) is the sole
+    // place it is enforced. `release.yml` excludes this task from its next-channel dry-run for the
+    // same reason.
+    //
+    // Note: the `Checks-Api` job runs on ubuntu-latest, so the Apple entries in
+    // library/api/library.klib.api are NOT actually validated — they pass by inference because
+    // klib.keepUnsupportedTargets defaults to `true`. Common-API drift is still caught via the
+    // js/wasmJs entries, which DO run on Linux.
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation {
+        @Suppress("UNCHECKED_CAST")
+        val enabledProperty = javaClass.methods
+            .firstOrNull { it.name == "getEnabled" && it.parameterCount == 0 }
+            ?.invoke(this) as? org.gradle.api.provider.Property<Boolean>
+        enabledProperty?.set(true)
+    }
+
     applyDefaultHierarchyTemplate()
     androidTarget {
         compilations.all {

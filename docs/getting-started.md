@@ -60,12 +60,12 @@ modifier = Modifier.validationConfig(
 )
 ```
 
-For headless `FieldValidator`s there's no `validationConfig` modifier; call
-`field.onFocusLost()` from `Modifier.onFocusLost { ... }` to validate-on-focus-lost,
-state-holder owned. The `shakeOnInvalid` / `showErrorOnInteraction` knobs are specific to
-the in-composition validators — on the headless path, drive shake yourself (see
-[MVI](patterns/mvi.md)) and gate error display via the `showError` flag you thread
-through `toFieldState`.
+For headless `FieldValidator`s there is no `validationConfig` modifier. Validate on
+focus loss by calling `field.onFocusLost()` from `Modifier.onFocusLost { ... }`. For
+shake, pass `FieldValidator.attempts` as the `shakeTrigger` of
+`Modifier.validationBehavior(isError, shakeTrigger, onFocusLost)`, or use
+`Modifier.shakeOnInvalid(isError, trigger)` directly. Error display stays yours to gate,
+via the `showError` flag you thread through `toFieldState`.
 
 ## Form-level submit
 

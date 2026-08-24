@@ -24,12 +24,12 @@ import com.chrisjenx.yakcov.FieldValidationState
 import com.chrisjenx.yakcov.RegularValidationResult
 import com.chrisjenx.yakcov.ValueValidatorRule
 import com.chrisjenx.yakcov.hasNoErrors
-import com.chrisjenx.yakcov.onFocusLost
 import com.chrisjenx.yakcov.strings.Email
 import com.chrisjenx.yakcov.strings.MinLength
 import com.chrisjenx.yakcov.strings.Required
 import com.chrisjenx.yakcov.supportingText
 import com.chrisjenx.yakcov.toFieldState
+import com.chrisjenx.yakcov.validationBehavior
 
 /* =====================================================================================
  * REDUCER-MVI integration of the yakcov *headless* validator.
@@ -78,6 +78,12 @@ data class Model(
     val confirmState: FieldValidationState = FieldValidationState.Pristine,
     /** Submit outcome: null = not attempted, true = accepted, false = blocked (show errors + shake). */
     val submitted: Boolean? = null,
+    /**
+     * Monotonic shake trigger for [Modifier.validationBehavior]. Bumped ONLY alongside the same
+     * `copy(...)` that surfaces errors on Submit, so `showError` and this counter always land in the
+     * same composition — no ordering race between "is it an error" and "did the trigger change".
+     */
+    val submitAttempts: Int = 0,
 ) {
     /**
      * Form-level validity, driven purely by SEVERITY (ignores showError), so the UI can react to
@@ -151,11 +157,13 @@ fun reduce(model: Model, event: Event): Model = when (event) {
     }
 
     Event.Submit -> {
-        // Show errors on every field (force showError = true), then read validity off severity.
+        // Show errors on every field (force showError = true) AND bump the shake trigger in the SAME
+        // copy(...) — so isError and the new trigger value arrive together, in one composition.
         val surfaced = model.copy(
             emailState = emailRules.toFieldState(model.emailDraft, showError = true),
             passwordState = passwordRules.toFieldState(model.passwordDraft, showError = true),
             confirmState = confirmRules(model.passwordDraft).toFieldState(model.confirmDraft, showError = true),
+            submitAttempts = model.submitAttempts + 1,
         )
         surfaced.copy(submitted = surfaced.canSubmit)
     }
@@ -225,6 +233,7 @@ private fun MviTextField(
     state: FieldValidationState,
     onChanged: (String) -> Unit,
     onFocusLost: () -> Unit,
+    shakeTrigger: Int,
     keyboardType: KeyboardType = KeyboardType.Text,
     mask: Boolean = false,
 ) {
@@ -244,7 +253,14 @@ private fun MviTextField(
         visualTransformation = if (mask) PasswordVisualTransformation() else VisualTransformation.None,
         modifier = Modifier
             .fillMaxWidth()
-            .onFocusLost(onFocusLost),             // show-on-focus-loss for this field
+            // Bundles show-on-focus-loss with shake-on-invalid-submit-retry, driven by the model's
+            // monotonic submitAttempts counter (state diffing can't drive this: a second invalid
+            // submit produces an `==` FieldValidationState, so a state-diff shake would fire once).
+            .validationBehavior(
+                isError = state.isError,
+                shakeTrigger = shakeTrigger,
+                onFocusLost = onFocusLost,
+            ),
     )
 }
 
@@ -264,6 +280,7 @@ fun MviFormSample() {
         state = model.emailState,
         onChanged = { store.dispatch(Event.Changed(Field.Email, it)) },
         onFocusLost = { store.dispatch(Event.FocusLost(Field.Email)) },
+        shakeTrigger = model.submitAttempts,
         keyboardType = KeyboardType.Email,
     )
     MviTextField(
@@ -272,6 +289,7 @@ fun MviFormSample() {
         state = model.passwordState,
         onChanged = { store.dispatch(Event.Changed(Field.Password, it)) },
         onFocusLost = { store.dispatch(Event.FocusLost(Field.Password)) },
+        shakeTrigger = model.submitAttempts,
         keyboardType = KeyboardType.Password,
         mask = true,
     )
@@ -281,6 +299,7 @@ fun MviFormSample() {
         state = model.confirmState,
         onChanged = { store.dispatch(Event.Changed(Field.Confirm, it)) },
         onFocusLost = { store.dispatch(Event.FocusLost(Field.Confirm)) },
+        shakeTrigger = model.submitAttempts,
         keyboardType = KeyboardType.Password,
         mask = true,
     )
@@ -297,7 +316,8 @@ fun MviFormSample() {
     ) { Text(if (model.canSubmit) "Create account" else "Fix errors to submit") }
 
     // Submit outcome. `false` occurs when Submit surfaces a still-invalid field the user never focused
-    // (submit-first, or an untouched required field) — a clean point to drive a shake on `false`
-    // (keep ShakingState UI-owned).
+    // (submit-first, or an untouched required field). Each MviTextField above already shakes on this:
+    // `submitAttempts` bumped in the same reduce() copy(...) that set showError = true, so every
+    // repeat invalid submit gets its own shake even though the resulting FieldValidationState is `==`.
     model.submitted?.let { Text(if (it) "Valid — proceeding" else "Fix the errors above") }
 }

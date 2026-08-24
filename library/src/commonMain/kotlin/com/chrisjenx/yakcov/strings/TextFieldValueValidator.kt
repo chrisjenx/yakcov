@@ -7,14 +7,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.chrisjenx.yakcov.ValueValidator
 import com.chrisjenx.yakcov.ValueValidator.Companion.defaultValidationSeparator
 import com.chrisjenx.yakcov.ValueValidatorRule
+import com.chrisjenx.yakcov.onFocusCursorToEnd
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * We wrap the [TextFieldValue] to add validation support.
@@ -146,23 +144,18 @@ class TextFieldValueValidator(
      * Returns a [Modifier] that will move the cursor to the end of the text when the focus is gained.
      *
      * @param highlight if true will highlight the text as well
+     * @see com.chrisjenx.yakcov.onFocusCursorToEnd the plain-value form, usable without a validator.
      */
     @Composable
     fun Modifier.onFocusCursorToEnd(
         scope: CoroutineScope = rememberCoroutineScope(),
         highlight: Boolean = false,
-    ): Modifier {
-        return this.onFocusChanged {
-            if (it.isFocused) {
-                scope.launch {
-                    val range = if (!highlight) TextRange(value.text.length)
-                    // Yes, this is the wrong way around (bug workaround to get cursor to end)
-                    else TextRange(value.text.length, 0)
-                    value = value.copy(selection = range)
-                }
-            }
-        }
-    }
+    ): Modifier = onFocusCursorToEnd(
+        value = this@TextFieldValueValidator.value,
+        onValueChange = { this@TextFieldValueValidator.value = it },
+        scope = scope,
+        highlight = highlight,
+    )
 
     /**
      * Called when the field value changes, we also start validating. Generally prefer to use
