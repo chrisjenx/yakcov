@@ -70,11 +70,9 @@ ViewModel/presenter owns a `FieldValidator`, or a pure MVI reducer folds rules w
 
 ## Dependencies
 
-By default we publish
-to [Maven Central](https://central.sonatype.com/artifact/com.chrisjenx.yakcov/library).
-
-We publish all targets (Android, JVM, JS, Wasm, iOS) you can include the common library in your
-project and it will pull in the correct target for what ever targets you have specified.
+Published to [Maven Central](https://central.sonatype.com/artifact/com.chrisjenx.yakcov/library) for
+all targets (Android, JVM, JS, Wasm, iOS) — depend on the common artifact and each of your targets
+resolves its own:
 
 ```kotlin
 commonMain {
@@ -84,7 +82,7 @@ commonMain {
 }
 ```
 
-If you only need a specific target you can include that directly, for example for Android:
+For a single target, depend on it directly — Android, for example:
 
 ```kotlin
 dependencies {
@@ -96,12 +94,7 @@ The `PhoneFormat` rule validates phone-number format with no extra dependencies.
 region-aware `Phone` rule needs the (compileOnly) libphonenumber dependency added to your app —
 see [phone validation](https://chrisjenx.github.io/yakcov/recipes/phone/).
 
-## Build locally
+## Building and testing
 
-- check your system with [KDoctor](https://github.com/Kotlin/kdoctor)
-- install JDK 17 or higher on your machine
-
-## Testing
-
-- You will need Chrome installed for JS based tests to run
-- run tests with `./gradlew :library:allTests`
+JDK 17+ required; check your system with [KDoctor](https://github.com/Kotlin/kdoctor). Run tests with
+`./gradlew :library:allTests` — the JS/WasmJS tests need Chrome installed.

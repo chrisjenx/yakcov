@@ -40,6 +40,8 @@ python3 scripts/check-compose-updates.py --self-test    # offline unit tests
 
 Requires JDK 17+. CI uses JDK 21 (Zulu). CI (`.github/workflows/checks.yml`) runs every platform's tests as a **matrix across both Compose channels**; the `next` (beta) leg is `continue-on-error`. The single required status check is the aggregate `CI-Gate` job — set branch protection on that, not on individual matrix legs (which change with `compose-releases.toml`). JS/WasmJS tests run through Karma with `ChromeHeadless`; if Chrome isn't auto-detected, set `CHROME_BIN` to the Chrome/Chromium binary.
 
+**Public API is gated.** `Checks-Api` (unmatrixed — public API must not vary by channel) runs `./gradlew :library:checkKotlinAbi` against the ABI dumps committed in `library/api/`, via Kotlin's built-in `abiValidation`. **Add or change a public symbol and CI fails until you run `./gradlew :library:updateKotlinAbi` and commit the dump.** `internal` declarations must not appear there. Caveat: the job runs on `ubuntu-latest`, so the Apple entries in `library.klib.api` pass by inference (`klib.keepUnsupportedTargets` defaults true) rather than being validated; js/wasmJs still catch common-API drift.
+
 ## Modules
 
 - **`:library`** — The published KMP library. All source under `library/src/`.
@@ -55,7 +57,7 @@ The core validation model is a hierarchy rooted in `ValueValidator<V, R>`:
 
 - **`GenericValueValidator<T>`** (`generic/GenericValueValidator.kt`) — Extends `ValueValidator<T, T>`. Validates any arbitrary type directly. Use `rememberGenericValueValidator()` in Compose.
 
-- **`FieldValidator<V>`** (`FieldValidator.kt`) — Headless, presenter-ownable validator with a **plain constructor** (no `@Composable`, no coroutine scope, no `Modifier` dependency) for snapshot-presenter (Molecule) screens. Owns its draft in a snapshot `value` cell and folds the `ValueValidatorRule` list into a plain `@Immutable @Serializable` `FieldValidationState` (`severity` + `showError` + a `@Transient` `ValidationResult`) via the pure `toFieldState` bridges in `FieldValidationState.kt`. It is **separate from** `ValueValidator` (not a refactor), so the existing API is untouched. An optional `observer: FieldValidatorObserver<V>` constructor param fires `ValueChanged`/`Validated`/`Reset` events after each mutation commits (never at construction; observers must not throw). **It is a mutable, reference-identity holder — do not place it inside an immutable reducer-MVI `Model`;** for reducer-MVI store the draft + `FieldValidationState` and call `toFieldState` in `reduce()`. Render messages with `FieldValidationState.text()`/`supportingText()`; submit with `List<FieldValidator<*>>.validate()` (reveals then checks).
+- **`FieldValidator<V>`** (`FieldValidator.kt`) — Headless validator with a **plain constructor** (no `@Composable`, no coroutine scope, no `Modifier` dependency) for snapshot-presenter (Molecule) screens; separate from `ValueValidator`, not a refactor of it. Holds its draft in a snapshot `value` cell and folds the rule list into an `@Immutable @Serializable` `FieldValidationState` (`severity` + `showError` + a `@Transient` `ValidationResult`) via the pure `toFieldState` bridges in `FieldValidationState.kt`. `attempts` counts submit-intent `validate()` calls only — not `onFocusLost()`, and never reset — and is this path's shake trigger. Optional `observer: FieldValidatorObserver<V>` fires `ValueChanged`/`Validated`/`Reset` after each mutation commits (never at construction; observers must not throw). **A mutable, reference-identity holder — never put it in an immutable reducer-MVI `Model`;** there, store the draft + `FieldValidationState` and call `toFieldState` in `reduce()`. Render with `FieldValidationState.text()`/`supportingText()`; submit with `List<FieldValidator<*>>.validate()` (reveals then checks).
 
 - **`ValueValidatorRule<V>`** (`ValueValidatorRule.kt`) — SAM interface. Implement `validate(value: V): ValidationResult` to create custom rules.
 
@@ -92,21 +94,8 @@ Each channel may also set `track` (`stable` | `prerelease`) to declare which ups
 
 ## Key Design Decisions
 
-- **Modifier primitives are free functions over plain values.** `Modifiers.kt` owns `shakeOnInvalid`,
-  `validationBehavior`, `onFocusCursorToEnd`, and `onFocusLost` so reducer-MVI and headless
-  `FieldValidator` code can use them with no validator object; `TextFieldValueValidator`'s
-  `onFocusCursorToEnd` member keeps its signature and forwards to the free form. The bundle is called
-  `validationBehavior`, **not** `validationConfig` — the latter is a `ValueValidator` member taking a
-  leading `Boolean`, and Kotlin's member-over-extension rule would silently bind a same-named free
-  function to it (setting `validateOnFocusLost` instead of `isError`) with no compiler diagnostic.
-- **Shake: two mechanisms on disjoint classes, deliberately.** `ValueValidator` keeps its own
-  imperative shake (`validationConfig(shakeOnInvalid = true)`), untouched. The plain-value paths use
-  `shakeOnInvalid(isError, trigger)` driven by a monotonic counter — `FieldValidator.attempts`, or a
-  reducer's own `submitAttempts`. Shake is **never** driven by diffing `FieldValidationState`: its
-  equality includes the message, so repeated invalid submits compare equal and a diff-driven shake
-  would fire once and never again. Give disposable fields a stable `key`, or a re-created field adopts
-  the current counter as its baseline and swallows a due shake. Shake is visual only — a
-  `graphicsLayer` translation, silent to screen readers.
+- **Modifier primitives are free functions over plain values.** `Modifiers.kt` owns `shakeOnInvalid`, `validationBehavior`, `onFocusCursorToEnd` and `onFocusLost`, so reducer-MVI and headless `FieldValidator` code needs no validator object; `TextFieldValueValidator.onFocusCursorToEnd` keeps its signature and forwards to the free form. The bundle is `validationBehavior`, **not** `validationConfig`: that name is a `ValueValidator` member taking a leading `Boolean`, and member-over-extension resolution would silently bind a same-named free function to it — setting `validateOnFocusLost` instead of `isError`, with no compiler diagnostic. In `validationBehavior`, `isError` gates only the shake, so it is inert when `shakeTrigger` is null.
+- **Shake: two mechanisms on disjoint classes, deliberately.** `ValueValidator` keeps its imperative shake (`validationConfig(shakeOnInvalid = true)`), untouched. Plain-value paths use `shakeOnInvalid(isError, trigger)` driven by a monotonic counter (`FieldValidator.attempts`, or a reducer's own `submitAttempts`) — **never** by diffing `FieldValidationState`, whose equality includes the message, so repeated invalid submits compare equal and a diff-driven shake would fire once and never again. `LaunchedEffect(trigger)` *cancels* an in-flight shake, so the animation is wrapped in `try`/`finally` with a `NonCancellable` `snapTo(0f)`; without it a cancelled shake leaves the field translated off-centre permanently. Give disposable fields a stable `key`, or a re-created field adopts the current counter as its baseline and swallows a due shake. Shake is visual only — a `graphicsLayer` translation, silent to screen readers.
 - **All Compose dependencies are `compileOnly`** in `commonMain` to avoid forcing transitive deps on consumers. Tests use `implementation` so they actually resolve.
 - **libphonenumber-kotlin is `compileOnly`** — consumers must add it themselves only for the region-aware `Phone` rule (and the `isPhoneNumber()` helper). The default `PhoneFormat` rule and the `String?.isPhoneNumberFormat()` helper are dependency-free common code.
 - **kotlinx-serialization-core and compose runtime-saveable are `compileOnly`** — consumers who serialize `FieldValidationState` must add a serialization runtime themselves (in practice `kotlinx-serialization-json`, which pulls core transitively). `Outcome` persists by constant *name*; don't rename its constants without a migration. `FieldValidationState.result` is `@Transient` (the kotlinx `Transient`, not `kotlin.jvm`) and equality intentionally includes `result` so message-only changes still recompose.
