@@ -83,3 +83,26 @@ fun Modifier.shakeOnInvalid(isError: Boolean, trigger: Int): Modifier = composed
     ShakeOnTriggerEffect(isError, trigger) { shakingState.shake(animationDuration = ShakeDurationMs) }
     shakable(shakingState)
 }
+
+/**
+ * Bundles focus-loss handling and shake-on-invalid over plain values — the plain-value counterpart to
+ * `ValueValidator`'s `validationConfig`, usable from a reducer's model or a headless [FieldValidator].
+ *
+ * Deliberately **not** named `validationConfig`: that name is already a `ValueValidator` member taking
+ * a leading `Boolean`, and Kotlin resolves members over extensions, so a same-named free function
+ * would silently bind to the member inside `with(validator) { }`.
+ *
+ * @param isError whether the field is currently showing an error — gates the shake.
+ * @param shakeTrigger a monotonic counter; `null` disables shake entirely.
+ * @param onFocusLost invoked when the element loses focus; `null` adds no focus handling. Equivalent
+ *  to chaining [onFocusLost] yourself.
+ * @see shakeOnInvalid
+ * @see onFocusLost
+ */
+fun Modifier.validationBehavior(
+    isError: Boolean,
+    shakeTrigger: Int? = null,
+    onFocusLost: (() -> Unit)? = null,
+): Modifier = this
+    .then(if (onFocusLost != null) Modifier.onFocusLost(onLost = onFocusLost) else Modifier)
+    .then(if (shakeTrigger != null) Modifier.shakeOnInvalid(isError, shakeTrigger) else Modifier)
