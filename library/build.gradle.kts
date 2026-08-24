@@ -22,6 +22,15 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
+    // Public API drift gate: `checkLegacyAbi` fails CI when the committed dump under
+    // library/api/ doesn't match the current public surface; `updateLegacyAbi` regenerates it.
+    // klib.enabled covers the native/JS/Wasm targets alongside JVM/Android.
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation {
+        enabled.set(true)
+        klib.enabled.set(true)
+    }
+
     applyDefaultHierarchyTemplate()
     androidTarget {
         compilations.all {
