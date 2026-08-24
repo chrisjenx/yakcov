@@ -128,7 +128,7 @@ jobs:
           java-version: '21'
           cache: 'gradle'
       - name: Check public API
-        run: ./gradlew :library:checkLegacyAbi
+        run: ./gradlew :library:checkKotlinAbi
 
   Checks-Apple:
     needs: Build-Matrix

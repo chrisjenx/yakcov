@@ -140,9 +140,14 @@ class ModifiersShakeTest {
     @AndroidJUnitIgnore
     @JSIgnore
     fun validationBehavior_isNotHijackedByValidatorMemberScope() = runComposeUiTest {
-        // Inside with(validator), Kotlin prefers MEMBERS over extensions. Had the free
-        // function been named validationConfig, this call would have silently bound to
-        // the member and set validateOnFocusLost instead of isError.
+        // Canary, not proof: there is no validationBehavior MEMBER on ValueValidator, so this
+        // test cannot demonstrate the free function "winning" a resolution contest today — it
+        // only exercises validationBehavior inside `with(validator) { }`. What it guards against
+        // is future regression: if someone later adds a colliding `validationBehavior` member to
+        // ValueValidator, Kotlin's member-over-extension resolution would silently bind here, and
+        // this test would start failing (the member has no onFocusLost param) rather than the
+        // collision going unnoticed. The actual naming-collision case this branch dodged is
+        // covered by validationConfig_memberStillBindsToMemberInsideWithValidator below.
         val validator = TextFieldValueValidator(value = "")
         var lost = 0
         setContent {
@@ -160,6 +165,60 @@ class ModifiersShakeTest {
         }
         onNodeWithTag("a").requestFocus()
         onNodeWithTag("b").requestFocus()
-        assertEquals(1, lost, "the free function must win — the member has no onFocusLost param")
+        assertEquals(1, lost, "validationBehavior's onFocusLost must fire from inside with(validator)")
+    }
+
+    @Test
+    @AndroidJUnitIgnore
+    @JSIgnore
+    fun validationConfig_memberStillBindsToMemberInsideWithValidator() = runComposeUiTest {
+        // The other half of the naming decision: inside with(validator) { }, the unqualified
+        // call `Modifier.validationConfig(...)` must still resolve to the ValueValidator MEMBER
+        // (member-over-extension), not to some free function. Required is the validator's
+        // default rule, so a blank value fails validation; validateOnFocusLost = true means
+        // losing focus should trigger validate() and flip isError() to true.
+        val validator = TextFieldValueValidator(value = "")
+        setContent {
+            with(validator) {
+                Column {
+                    TextField(
+                        value = "", onValueChange = {},
+                        modifier = Modifier
+                            .testTag("a")
+                            .validationConfig(validateOnFocusLost = true),
+                    )
+                    TextField(value = "", onValueChange = {}, modifier = Modifier.testTag("b"))
+                }
+            }
+        }
+        onNodeWithTag("a").requestFocus()
+        assertEquals(false, validator.isError())
+        onNodeWithTag("b").requestFocus()
+        assertEquals(true, validator.isError())
+    }
+
+    @Test
+    @AndroidJUnitIgnore
+    @JSIgnore
+    fun shakeOnInvalid_composesThePublicModifier() = runComposeUiTest {
+        // Every other shake test targets the internal ShakeOnTriggerEffect. This is the only
+        // test that materializes the PUBLIC Modifier.shakeOnInvalid, so it would catch a
+        // shakeOnInvalid (or validationBehavior) that dropped its shakable(shakingState) call.
+        var trigger by mutableStateOf(0)
+        setContent {
+            TextField(
+                value = "", onValueChange = {},
+                modifier = Modifier
+                    .testTag("a")
+                    .shakeOnInvalid(isError = true, trigger = trigger),
+            )
+        }
+        waitForIdle()
+        trigger = 1
+        waitForIdle()
+        // Proves the public modifier composed successfully and its shake branch ran without
+        // crashing composition (a throw there would have already failed at setContent /
+        // waitForIdle above); requestFocus() re-confirms the node is still alive afterward.
+        onNodeWithTag("a").requestFocus()
     }
 }

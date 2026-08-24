@@ -22,9 +22,16 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
-    // Public API drift gate: `checkLegacyAbi` fails CI when the committed dump under
-    // library/api/ doesn't match the current public surface; `updateLegacyAbi` regenerates it.
+    // Public API drift gate: `checkKotlinAbi` fails CI when the committed dump under
+    // library/api/ doesn't match the current public surface; `updateKotlinAbi` regenerates it.
     // klib.enabled covers the native/JS/Wasm targets alongside JVM/Android.
+    //
+    // Note: the `Checks-Api` CI job that runs checkKotlinAbi executes on ubuntu-latest, so the
+    // Apple klib targets recorded in library/api/library.klib.api are NOT actually validated
+    // there — they pass via inference because klib.keepUnsupportedTargets defaults to `true`.
+    // Common-API drift is still caught through the js/wasmJs entries, which DO run on Linux.
+    // klib.enabled.set(true) below is redundant (it already defaults to `true`); kept as
+    // documentation that klib validation is intentionally on, not an oversight.
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
     abiValidation {
         enabled.set(true)
