@@ -5,10 +5,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Returns a [Modifier] that will modify how the field acts to user interaction and validation
@@ -106,3 +112,34 @@ fun Modifier.validationBehavior(
 ): Modifier = this
     .then(if (onFocusLost != null) Modifier.onFocusLost(onLost = onFocusLost) else Modifier)
     .then(if (shakeTrigger != null) Modifier.shakeOnInvalid(isError, shakeTrigger) else Modifier)
+
+/**
+ * Moves the cursor to the end of the text when this element gains focus — the plain-value form of
+ * `TextFieldValueValidator`'s member of the same name, usable with no validator.
+ *
+ * `@Composable` rather than `composed {}` because the [scope] default is a composable call. The value
+ * is read through `rememberUpdatedState` so the deferred write sees the *live* text: the one-frame
+ * deferral is what makes the reversed [TextRange] land the cursor at the end.
+ *
+ * @param highlight when true, selects the whole text instead of collapsing to the end.
+ */
+@Composable
+fun Modifier.onFocusCursorToEnd(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    scope: CoroutineScope = rememberCoroutineScope(),
+    highlight: Boolean = false,
+): Modifier {
+    val currentValue by rememberUpdatedState(value)
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
+    return onFocusChanged { focusState ->
+        if (focusState.isFocused) {
+            scope.launch {
+                val length = currentValue.text.length
+                // Yes, this is the wrong way around (bug workaround to get cursor to end)
+                val range = if (!highlight) TextRange(length) else TextRange(length, 0)
+                currentOnValueChange(currentValue.copy(selection = range))
+            }
+        }
+    }
+}
