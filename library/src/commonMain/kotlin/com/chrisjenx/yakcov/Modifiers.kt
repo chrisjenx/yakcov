@@ -49,10 +49,17 @@ fun Modifier.onFocusLost(onLost: () -> Unit): Modifier = composed {
     }
 }
 
-/** Shake parity constants — copied from the ValueValidator implementation they replace. */
-private val ShakeStrength = ShakingState.Strength.Custom(20f)
-private val ShakeDirection = ShakingState.Direction.LEFT_THEN_RIGHT
-private const val ShakeDurationMs = 20
+/**
+ * Shake parity constants, matching `ValueValidator`'s own imperative shake so both paths feel
+ * identical. `internal` rather than `private` so tests assert against these values instead of
+ * re-typing the literals — a copy in a test drifts silently when the real ones are tuned.
+ *
+ * NOTE: `ValueValidator.kt` still spells the same values inline; unifying that too means editing a
+ * file this change deliberately leaves alone, so it stays a follow-up.
+ */
+internal val ShakeStrength = ShakingState.Strength.Custom(20f)
+internal val ShakeDirection = ShakingState.Direction.LEFT_THEN_RIGHT
+internal const val ShakeDurationMs = 20
 
 /**
  * Invokes [onShake] when [trigger] changes while [isError] is true.
@@ -87,7 +94,7 @@ internal fun ShakeOnTriggerEffect(
  * @see validationBehavior for the bundled form.
  */
 fun Modifier.shakeOnInvalid(isError: Boolean, trigger: Int): Modifier = composed {
-    val shakingState = remember { ShakingState(ShakeStrength, ShakeDirection) }
+    val shakingState = rememberShakingState(strength = ShakeStrength, direction = ShakeDirection)
     shakeOnInvalidImpl(isError, trigger, shakingState)
 }
 

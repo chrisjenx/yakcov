@@ -1,7 +1,6 @@
 package com.chrisjenx.yakcov
 
 import com.chrisjenx.yakcov.ValidationResult.Outcome
-import com.chrisjenx.yakcov.strings.Required
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -203,7 +202,7 @@ class FieldValidatorTest {
 
     @Test
     fun attempts_incrementsOnValidateOnly() {
-        val field = FieldValidator("", rules = listOf(Required))
+        val field = newValidator()
         assertEquals(0, field.attempts)
 
         field.onValueChange("a")
@@ -222,7 +221,7 @@ class FieldValidatorTest {
     fun attempts_survivesReset() {
         // attempts counts events, not state. Resetting it would itself register as a
         // trigger change and fire a spurious shake on an initialValidate field.
-        val field = FieldValidator("", rules = listOf(Required))
+        val field = newValidator()
         field.validate()
         assertEquals(1, field.attempts)
         field.reset()
@@ -231,9 +230,9 @@ class FieldValidatorTest {
 
     @Test
     fun onFocusLost_stillRevealsErrorsAndReportsValidity() {
-        val field = FieldValidator("", rules = listOf(Required))
+        val field = newValidator()
         assertFalse(field.state.showError)
-        assertFalse(field.onFocusLost(), "blank Required field is invalid")
+        assertFalse(field.onFocusLost(), "blank required field is invalid")
         assertTrue(field.state.showError)
         assertTrue(field.state.isError)
     }

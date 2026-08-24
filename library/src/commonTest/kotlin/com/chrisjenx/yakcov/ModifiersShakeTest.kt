@@ -230,7 +230,7 @@ class ModifiersShakeTest {
         // The wiring proof the parked finding asked for: with an injected ShakingState we can see
         // that shakeOnInvalid really drives ShakingState.shake(), i.e. that translationX moves.
         // Deleting shakable()/shake() from the modifier makes this fail instead of passing silently.
-        val shakingState = ShakingState(ShakingState.Strength.Custom(20f), ShakingState.Direction.LEFT_THEN_RIGHT)
+        val shakingState = ShakingState(ShakeStrength, ShakeDirection)
         var trigger by mutableStateOf(0)
         mainClock.autoAdvance = false
         setContent {
@@ -276,7 +276,7 @@ class ModifiersShakeTest {
         // the restart's isError guard then skips (the value was corrected mid-animation, e.g. by
         // autofill), xPosition is stranded wherever animateTo was interrupted and the field renders
         // permanently offset. The shake must always unwind to 0f.
-        val shakingState = ShakingState(ShakingState.Strength.Custom(20f), ShakingState.Direction.LEFT_THEN_RIGHT)
+        val shakingState = ShakingState(ShakeStrength, ShakeDirection)
         var trigger by mutableStateOf(0)
         var isError by mutableStateOf(true)
         mainClock.autoAdvance = false
