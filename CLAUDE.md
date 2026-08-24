@@ -40,7 +40,13 @@ python3 scripts/check-compose-updates.py --self-test    # offline unit tests
 
 Requires JDK 17+. CI uses JDK 21 (Zulu). CI (`.github/workflows/checks.yml`) runs every platform's tests as a **matrix across both Compose channels**; the `next` (beta) leg is `continue-on-error`. The single required status check is the aggregate `CI-Gate` job — set branch protection on that, not on individual matrix legs (which change with `compose-releases.toml`). JS/WasmJS tests run through Karma with `ChromeHeadless`; if Chrome isn't auto-detected, set `CHROME_BIN` to the Chrome/Chromium binary.
 
-**Public API is gated.** `Checks-Api` (unmatrixed — public API must not vary by channel) runs `./gradlew :library:checkKotlinAbi` against the ABI dumps committed in `library/api/`, via Kotlin's built-in `abiValidation`. **Add or change a public symbol and CI fails until you run `./gradlew :library:updateKotlinAbi` and commit the dump.** `internal` declarations must not appear there. Caveat: the job runs on `ubuntu-latest`, so the Apple entries in `library.klib.api` pass by inference (`klib.keepUnsupportedTargets` defaults true) rather than being validated; js/wasmJs still catch common-API drift.
+**Public API is gated.** `Checks-Api` runs `./gradlew :library:checkKotlinAbi` against the ABI dumps committed in `library/api/`, via Kotlin's built-in `abiValidation`. **Add or change a public symbol and CI fails until you run `./gradlew :library:updateKotlinAbi` and commit the dump.** `internal` declarations must not appear there.
+
+The job is **unmatrixed, and must stay that way** — not only because public API must not vary by channel, but because the dumps are *toolchain-specific*: each Kotlin version emits a slightly different surface (2.4 stops emitting the synthetic `DefaultConstructorMarker` bridge constructors that 2.3 does), so a stable-generated dump can never match another channel's compiler. `release.yml`'s dry-run passes `-x :library:checkKotlinAbi` for the same reason. Regenerate dumps on **stable** only.
+
+Two traps in the `abiValidation` block itself (see the comment in `library/build.gradle.kts`): `enabled` must be set **reflectively**, because Kotlin 2.4 removed it and naming it statically is a deprecation-level *error* that fails the build script's own compilation on `[next]`; and an *empty* block is not a substitute — on 2.3 that leaves `checkKotlinAbi` `SKIPPED`, a gate that passes while validating nothing. Verify any change here with a mutation test: add a public symbol and confirm the check actually **fails**.
+
+Caveat: the job runs on `ubuntu-latest`, so the Apple entries in `library.klib.api` pass by inference (`klib.keepUnsupportedTargets` defaults true) rather than being validated; js/wasmJs still catch common-API drift.
 
 ## Modules
 
