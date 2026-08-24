@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.chrisjenx.yakcov.FieldValidator
-import com.chrisjenx.yakcov.onFocusLost
 import com.chrisjenx.yakcov.validate
+import com.chrisjenx.yakcov.validationBehavior
 import com.chrisjenx.yakcov.supportingText
 import com.chrisjenx.yakcov.strings.Email
 import com.chrisjenx.yakcov.strings.Required
@@ -56,7 +56,13 @@ fun ValidatedTextField(
         supportingText = field.state.supportingText(),
         modifier = modifier
             .fillMaxWidth()
-            .onFocusLost { field.onFocusLost() },
+            // field.attempts is bumped only by validate() (never onFocusLost()) and never resets, so
+            // every repeat invalid submit shakes even though the resulting state is `==` to the last.
+            .validationBehavior(
+                isError = field.state.isError,
+                shakeTrigger = field.attempts,
+                onFocusLost = { field.onFocusLost() },
+            ),
     )
 }
 
@@ -71,5 +77,5 @@ fun PresenterFormSample() {
         onClick = { submitted = presenter.submit() },
         modifier = Modifier.fillMaxWidth(),
     ) { Text("Submit") }
-    submitted?.let { Text(if (it) "Valid — proceeding" else "Invalid — shake here") }
+    submitted?.let { Text(if (it) "Valid — proceeding" else "Fix the errors above") }
 }
