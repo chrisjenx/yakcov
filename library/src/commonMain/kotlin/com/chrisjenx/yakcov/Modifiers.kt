@@ -1,5 +1,7 @@
 package com.chrisjenx.yakcov
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,4 +39,47 @@ fun Modifier.onFocusLost(onLost: () -> Unit): Modifier = composed {
         if (hadFocus && !focusState.hasFocus) onLost()
         hadFocus = focusState.hasFocus
     }
+}
+
+/** Shake parity constants — copied from the ValueValidator implementation they replace. */
+private val ShakeStrength = ShakingState.Strength.Custom(20f)
+private val ShakeDirection = ShakingState.Direction.LEFT_THEN_RIGHT
+private const val ShakeDurationMs = 20
+
+/**
+ * Invokes [onShake] when [trigger] changes while [isError] is true.
+ *
+ * The trigger value observed at first composition is treated as already-seen, so a field that is
+ * already in error (e.g. `initialValidate = true`) does not shake on its first frame. [trigger] must
+ * be monotonic: a counter that returns to its first-composition value will not fire.
+ *
+ * Internal so the trigger semantics can be tested without asserting on animation frames; the public
+ * entry point is [shakeOnInvalid].
+ */
+@Composable
+internal fun ShakeOnTriggerEffect(
+    isError: Boolean,
+    trigger: Int,
+    onShake: suspend () -> Unit,
+) {
+    val initialTrigger = remember { trigger }
+    LaunchedEffect(trigger) {
+        if (trigger != initialTrigger && isError) onShake()
+    }
+}
+
+/**
+ * Shakes this element when [trigger] changes while [isError] is true — the plain-value equivalent of
+ * `ValueValidator`'s `validationConfig(shakeOnInvalid = true)`, usable with no validator at all.
+ *
+ * Because a repeated invalid submit produces a structurally *equal* validation state, shake cannot be
+ * driven by diffing that state; pass a monotonic counter instead (`FieldValidator.attempts`, or a
+ * `submitAttempts` field in your reducer's model).
+ *
+ * @see validationBehavior for the bundled form.
+ */
+fun Modifier.shakeOnInvalid(isError: Boolean, trigger: Int): Modifier = composed {
+    val shakingState = remember { ShakingState(ShakeStrength, ShakeDirection) }
+    ShakeOnTriggerEffect(isError, trigger) { shakingState.shake(animationDuration = ShakeDurationMs) }
+    shakable(shakingState)
 }
