@@ -44,8 +44,22 @@ Notes on the wiring:
 - Cross-field rules (confirm-password, etc.) are SAM lambdas closing over the model —
   see [custom rules](../recipes/custom-rules.md). The built-in `PasswordMatches` couples
   to a *mutable* validator and does **not** fit a reducer.
-- **Shake stays UI-owned:** keep a `rememberShakingState()` in the screen and call
-  `shakingState.shake()` when an invalid submit reduces `submitted` to `false`.
+- **Shake is driven by a monotonic counter, not a state diff.** `FieldValidationState` equality
+  includes its message, so a *second* invalid submit produces an `==` state — no recomposition, and a
+  diff-driven shake would fire once and never again. Thread a `submitAttempts` counter in the model
+  and pass it as `shakeTrigger`; `Modifier.validationBehavior(isError, shakeTrigger, onFocusLost)`
+  bundles that with focus-loss handling. `Modifier.shakeOnInvalid(isError, trigger)` is the
+  standalone form.
+- **Screen readers get no signal from shake.** It is a purely visual `graphicsLayer` translation, and
+  a repeat invalid submit changes nothing in the semantics tree. If the form must be accessible,
+  announce the failure yourself on submit.
+- **Give disposable fields a stable `key`.** The "don't shake on first frame" guard remembers the
+  trigger it was born with, so a field re-created after its subtree was disposed — a `LazyColumn` item
+  without a stable `key`, a nav destination re-entered — adopts the current counter as its new
+  baseline and swallows any shake that became due while it was gone.
+- **`onFocusCursorToEnd` needs a `TextFieldValue` in your model,** not a `String`. The examples on
+  this page hoist `String`, so adopting cursor-to-end means migrating the field's model type.
+  `TextFieldValue` is a value type and is safe inside an immutable model.
 
 ## Persistence & process death
 

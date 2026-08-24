@@ -15,12 +15,12 @@ import androidx.compose.ui.Modifier
 import com.chrisjenx.yakcov.FieldValidationState
 import com.chrisjenx.yakcov.ValueValidatorRule
 import com.chrisjenx.yakcov.hasNoErrors
-import com.chrisjenx.yakcov.onFocusLost
 import com.chrisjenx.yakcov.strings.Email
 import com.chrisjenx.yakcov.strings.MinLength
 import com.chrisjenx.yakcov.strings.Required
 import com.chrisjenx.yakcov.supportingText
 import com.chrisjenx.yakcov.toFieldState
+import com.chrisjenx.yakcov.validationBehavior
 
 // --8<-- [start:mvi-model]
 // Plain top-level rule lists: shared by reduce() and any unit test, no Compose needed.
@@ -35,6 +35,9 @@ data class SignUpModel(
     val passwordState: FieldValidationState = FieldValidationState.Pristine,
     /** null = not attempted, true = accepted, false = blocked (errors surfaced). */
     val submitted: Boolean? = null,
+    /** Monotonic submit counter — drives shake. A repeated invalid submit yields an
+     *  EQUAL FieldValidationState, so a state diff alone can never re-fire the shake. */
+    val submitAttempts: Int = 0,
 ) {
     /** Driven purely by severity (ignores showError) — live from the first frame. */
     val canSubmit: Boolean get() = listOf(emailState, passwordState).hasNoErrors()
@@ -80,6 +83,7 @@ fun reduce(model: SignUpModel, event: SignUpEvent): SignUpModel = when (event) {
         val surfaced = model.copy(
             emailState = emailRules.toFieldState(model.email, showError = true),
             passwordState = passwordRules.toFieldState(model.password, showError = true),
+            submitAttempts = model.submitAttempts + 1,
         )
         surfaced.copy(submitted = surfaced.canSubmit)
     }
@@ -114,7 +118,11 @@ fun MviSignUpScreen(store: SignUpStore = remember { SignUpStore() }) {
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .onFocusLost { store.dispatch(SignUpEvent.EmailFocusLost) },
+                .validationBehavior(
+                    isError = model.emailState.isError,
+                    shakeTrigger = model.submitAttempts,
+                    onFocusLost = { store.dispatch(SignUpEvent.EmailFocusLost) },
+                ),
         )
         OutlinedTextField(
             value = model.password,
@@ -125,7 +133,11 @@ fun MviSignUpScreen(store: SignUpStore = remember { SignUpStore() }) {
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .onFocusLost { store.dispatch(SignUpEvent.PasswordFocusLost) },
+                .validationBehavior(
+                    isError = model.passwordState.isError,
+                    shakeTrigger = model.submitAttempts,
+                    onFocusLost = { store.dispatch(SignUpEvent.PasswordFocusLost) },
+                ),
         )
         Button(
             onClick = { store.dispatch(SignUpEvent.Submit) },

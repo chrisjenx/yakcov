@@ -92,6 +92,21 @@ Each channel may also set `track` (`stable` | `prerelease`) to declare which ups
 
 ## Key Design Decisions
 
+- **Modifier primitives are free functions over plain values.** `Modifiers.kt` owns `shakeOnInvalid`,
+  `validationBehavior`, `onFocusCursorToEnd`, and `onFocusLost` so reducer-MVI and headless
+  `FieldValidator` code can use them with no validator object; `TextFieldValueValidator`'s
+  `onFocusCursorToEnd` member keeps its signature and forwards to the free form. The bundle is called
+  `validationBehavior`, **not** `validationConfig` — the latter is a `ValueValidator` member taking a
+  leading `Boolean`, and Kotlin's member-over-extension rule would silently bind a same-named free
+  function to it (setting `validateOnFocusLost` instead of `isError`) with no compiler diagnostic.
+- **Shake: two mechanisms on disjoint classes, deliberately.** `ValueValidator` keeps its own
+  imperative shake (`validationConfig(shakeOnInvalid = true)`), untouched. The plain-value paths use
+  `shakeOnInvalid(isError, trigger)` driven by a monotonic counter — `FieldValidator.attempts`, or a
+  reducer's own `submitAttempts`. Shake is **never** driven by diffing `FieldValidationState`: its
+  equality includes the message, so repeated invalid submits compare equal and a diff-driven shake
+  would fire once and never again. Give disposable fields a stable `key`, or a re-created field adopts
+  the current counter as its baseline and swallows a due shake. Shake is visual only — a
+  `graphicsLayer` translation, silent to screen readers.
 - **All Compose dependencies are `compileOnly`** in `commonMain` to avoid forcing transitive deps on consumers. Tests use `implementation` so they actually resolve.
 - **libphonenumber-kotlin is `compileOnly`** — consumers must add it themselves only for the region-aware `Phone` rule (and the `isPhoneNumber()` helper). The default `PhoneFormat` rule and the `String?.isPhoneNumberFormat()` helper are dependency-free common code.
 - **kotlinx-serialization-core and compose runtime-saveable are `compileOnly`** — consumers who serialize `FieldValidationState` must add a serialization runtime themselves (in practice `kotlinx-serialization-json`, which pulls core transitively). `Outcome` persists by constant *name*; don't rename its constants without a migration. `FieldValidationState.result` is `@Transient` (the kotlinx `Transient`, not `kotlin.jvm`) and equality intentionally includes `result` so message-only changes still recompose.
