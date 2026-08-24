@@ -69,6 +69,17 @@ class FieldValidator<V>(
     var state: FieldValidationState by mutableStateOf(seedState(initial))
         private set
 
+    /**
+     * Monotonic count of submit-intent validations — every [validate] call, and no others. Pass this
+     * as the `shakeTrigger` of [validationBehavior]/[shakeOnInvalid]: a repeated invalid submit
+     * produces an *equal* [FieldValidationState], so shake cannot be driven by diffing that state.
+     *
+     * Deliberately not bumped by [onFocusLost] (focus loss reveals the error without shaking) nor
+     * reset by [reset] (it counts events, not state).
+     */
+    var attempts: Int by mutableStateOf(0)
+        private set
+
     /** Update the draft and revalidate, keeping the current showError (no error pop while typing). */
     fun onValueChange(value: V) {
         Snapshot.withMutableSnapshot {
@@ -78,17 +89,22 @@ class FieldValidator<V>(
         observer?.onEvent(FieldValidatorEvent.ValueChanged(this.value, state))
     }
 
-    /** Revalidate and show errors — call when the field loses focus. Alias for [validate]. */
-    fun onFocusLost(): Boolean = validate()
+    /** Revalidate and show errors — call when the field loses focus. Does not count as an attempt. */
+    fun onFocusLost(): Boolean = revealAndValidate(countAttempt = false)
 
     /**
-     * Revalidate, force errors visible, and report validity — call at submit time (or on focus loss
-     * via [onFocusLost]). Mirrors [ValueValidator.validate].
+     * Revalidate, force errors visible, and report validity — call at submit time. Increments
+     * [attempts]. Mirrors [ValueValidator.validate].
      *
      * @return `true` when the field is valid (no [ValidationResult.Outcome.ERROR]).
      */
-    fun validate(): Boolean {
-        revalidate(showError = true)
+    fun validate(): Boolean = revealAndValidate(countAttempt = true)
+
+    private fun revealAndValidate(countAttempt: Boolean): Boolean {
+        Snapshot.withMutableSnapshot {
+            revalidate(showError = true)
+            if (countAttempt) attempts++
+        }
         observer?.onEvent(FieldValidatorEvent.Validated(value, state))
         return !state.isError
     }

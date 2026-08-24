@@ -1,6 +1,7 @@
 package com.chrisjenx.yakcov
 
 import com.chrisjenx.yakcov.ValidationResult.Outcome
+import com.chrisjenx.yakcov.strings.Required
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -198,5 +199,42 @@ class FieldValidatorTest {
         v.validate()
         v.reset()
         assertEquals(3, checked)
+    }
+
+    @Test
+    fun attempts_incrementsOnValidateOnly() {
+        val field = FieldValidator("", rules = listOf(Required))
+        assertEquals(0, field.attempts)
+
+        field.onValueChange("a")
+        assertEquals(0, field.attempts, "typing must not count as a submit attempt")
+
+        field.onFocusLost()
+        assertEquals(0, field.attempts, "focus loss shows the error but must not shake")
+
+        field.validate()
+        assertEquals(1, field.attempts)
+        field.validate()
+        assertEquals(2, field.attempts, "each submit attempt must be distinguishable")
+    }
+
+    @Test
+    fun attempts_survivesReset() {
+        // attempts counts events, not state. Resetting it would itself register as a
+        // trigger change and fire a spurious shake on an initialValidate field.
+        val field = FieldValidator("", rules = listOf(Required))
+        field.validate()
+        assertEquals(1, field.attempts)
+        field.reset()
+        assertEquals(1, field.attempts)
+    }
+
+    @Test
+    fun onFocusLost_stillRevealsErrorsAndReportsValidity() {
+        val field = FieldValidator("", rules = listOf(Required))
+        assertFalse(field.state.showError)
+        assertFalse(field.onFocusLost(), "blank Required field is invalid")
+        assertTrue(field.state.showError)
+        assertTrue(field.state.isError)
     }
 }
