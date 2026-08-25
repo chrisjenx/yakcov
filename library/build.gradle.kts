@@ -25,22 +25,28 @@ kotlin {
     // Public API drift gate: `checkKotlinAbi` fails CI when the committed dump under
     // library/api/ doesn't match the current public surface; `updateKotlinAbi` regenerates it.
     //
-    // `enabled` must be set REFLECTIVELY, and the two channels are why. Kotlin 2.4 (`[next]`)
-    // removed both `enabled` and `klib`; naming either one statically is a deprecation *error*
-    // that fails this script's own compilation — breaking not just the continue-on-error `next`
-    // CI legs but `release.yml`'s next-channel publish. Kotlin 2.3 (`[stable]`) has the opposite
-    // requirement: without `enabled = true` the check task is SKIPPED, so an empty block leaves
-    // a gate that always passes and validates nothing. Verified both directions by mutation test
-    // (add a public symbol; the check must FAIL) — an empty block passed it vacuously.
+    // `enabled` is set REFLECTIVELY, and it stays that way even though both channels now run
+    // Kotlin 2.4.10, where the reflective lookup finds nothing and no-ops (2.4 removed `enabled`
+    // and `klib`; the block's mere presence auto-enables validation). Two opposite hazards make
+    // the reflection the only form that is safe on both sides of that version line:
+    //   - Naming `enabled` statically is a deprecation-level *error* on 2.4 — it fails this
+    //     script's own compilation, taking every Gradle invocation with it.
+    //   - An empty block is NOT a substitute on 2.3, where `enabled` still had to be set or
+    //     `checkKotlinAbi` is SKIPPED — a gate that passes while validating nothing.
+    // So the 4 lines below are currently inert, and are kept as the landmine guard for the day a
+    // channel is pinned back to a 2.3.x Kotlin: an empty block would silently go vacuous instead.
     //
     // `klib` is not set at all: klib validation already defaults to on.
     //
-    // On 2.4 the reflective lookup finds nothing and no-ops, but the block's presence auto-enables
-    // validation there — and the committed dump, generated on stable's compiler, will NOT match it
-    // (2.4 stops emitting the synthetic DefaultConstructorMarker bridge constructors). The dump is
-    // therefore toolchain-specific by nature and `Checks-Api` (unmatrixed, stable-only) is the sole
-    // place it is enforced. `release.yml` excludes this task from its next-channel dry-run for the
-    // same reason.
+    // Because both channels share one Kotlin, the committed dump is valid on every channel — so
+    // `Checks-Api` (unmatrixed, running libs.versions.toml defaults) enforces a surface that
+    // actually matches what each channel builds, and `release.yml`'s dry-run re-checks it. Pinning
+    // a channel to a different Kotlin breaks that: each compiler emits a slightly different
+    // surface (2.4 stops emitting the synthetic DefaultConstructorMarker bridge constructors 2.3
+    // does), and the dump would have to be regenerated per channel or excluded per leg.
+    //
+    // Verified by mutation test on 2.4.10 (add a public symbol; `checkKotlinAbi` must FAIL — it
+    // does, in all three dumps) plus a clean control. Re-run that check after ANY edit here.
     //
     // Note: the `Checks-Api` job runs on ubuntu-latest, so the Apple entries in
     // library/api/library.klib.api are NOT actually validated — they pass by inference because

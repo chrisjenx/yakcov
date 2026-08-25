@@ -141,7 +141,6 @@ public final class com/chrisjenx/yakcov/RegexExtKt {
 public final class com/chrisjenx/yakcov/RegularValidationResult : com/chrisjenx/yakcov/ValidationResult {
 	public static final field $stable I
 	public static final field Companion Lcom/chrisjenx/yakcov/RegularValidationResult$Companion;
-	public synthetic fun <init> (Ljava/lang/String;Lcom/chrisjenx/yakcov/ValidationResult$Outcome;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun copy (Ljava/lang/String;Lcom/chrisjenx/yakcov/ValidationResult$Outcome;)Lcom/chrisjenx/yakcov/RegularValidationResult;
 	public static synthetic fun copy$default (Lcom/chrisjenx/yakcov/RegularValidationResult;Ljava/lang/String;Lcom/chrisjenx/yakcov/ValidationResult$Outcome;ILjava/lang/Object;)Lcom/chrisjenx/yakcov/RegularValidationResult;
 	public fun equals (Ljava/lang/Object;)Z
@@ -163,7 +162,6 @@ public final class com/chrisjenx/yakcov/RegularValidationResult$Companion {
 public final class com/chrisjenx/yakcov/ResourceValidationResult : com/chrisjenx/yakcov/ValidationResult {
 	public static final field $stable I
 	public static final field Companion Lcom/chrisjenx/yakcov/ResourceValidationResult$Companion;
-	public synthetic fun <init> (Lorg/jetbrains/compose/resources/StringResource;Lcom/chrisjenx/yakcov/ValidationResult$Outcome;[Ljava/lang/Object;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun copy (Lorg/jetbrains/compose/resources/StringResource;Ljava/util/List;Lcom/chrisjenx/yakcov/ValidationResult$Outcome;)Lcom/chrisjenx/yakcov/ResourceValidationResult;
 	public static synthetic fun copy$default (Lcom/chrisjenx/yakcov/ResourceValidationResult;Lorg/jetbrains/compose/resources/StringResource;Ljava/util/List;Lcom/chrisjenx/yakcov/ValidationResult$Outcome;ILjava/lang/Object;)Lcom/chrisjenx/yakcov/ResourceValidationResult;
 	public fun equals (Ljava/lang/Object;)Z
