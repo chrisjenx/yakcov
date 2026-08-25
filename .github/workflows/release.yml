@@ -79,11 +79,13 @@ jobs:
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
       - name: Dry-run build
         if: ${{ inputs.dry-run == true }}
-        # checkKotlinAbi is excluded: library/api/ dumps are toolchain-specific (each Kotlin
-        # version emits a slightly different surface), so a dump generated on stable cannot match
-        # a non-stable channel's compiler. The unmatrixed `Checks-Api` job owns that gate and runs
-        # on every PR; re-running it here would only ever fail for the channel mismatch.
-        run: ./gradlew :library:build -x :library:checkKotlinAbi --no-configuration-cache -PpublishVersion="${{ matrix.tag }}"
+        # checkKotlinAbi runs here again deliberately. It used to be excluded, because the
+        # channels ran different Kotlin versions and library/api/ dumps are toolchain-specific,
+        # so a stable-generated dump could never match another channel's compiler. Both channels
+        # now share one Kotlin (see compose-releases.toml), so the dump is valid on every channel
+        # and this leg validates it rather than always failing on a mismatch. If a channel is ever
+        # pinned to a different Kotlin again, re-add `-x :library:checkKotlinAbi` for that leg.
+        run: ./gradlew :library:build --no-configuration-cache -PpublishVersion="${{ matrix.tag }}"
       - name: Create and push git tag
         if: ${{ inputs.dry-run == false }}
         run: |

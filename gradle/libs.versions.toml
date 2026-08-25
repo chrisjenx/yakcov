@@ -1,8 +1,7 @@
 [versions]
 # AGP 9.1.1 requires Gradle 9.3.1+ and supports compileSdk 37. Needed by Compose 1.12
 # (the [next] channel): its androidx artifacts demand AGP >= 9.1.0 / compileSdk 37.
-# Shared by both channels; stable (Kotlin 2.3.21) runs slightly beyond its KGP-tested
-# AGP/Gradle range but builds cleanly (verified in CI).
+# Shared by both channels, as Kotlin now is too (2.4.10).
 agp = "9.1.1"
 androidx-activityCompose = "1.13.0"
 androidx-uiTest = "1.11.2"
@@ -17,8 +16,10 @@ composeBom = "2026.05.01"
 coreKtx = "1.19.0"
 # org.jetbrains.androidx.lifecycle KMP artifacts (desktop + android), used by docs-examples
 jetbrains-lifecycle = "2.10.0"
-# Compose Multiplatform 1.11 requires Kotlin >= 2.3.10 for native/web targets
-kotlin = "2.3.21"
+# Latest stable Kotlin, shared by both channels (see compose-releases.toml). Compose
+# Multiplatform 1.11 requires Kotlin >= 2.3.10 for native/web targets; 2.4.10 satisfies
+# that and matches [next], so the committed ABI dumps are valid on every channel.
+kotlin = "2.4.10"
 # Android JVM bytecode target. Per-channel override lives in compose-releases.toml
 # (jvm-target). Compose 1.12+ androidx artifacts are JVM 11 bytecode; 1.11 inlines
 # cleanly into 1.8. Value is a Kotlin JvmTarget string ("1.8", "9", "11", "17", "21").
