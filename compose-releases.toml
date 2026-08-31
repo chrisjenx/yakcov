@@ -14,8 +14,8 @@
 #                      [stable] section and "prerelease" for any other section)
 
 [stable]
-compose = "1.11.1"
-compose-material3 = "1.11.0-alpha07"
+compose = "1.12.0"
+compose-material3 = "1.12.0-alpha03"
 # kotlin omitted -> inherits 2.4.10 (latest stable) from libs.versions.toml, comfortably above
 # the >= 2.3.10 that Compose 1.11 native/web requires. Verified: 1.11.1's artifacts build and
 # test clean on 2.4.10 across all five targets, and jvmTarget 1.8 is still accepted.
