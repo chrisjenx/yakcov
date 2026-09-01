@@ -7,6 +7,7 @@
 #   list_channels
 #   read_channel_key "stable" "compose"
 #   next_tag_for "1.10.3"
+#   select_channels "stable"
 #   patch_versions "stable"
 #   restore_versions
 #
@@ -25,7 +26,7 @@ NC='\033[0m'
 
 print_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 print_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 print_channel() { echo -e "${CYAN}[$1]${NC} $2"; }
 
 # --- TOML parsing ---
@@ -84,6 +85,74 @@ next_tag_for() {
     else
         echo "$base"
     fi
+}
+
+# A channel's tag derives from its compose version, and a tag is only created at the end of
+# that channel's release — so two channels sharing a version resolve to one tag, which the
+# publish matrix then races in parallel. Auto-suffixing instead would ship a duplicate as
+# 1.12.0-1, which outranks 1.12.0 in Gradle/Maven ordering, so refuse loudly.
+#
+# Compares the declared versions rather than next_tag_for's output: that keeps the check
+# independent of which tags the checkout happens to have (checks.yml fetches none,
+# release.yml fetches all).
+#
+# Usage: assert_distinct_channel_versions <channel> [channel...]
+assert_distinct_channel_versions() {
+    local seen_versions=() seen_channels=()
+    local channel compose_ver i
+
+    for channel in "$@"; do
+        compose_ver=$(read_channel_key "$channel" "compose")
+        # Channels without a compose version are skipped by the matrix too
+        [ -z "$compose_ver" ] && continue
+
+        for i in "${!seen_versions[@]}"; do
+            if [ "${seen_versions[$i]}" = "$compose_ver" ]; then
+                print_error "Channels '${seen_channels[$i]}' and '$channel' both declare compose = '$compose_ver'."
+                print_error "Give them distinct 'compose' versions in compose-releases.toml, or retire one channel."
+                return 1
+            fi
+        done
+
+        seen_versions+=("$compose_ver")
+        seen_channels+=("$channel")
+    done
+
+    return 0
+}
+
+# Echo the channels a caller should operate on, newline-separated, after validating both the
+# config and the filter. Every consumer goes through here so the distinctness invariant cannot
+# be reached without being checked.
+#
+# The invariant is asserted over the WHOLE file before filtering: it is a property of the
+# config, not of the subset in play, so releasing one channel at a time must not sidestep it.
+#
+# Diagnostics go to stderr (print_error already does) because stdout is the channel list.
+# Usage: channels=$(select_channels [all|<channel>]) || exit 1
+select_channels() {
+    local filter="${1:-all}"
+    local channels
+    channels=$(list_channels)
+
+    if [ -z "$channels" ]; then
+        print_error "No channels found in compose-releases.toml"
+        return 1
+    fi
+
+    # shellcheck disable=SC2086  # intentional word splitting over the channel list
+    assert_distinct_channel_versions $channels || return 1
+
+    if [ "$filter" != "all" ]; then
+        if ! echo "$channels" | grep -q "^${filter}$"; then
+            print_error "Channel '$filter' not found in compose-releases.toml"
+            print_info "Available channels: $(echo "$channels" | tr '\n' ' ')" >&2
+            return 1
+        fi
+        channels="$filter"
+    fi
+
+    echo "$channels"
 }
 
 # --- Version patching ---
@@ -145,12 +214,10 @@ _json_matrix() {
     local channel_filter="${1:-all}"
     local matrix="["
     local first=true
+    local channels
+    channels=$(select_channels "$channel_filter") || return 1
 
-    for channel in $(list_channels); do
-        if [ "$channel_filter" != "all" ] && [ "$channel_filter" != "$channel" ]; then
-            continue
-        fi
-
+    for channel in $channels; do
         local compose_ver material3_ver kotlin_ver jvm_target_ver xcode_ver tag
         compose_ver=$(read_channel_key "$channel" "compose")
         material3_ver=$(read_channel_key "$channel" "compose-material3")

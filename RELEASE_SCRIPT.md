@@ -10,7 +10,7 @@ For each channel defined in `compose-releases.toml`:
 
 1. **Determines the next tag** by analyzing existing git tags and incrementing
 2. **Cleans build state** (Gradle build + `kotlin-js-store`) to avoid stale JS/Wasm caches
-3. **Patches `gradle/libs.versions.toml`** with the channel's compose, material3, and kotlin versions
+3. **Patches `gradle/libs.versions.toml`** with the channel's compose, material3, kotlin and jvm-target values
 4. **Builds and publishes** to Maven Central via Gradle with `-PpublishVersion=$TAG`
 5. **Creates and pushes the git tag** to the remote repository
 6. **Restores `libs.versions.toml`** to its original state
@@ -40,6 +40,7 @@ xcode = "26.3"
 | `compose` | Yes | Compose Multiplatform plugin + dependency version |
 | `compose-material3` | Yes | Material3 artifact version (often differs from compose) |
 | `kotlin` | No | Kotlin version override. Omit to inherit from `libs.versions.toml` |
+| `jvm-target` | No | Android JVM bytecode target override. Omit to inherit `jvmTarget` from `libs.versions.toml` |
 | `track` | No | Upstream channel the version tracker follows: `stable` or `prerelease`. Defaults to `stable` for `[stable]`, `prerelease` otherwise |
 | `xcode` | No | Xcode version for the Apple CI/publish job. Omit to use the runner default |
 
@@ -92,6 +93,16 @@ Continue with release? (y/N):
 
 The script automatically detects existing tags and increments.
 
+The `-N` suffix is for **sequential re-releases of one channel**. Two channels pointed at one
+`compose` version are refused outright — by the release plan and by CI's `Build-Matrix`, and
+regardless of `--channel`, since the collision is a property of the file rather than of the
+channels you selected. Recover by giving them distinct versions or commenting a section out.
+
+Separately, and for a different reason: when upstream has no prerelease ahead of stable, the
+tracker holds `[next]` at its current version, leaving it *behind* stable. Releasing it then
+ships a superseded artifact, so release only stable (`--channel stable`) — no collision is
+involved.
+
 ## CI Matrix Testing
 
 The CI workflow (`.github/workflows/checks.yml`) automatically tests against all channels defined in `compose-releases.toml`. Each test job (JS, JVM, Apple) runs once per channel using a matrix strategy.
@@ -110,7 +121,8 @@ Test the release logic without making any changes:
 ./scripts/test-release-logic.sh
 ```
 
-This validates: TOML parsing, tag computation, version patching, and restoration.
+This validates: TOML parsing, channel selection (including the distinct-version guard), tag
+computation, version patching, and restoration.
 
 ## Manual Override
 

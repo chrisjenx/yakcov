@@ -129,22 +129,11 @@ release_channel() {
 
 # --- Main ---
 
-CHANNELS=$(list_channels)
-
-if [ -z "$CHANNELS" ]; then
-    print_error "No channels found in compose-releases.toml"
-    exit 1
-fi
-
-# Filter channels
-if [ "$CHANNEL_FILTER" != "all" ]; then
-    if ! echo "$CHANNELS" | grep -q "^${CHANNEL_FILTER}$"; then
-        print_error "Channel '$CHANNEL_FILTER' not found in compose-releases.toml"
-        print_info "Available channels: $(echo "$CHANNELS" | tr '\n' ' ')"
-        exit 1
-    fi
-    CHANNELS="$CHANNEL_FILTER"
-fi
+# Validates the config and the filter, and asserts no two channels share a compose version
+# before anything is built. Checked here rather than in release_channel: that recomputes
+# next_tag_for after the previous channel's tag is pushed, which would hide a clash behind
+# a "-N" suffix.
+CHANNELS=$(select_channels "$CHANNEL_FILTER") || exit 1
 
 # Show plan
 echo ""

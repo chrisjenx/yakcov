@@ -20,10 +20,9 @@ jetbrains-lifecycle = "2.10.0"
 # Multiplatform 1.11 requires Kotlin >= 2.3.10 for native/web targets; 2.4.10 satisfies
 # that and matches [next], so the committed ABI dumps are valid on every channel.
 kotlin = "2.4.10"
-# Android JVM bytecode target. Per-channel override lives in compose-releases.toml
-# (jvm-target). Compose 1.12+ androidx artifacts are JVM 11 bytecode; 1.11 inlines
-# cleanly into 1.8. Value is a Kotlin JvmTarget string ("1.8", "9", "11", "17", "21").
-jvmTarget = "1.8"
+# Compose 1.12+ androidx artifacts are JVM 11 bytecode; below 11 the Android compile
+# fails with "Cannot inline bytecode built with JVM target 11".
+jvmTarget = "11"
 kotlinx-datetime = "0.8.0"
 kotlinx-serialization = "1.11.0"
 libphonenumber-kotlin = "0.1.9"

@@ -7,24 +7,25 @@
 #   compose          - Compose Multiplatform plugin + dependency version (required)
 #   compose-material3 - Material3 artifact version (required, often differs from compose)
 #   kotlin           - Kotlin version override (optional, inherits from libs.versions.toml if omitted)
-#   jvm-target       - Android JVM bytecode target override (optional, inherits "1.8" from libs.versions.toml)
+#   jvm-target       - Android JVM bytecode target override (optional, inherits jvmTarget from libs.versions.toml)
 #   xcode            - Xcode version for Apple CI builds (optional, uses runner default if omitted)
 #   track            - Upstream channel followed by scripts/check-compose-updates.py:
 #                      "stable" or "prerelease" (optional; defaults to "stable" for the
 #                      [stable] section and "prerelease" for any other section)
 
 [stable]
-compose = "1.11.1"
-compose-material3 = "1.11.0-alpha07"
-# kotlin omitted -> inherits 2.4.10 (latest stable) from libs.versions.toml, comfortably above
-# the >= 2.3.10 that Compose 1.11 native/web requires. Verified: 1.11.1's artifacts build and
-# test clean on 2.4.10 across all five targets, and jvmTarget 1.8 is still accepted.
-# Required: Compose 1.11's iOS skiko links against a newer SDK than the macos runner
+compose = "1.12.0"
+compose-material3 = "1.12.0-alpha03"
+# kotlin omitted -> inherits 2.4.10 (latest stable) from libs.versions.toml, which is what
+# [next] pins, so a single committed ABI dump stays valid on every channel.
+# Required: Compose's iOS skiko links against a newer SDK than the macos runner
 # default (Xcode 16.4 / iOS 18.5), which fails with "framework 'UIUtilities' not found".
 # Xcode 26.3 is installed on the macos-latest runner and links cleanly. Do not remove.
 xcode = "26.3"
 
-# The [next] (beta) channel rides the next Compose development line ahead of stable.
+# The [next] (beta) channel rides the pre-release Compose line. It is normally ahead of
+# stable, but sits behind whenever stable catches up to a GA that has no alpha after it yet
+# (the tracker holds next at its last prerelease); release only stable while that is true.
 # Its CI matrix leg is continue-on-error (keyed on channel == "next" in checks.yml),
 # so a broken pre-release surfaces without blocking the CI-Gate / merges.
 [next]
@@ -37,7 +38,4 @@ compose-material3 = "1.12.0-alpha03"
 # Both channels sharing one compiler is what lets a single committed ABI dump be
 # valid everywhere; see the abiValidation block in library/build.gradle.kts.
 kotlin = "2.4.10"
-# Compose 1.12 androidx artifacts are JVM 11 bytecode; the library's Android target
-# must inline into 11. [stable] omits this and inherits jvmTarget=1.8 from libs.versions.toml.
-jvm-target = "11"
 xcode = "26.3"
