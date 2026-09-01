@@ -92,11 +92,9 @@ Continue with release? (y/N):
 
 The script automatically detects existing tags and increments.
 
-The `-N` suffix is for **sequential re-releases of one channel**, not for publishing two at
-once: channels sharing a `compose` version resolve to the same tag, which the parallel publish
-matrix would then race. `assert_distinct_channel_tags` refuses the plan and the CI matrix
-outright. So when upstream has no prerelease ahead of stable, release only stable
-(`--channel stable`) rather than pointing both channels at one version.
+The `-N` suffix is for **sequential re-releases of one channel**. Two channels pointed at one
+`compose` version are refused outright, so when upstream has no prerelease ahead of stable,
+release only stable (`--channel stable`).
 
 ## CI Matrix Testing
 

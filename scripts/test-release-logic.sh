@@ -127,24 +127,31 @@ for channel in $CHANNELS; do
     restore_versions
 done
 
-# Test 4b: no channel silently moves the Android bytecode target off the shared default
+# Test 4b: the jvm-target escape hatch still works. No channel currently declares one (all
+# are on Compose 1.12+, so 11 is the shared default), so this exercises the branch against a
+# fixture rather than asserting the live config never uses it.
 print_info ""
-print_info "Test 4b: jvm-target inheritance"
-ORIGINAL_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
-assert_not_empty "Original jvmTarget" "$ORIGINAL_JVMTARGET"
-
-for channel in $CHANNELS; do
-    patch_versions "$channel" >/dev/null
-    PATCHED_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
-    restore_versions
-    if [ "$PATCHED_JVMTARGET" = "$ORIGINAL_JVMTARGET" ]; then
-        print_info "✓ [$channel] jvmTarget inherits shared default ($PATCHED_JVMTARGET)"
-        PASS=$((PASS + 1))
-    else
-        print_error "✗ [$channel] jvmTarget patched to $PATCHED_JVMTARGET (shared default is $ORIGINAL_JVMTARGET)"
-        FAIL=$((FAIL + 1))
-    fi
-done
+print_info "Test 4b: jvm-target override"
+JVM_DIR=$(mktemp -d)
+mkdir -p "$JVM_DIR/gradle"
+cat > "$JVM_DIR/compose-releases.toml" <<'EOF'
+[stable]
+compose = "9.9.9"
+compose-material3 = "9.9.9"
+jvm-target = "17"
+EOF
+printf '[versions]\ncompose = "0"\ncompose-material3 = "0"\njvmTarget = "11"\n' \
+    > "$JVM_DIR/gradle/libs.versions.toml"
+JVM_PATCHED=$(cd "$JVM_DIR" && patch_versions stable >/dev/null \
+    && sed -n 's/^jvmTarget = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+rm -rf "$JVM_DIR"
+if [ "$JVM_PATCHED" = "17" ]; then
+    print_info "✓ A declared jvm-target overrides the shared default (11 -> 17)"
+    PASS=$((PASS + 1))
+else
+    print_error "✗ Expected jvmTarget=17 from the channel override, got '$JVM_PATCHED'"
+    FAIL=$((FAIL + 1))
+fi
 
 # Verify restore worked
 RESTORED_COMPOSE=$(grep "^compose = " gradle/libs.versions.toml | head -1 | sed 's/compose = "\(.*\)"/\1/')
@@ -161,15 +168,8 @@ print_info ""
 print_info "Test 5: JSON matrix output"
 MATRIX=$("$SCRIPT_DIR/lib-release.sh" --json-matrix)
 if echo "$MATRIX" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-    # Every channel is on Compose 1.12+, so jvmTarget comes from the shared default.
-    OVERRIDES=$(echo "$MATRIX" | python3 -c "import sys,json; print(' '.join(d['channel'] for d in json.load(sys.stdin) if d.get('jvmTarget')))")
-    if [ "$ORIGINAL_JVMTARGET" = "11" ] && [ -z "$OVERRIDES" ]; then
-        print_info "✓ JSON matrix is valid, shared jvmTarget=11, no per-channel overrides: $MATRIX"
-        PASS=$((PASS + 1))
-    else
-        print_error "✗ Expected shared jvmTarget=11 (got '$ORIGINAL_JVMTARGET') and no overrides (got '$OVERRIDES')"
-        FAIL=$((FAIL + 1))
-    fi
+    print_info "✓ JSON matrix is valid: $MATRIX"
+    PASS=$((PASS + 1))
 else
     print_error "✗ JSON matrix is invalid: $MATRIX"
     FAIL=$((FAIL + 1))
@@ -177,11 +177,10 @@ fi
 
 # Test 5b: colliding channels are refused rather than silently suffixed
 print_info ""
-print_info "Test 5b: duplicate-tag guard"
+print_info "Test 5b: duplicate-version guard"
 COLLIDE_DIR=$(mktemp -d)
 cp "$SCRIPT_DIR/lib-release.sh" "$COLLIDE_DIR/"
-# next_tag_for shells out to git, so the fixture needs to be a repo (with no 9.9.9 tags)
-git init -q "$COLLIDE_DIR"
+# Goes through the CLI, not the sourced function, to cover exit-code propagation into CI
 cat > "$COLLIDE_DIR/compose-releases.toml" <<'EOF'
 [stable]
 compose = "9.9.9"
@@ -193,7 +192,7 @@ compose-material3 = "9.9.9"
 EOF
 COLLIDE_OUT=$(cd "$COLLIDE_DIR" && bash lib-release.sh --json-matrix 2>&1) && COLLIDE_RC=0 || COLLIDE_RC=$?
 rm -rf "$COLLIDE_DIR"
-if [ "$COLLIDE_RC" -ne 0 ] && echo "$COLLIDE_OUT" | grep -q "both resolve to release tag"; then
+if [ "$COLLIDE_RC" -ne 0 ] && echo "$COLLIDE_OUT" | grep -q "both declare compose"; then
     print_info "✓ Two channels sharing a compose version are refused (exit $COLLIDE_RC)"
     PASS=$((PASS + 1))
 else
@@ -203,13 +202,13 @@ fi
 
 # Test 5c: the real config must not collide
 print_info ""
-print_info "Test 5c: current channels resolve to distinct tags"
+print_info "Test 5c: current channels declare distinct versions"
 # shellcheck disable=SC2086  # intentional word splitting over the channel list
-if assert_distinct_channel_tags $CHANNELS; then
-    print_info "✓ Current channels resolve to distinct tags"
+if assert_distinct_channel_versions $CHANNELS; then
+    print_info "✓ Current channels declare distinct compose versions"
     PASS=$((PASS + 1))
 else
-    print_error "✗ Current channels collide on a release tag"
+    print_error "✗ Current channels declare the same compose version"
     FAIL=$((FAIL + 1))
 fi
 

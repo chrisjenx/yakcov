@@ -25,7 +25,7 @@ NC='\033[0m'
 
 print_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 print_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-print_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+print_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 print_channel() { echo -e "${CYAN}[$1]${NC} $2"; }
 
 # --- TOML parsing ---
@@ -86,37 +86,37 @@ next_tag_for() {
     fi
 }
 
-# Fail if two channels resolve to the same release tag.
+# Fail if two channels declare the same `compose` version.
 #
-# A tag is only created at the end of a channel's release, so next_tag_for cannot see it
-# yet and channels sharing a `compose` version all resolve to one tag — which the publish
-# matrix then races in parallel. Auto-suffixing instead would ship a duplicate as
+# A channel's tag derives from its compose version, and a tag is only created at the end of
+# that channel's release — so two channels sharing a version resolve to one tag, which the
+# publish matrix then races in parallel. Auto-suffixing instead would ship a duplicate as
 # 1.12.0-1, which outranks 1.12.0 in Gradle/Maven ordering, so refuse loudly.
 #
-# Usage: assert_distinct_channel_tags <channel> [channel...]
-assert_distinct_channel_tags() {
-    local seen_tags="" seen_channels=""
-    local channel compose_ver tag idx prev_tag prev_channel
+# Compares the declared versions rather than next_tag_for's output: that keeps the check
+# independent of which tags the checkout happens to have (checks.yml fetches none,
+# release.yml fetches all) and names the key the operator has to change.
+#
+# Usage: assert_distinct_channel_versions <channel> [channel...]
+assert_distinct_channel_versions() {
+    local seen_versions=() seen_channels=()
+    local channel compose_ver i
 
     for channel in "$@"; do
         compose_ver=$(read_channel_key "$channel" "compose")
         # Channels without a compose version are skipped by the matrix too
         [ -z "$compose_ver" ] && continue
-        tag=$(next_tag_for "$compose_ver")
 
-        idx=1
-        for prev_tag in $seen_tags; do
-            if [ "$prev_tag" = "$tag" ]; then
-                prev_channel=$(echo "$seen_channels" | cut -d' ' -f"$idx")
-                print_error "Channels '$prev_channel' and '$channel' both resolve to release tag '$tag'." >&2
-                print_error "Give them distinct 'compose' versions in compose-releases.toml, or retire one channel." >&2
+        for i in "${!seen_versions[@]}"; do
+            if [ "${seen_versions[$i]}" = "$compose_ver" ]; then
+                print_error "Channels '${seen_channels[$i]}' and '$channel' both declare compose = '$compose_ver'."
+                print_error "Give them distinct 'compose' versions in compose-releases.toml, or retire one channel."
                 return 1
             fi
-            idx=$((idx + 1))
         done
 
-        seen_tags="${seen_tags:+$seen_tags }$tag"
-        seen_channels="${seen_channels:+$seen_channels }$channel"
+        seen_versions+=("$compose_ver")
+        seen_channels+=("$channel")
     done
 
     return 0
@@ -181,17 +181,12 @@ _json_matrix() {
     local channel_filter="${1:-all}"
     local matrix="["
     local first=true
-    local channels=""
-
-    for channel in $(list_channels); do
-        if [ "$channel_filter" != "all" ] && [ "$channel_filter" != "$channel" ]; then
-            continue
-        fi
-        channels="${channels:+$channels }$channel"
-    done
+    local channels
+    channels=$(list_channels)
+    [ "$channel_filter" = "all" ] || channels="$channel_filter"
 
     # shellcheck disable=SC2086  # intentional word splitting over the channel list
-    assert_distinct_channel_tags $channels || return 1
+    assert_distinct_channel_versions $channels || return 1
 
     for channel in $channels; do
         local compose_ver material3_ver kotlin_ver jvm_target_ver xcode_ver tag

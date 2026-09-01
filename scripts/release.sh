@@ -149,7 +149,7 @@ fi
 # Checked up front, not in release_channel: that recomputes next_tag_for after the previous
 # channel's tag is pushed, which hides the clash behind a "-N" suffix.
 # shellcheck disable=SC2086  # intentional word splitting over the channel list
-if ! assert_distinct_channel_tags $CHANNELS; then
+if ! assert_distinct_channel_versions $CHANNELS; then
     exit 1
 fi
 

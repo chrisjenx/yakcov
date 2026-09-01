@@ -7,7 +7,7 @@
 #   compose          - Compose Multiplatform plugin + dependency version (required)
 #   compose-material3 - Material3 artifact version (required, often differs from compose)
 #   kotlin           - Kotlin version override (optional, inherits from libs.versions.toml if omitted)
-#   jvm-target       - Android JVM bytecode target override (optional, inherits "1.8" from libs.versions.toml)
+#   jvm-target       - Android JVM bytecode target override (optional, inherits jvmTarget from libs.versions.toml)
 #   xcode            - Xcode version for Apple CI builds (optional, uses runner default if omitted)
 #   track            - Upstream channel followed by scripts/check-compose-updates.py:
 #                      "stable" or "prerelease" (optional; defaults to "stable" for the
