@@ -127,33 +127,24 @@ for channel in $CHANNELS; do
     restore_versions
 done
 
-# Test 4b: jvm-target patching (next overrides to 11, stable inherits default)
+# Test 4b: no channel silently moves the Android bytecode target off the shared default
 print_info ""
-print_info "Test 4b: jvm-target patching"
+print_info "Test 4b: jvm-target inheritance"
 ORIGINAL_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
 assert_not_empty "Original jvmTarget" "$ORIGINAL_JVMTARGET"
 
-patch_versions "next"
-PATCHED_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
-if [ "$PATCHED_JVMTARGET" = "11" ]; then
-    print_info "✓ [next] jvmTarget patched to 11"
-    PASS=$((PASS + 1))
-else
-    print_error "✗ [next] jvmTarget expected 11, got $PATCHED_JVMTARGET"
-    FAIL=$((FAIL + 1))
-fi
-restore_versions
-
-patch_versions "stable"
-STABLE_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
-if [ "$STABLE_JVMTARGET" = "$ORIGINAL_JVMTARGET" ]; then
-    print_info "✓ [stable] jvmTarget inherits default ($STABLE_JVMTARGET)"
-    PASS=$((PASS + 1))
-else
-    print_error "✗ [stable] jvmTarget changed to $STABLE_JVMTARGET (expected $ORIGINAL_JVMTARGET)"
-    FAIL=$((FAIL + 1))
-fi
-restore_versions
+for channel in $CHANNELS; do
+    patch_versions "$channel" >/dev/null
+    PATCHED_JVMTARGET=$(grep "^jvmTarget = " gradle/libs.versions.toml | sed 's/jvmTarget = "\(.*\)"/\1/')
+    restore_versions
+    if [ "$PATCHED_JVMTARGET" = "$ORIGINAL_JVMTARGET" ]; then
+        print_info "✓ [$channel] jvmTarget inherits shared default ($PATCHED_JVMTARGET)"
+        PASS=$((PASS + 1))
+    else
+        print_error "✗ [$channel] jvmTarget patched to $PATCHED_JVMTARGET (shared default is $ORIGINAL_JVMTARGET)"
+        FAIL=$((FAIL + 1))
+    fi
+done
 
 # Verify restore worked
 RESTORED_COMPOSE=$(grep "^compose = " gradle/libs.versions.toml | head -1 | sed 's/compose = "\(.*\)"/\1/')
@@ -170,8 +161,7 @@ print_info ""
 print_info "Test 5: JSON matrix output"
 MATRIX=$("$SCRIPT_DIR/lib-release.sh" --json-matrix)
 if echo "$MATRIX" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-    # Every channel is on Compose 1.12+, so jvmTarget comes from the shared libs.versions.toml
-    # default (11) and no channel overrides it. An override would show up here as non-empty.
+    # Every channel is on Compose 1.12+, so jvmTarget comes from the shared default.
     OVERRIDES=$(echo "$MATRIX" | python3 -c "import sys,json; print(' '.join(d['channel'] for d in json.load(sys.stdin) if d.get('jvmTarget')))")
     if [ "$ORIGINAL_JVMTARGET" = "11" ] && [ -z "$OVERRIDES" ]; then
         print_info "✓ JSON matrix is valid, shared jvmTarget=11, no per-channel overrides: $MATRIX"

@@ -88,16 +88,10 @@ next_tag_for() {
 
 # Fail if two channels resolve to the same release tag.
 #
-# next_tag_for only sees tags that already exist in git, and a channel's tag is created
-# at the *end* of its release — so channels sharing a `compose` version all resolve to
-# the same tag up front. The publish matrix runs channels in parallel, which would race
-# two legs onto one Maven version, one git tag and one GitHub release (whose prerelease
-# flag keys off the channel, so the winner decides how stable is labelled).
-#
-# The "-N" suffix disambiguates *sequential* re-releases of a single channel; it is not a
-# way to publish two channels at once. Auto-suffixing here would silently ship a duplicate
-# build as e.g. 1.12.0-1, which outranks 1.12.0 in Gradle/Maven ordering — so refuse loudly
-# instead and let the operator give the channels distinct versions or retire one.
+# A tag is only created at the end of a channel's release, so next_tag_for cannot see it
+# yet and channels sharing a `compose` version all resolve to one tag — which the publish
+# matrix then races in parallel. Auto-suffixing instead would ship a duplicate as
+# 1.12.0-1, which outranks 1.12.0 in Gradle/Maven ordering, so refuse loudly.
 #
 # Usage: assert_distinct_channel_tags <channel> [channel...]
 assert_distinct_channel_tags() {
@@ -196,7 +190,6 @@ _json_matrix() {
         channels="${channels:+$channels }$channel"
     done
 
-    # Refuse to emit a matrix whose legs would race the same tag (see the function's notes)
     # shellcheck disable=SC2086  # intentional word splitting over the channel list
     assert_distinct_channel_tags $channels || return 1
 
