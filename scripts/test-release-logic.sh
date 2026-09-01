@@ -88,6 +88,8 @@ ORIGINAL_COMPOSE=$(grep "^compose = " gradle/libs.versions.toml | head -1 | sed 
 ORIGINAL_MATERIAL3=$(grep "^compose-material3 = " gradle/libs.versions.toml | sed 's/compose-material3 = "\(.*\)"/\1/')
 ORIGINAL_KOTLIN=$(grep "^kotlin = " gradle/libs.versions.toml | sed 's/kotlin = "\(.*\)"/\1/')
 
+ORIGINAL_JVMTARGET=$(sed -n 's/^jvmTarget = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+
 assert_not_empty "Original compose" "$ORIGINAL_COMPOSE"
 assert_not_empty "Original compose-material3" "$ORIGINAL_MATERIAL3"
 assert_not_empty "Original kotlin" "$ORIGINAL_KOTLIN"
@@ -123,6 +125,19 @@ for channel in $CHANNELS; do
         fi
     fi
 
+    # A channel that declares no jvm-target must leave the shared jvmTarget alone. Conditional
+    # so a channel that legitimately declares one later doesn't trip this.
+    if [ -z "$(read_channel_key "$channel" "jvm-target")" ]; then
+        SHARED_JVMTARGET=$(sed -n 's/^jvmTarget = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+        if [ "$SHARED_JVMTARGET" = "$ORIGINAL_JVMTARGET" ]; then
+            print_info "✓ [$channel] declares no jvm-target, shared default untouched ($SHARED_JVMTARGET)"
+            PASS=$((PASS + 1))
+        else
+            print_error "✗ [$channel] moved jvmTarget to $SHARED_JVMTARGET without declaring jvm-target"
+            FAIL=$((FAIL + 1))
+        fi
+    fi
+
     # Restore
     restore_versions
 done
@@ -143,7 +158,7 @@ EOF
 printf '[versions]\ncompose = "0"\ncompose-material3 = "0"\njvmTarget = "11"\n' \
     > "$JVM_DIR/gradle/libs.versions.toml"
 JVM_PATCHED=$(cd "$JVM_DIR" && patch_versions stable >/dev/null \
-    && sed -n 's/^jvmTarget = "\(.*\)"/\1/p' gradle/libs.versions.toml)
+    && sed -n 's/^jvmTarget = "\(.*\)"/\1/p' gradle/libs.versions.toml) || JVM_PATCHED="<patch failed>"
 rm -rf "$JVM_DIR"
 if [ "$JVM_PATCHED" = "17" ]; then
     print_info "✓ A declared jvm-target overrides the shared default (11 -> 17)"
@@ -166,12 +181,12 @@ fi
 # Test 5: JSON matrix output (used by CI)
 print_info ""
 print_info "Test 5: JSON matrix output"
-MATRIX=$("$SCRIPT_DIR/lib-release.sh" --json-matrix)
-if echo "$MATRIX" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+MATRIX=$("$SCRIPT_DIR/lib-release.sh" --json-matrix 2>&1) && MATRIX_RC=0 || MATRIX_RC=$?
+if [ "$MATRIX_RC" -eq 0 ] && echo "$MATRIX" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
     print_info "✓ JSON matrix is valid: $MATRIX"
     PASS=$((PASS + 1))
 else
-    print_error "✗ JSON matrix is invalid: $MATRIX"
+    print_error "✗ JSON matrix invalid or refused (rc=$MATRIX_RC): $MATRIX"
     FAIL=$((FAIL + 1))
 fi
 
@@ -190,7 +205,7 @@ compose-material3 = "9.9.9"
 compose = "9.9.9"
 compose-material3 = "9.9.9"
 EOF
-COLLIDE_OUT=$(cd "$COLLIDE_DIR" && bash lib-release.sh --json-matrix 2>&1) && COLLIDE_RC=0 || COLLIDE_RC=$?
+COLLIDE_OUT=$(cd "$COLLIDE_DIR" && ./lib-release.sh --json-matrix 2>&1) && COLLIDE_RC=0 || COLLIDE_RC=$?
 rm -rf "$COLLIDE_DIR"
 if [ "$COLLIDE_RC" -ne 0 ] && echo "$COLLIDE_OUT" | grep -q "both declare compose"; then
     print_info "✓ Two channels sharing a compose version are refused (exit $COLLIDE_RC)"
@@ -200,15 +215,28 @@ else
     FAIL=$((FAIL + 1))
 fi
 
-# Test 5c: the real config must not collide
+# Test 5c: a collision must be refused even when the filter selects a single channel -
+# otherwise releasing one channel at a time sidesteps the guard entirely.
 print_info ""
-print_info "Test 5c: current channels declare distinct versions"
-# shellcheck disable=SC2086  # intentional word splitting over the channel list
-if assert_distinct_channel_versions $CHANNELS; then
-    print_info "✓ Current channels declare distinct compose versions"
+print_info "Test 5c: filtered call still refuses a collision"
+FILTERED_DIR=$(mktemp -d)
+cp "$SCRIPT_DIR/lib-release.sh" "$FILTERED_DIR/"
+cat > "$FILTERED_DIR/compose-releases.toml" <<'EOF'
+[stable]
+compose = "9.9.9"
+compose-material3 = "9.9.9"
+
+[next]
+compose = "9.9.9"
+compose-material3 = "9.9.9"
+EOF
+FILTERED_OUT=$(cd "$FILTERED_DIR" && ./lib-release.sh --json-matrix stable 2>&1) && FILTERED_RC=0 || FILTERED_RC=$?
+rm -rf "$FILTERED_DIR"
+if [ "$FILTERED_RC" -ne 0 ] && echo "$FILTERED_OUT" | grep -q "both declare compose"; then
+    print_info "✓ Collision refused even filtered to one channel (exit $FILTERED_RC)"
     PASS=$((PASS + 1))
 else
-    print_error "✗ Current channels declare the same compose version"
+    print_error "✗ Filtered call sidestepped the guard, got rc=$FILTERED_RC: $FILTERED_OUT"
     FAIL=$((FAIL + 1))
 fi
 

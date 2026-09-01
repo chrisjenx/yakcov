@@ -7,6 +7,7 @@
 #   list_channels
 #   read_channel_key "stable" "compose"
 #   next_tag_for "1.10.3"
+#   select_channels "stable"
 #   patch_versions "stable"
 #   restore_versions
 #
@@ -86,8 +87,6 @@ next_tag_for() {
     fi
 }
 
-# Fail if two channels declare the same `compose` version.
-#
 # A channel's tag derives from its compose version, and a tag is only created at the end of
 # that channel's release — so two channels sharing a version resolve to one tag, which the
 # publish matrix then races in parallel. Auto-suffixing instead would ship a duplicate as
@@ -95,7 +94,7 @@ next_tag_for() {
 #
 # Compares the declared versions rather than next_tag_for's output: that keeps the check
 # independent of which tags the checkout happens to have (checks.yml fetches none,
-# release.yml fetches all) and names the key the operator has to change.
+# release.yml fetches all).
 #
 # Usage: assert_distinct_channel_versions <channel> [channel...]
 assert_distinct_channel_versions() {
@@ -120,6 +119,40 @@ assert_distinct_channel_versions() {
     done
 
     return 0
+}
+
+# Echo the channels a caller should operate on, newline-separated, after validating both the
+# config and the filter. Every consumer goes through here so the distinctness invariant cannot
+# be reached without being checked.
+#
+# The invariant is asserted over the WHOLE file before filtering: it is a property of the
+# config, not of the subset in play, so releasing one channel at a time must not sidestep it.
+#
+# Diagnostics go to stderr (print_error already does) because stdout is the channel list.
+# Usage: channels=$(select_channels [all|<channel>]) || exit 1
+select_channels() {
+    local filter="${1:-all}"
+    local channels
+    channels=$(list_channels)
+
+    if [ -z "$channels" ]; then
+        print_error "No channels found in compose-releases.toml"
+        return 1
+    fi
+
+    # shellcheck disable=SC2086  # intentional word splitting over the channel list
+    assert_distinct_channel_versions $channels || return 1
+
+    if [ "$filter" != "all" ]; then
+        if ! echo "$channels" | grep -q "^${filter}$"; then
+            print_error "Channel '$filter' not found in compose-releases.toml"
+            print_info "Available channels: $(echo "$channels" | tr '\n' ' ')" >&2
+            return 1
+        fi
+        channels="$filter"
+    fi
+
+    echo "$channels"
 }
 
 # --- Version patching ---
@@ -182,11 +215,7 @@ _json_matrix() {
     local matrix="["
     local first=true
     local channels
-    channels=$(list_channels)
-    [ "$channel_filter" = "all" ] || channels="$channel_filter"
-
-    # shellcheck disable=SC2086  # intentional word splitting over the channel list
-    assert_distinct_channel_versions $channels || return 1
+    channels=$(select_channels "$channel_filter") || return 1
 
     for channel in $channels; do
         local compose_ver material3_ver kotlin_ver jvm_target_ver xcode_ver tag
