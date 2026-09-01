@@ -16,10 +16,11 @@
 [stable]
 compose = "1.12.0"
 compose-material3 = "1.12.0-alpha03"
-# kotlin omitted -> inherits 2.4.10 (latest stable) from libs.versions.toml, comfortably above
-# the >= 2.3.10 that Compose 1.11 native/web requires. Verified: 1.11.1's artifacts build and
-# test clean on 2.4.10 across all five targets, and jvmTarget 1.8 is still accepted.
-# Required: Compose 1.11's iOS skiko links against a newer SDK than the macos runner
+# kotlin omitted -> inherits 2.4.10 (latest stable) from libs.versions.toml, which is what
+# [next] pins, so a single committed ABI dump stays valid on every channel.
+# jvm-target omitted -> inherits jvmTarget=11 from libs.versions.toml. Compose 1.12's
+# androidx artifacts are JVM 11 bytecode, so 1.8 no longer compiles the Android target.
+# Required: Compose's iOS skiko links against a newer SDK than the macos runner
 # default (Xcode 16.4 / iOS 18.5), which fails with "framework 'UIUtilities' not found".
 # Xcode 26.3 is installed on the macos-latest runner and links cleanly. Do not remove.
 xcode = "26.3"
@@ -37,7 +38,7 @@ compose-material3 = "1.12.0-alpha03"
 # Both channels sharing one compiler is what lets a single committed ABI dump be
 # valid everywhere; see the abiValidation block in library/build.gradle.kts.
 kotlin = "2.4.10"
-# Compose 1.12 androidx artifacts are JVM 11 bytecode; the library's Android target
-# must inline into 11. [stable] omits this and inherits jvmTarget=1.8 from libs.versions.toml.
-jvm-target = "11"
+# jvm-target omitted -> inherits jvmTarget=11 from libs.versions.toml. Both channels are
+# on Compose 1.12+, whose androidx artifacts are JVM 11 bytecode, so 11 is the shared
+# default rather than a per-channel override.
 xcode = "26.3"

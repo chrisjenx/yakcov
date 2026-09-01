@@ -86,6 +86,48 @@ next_tag_for() {
     fi
 }
 
+# Fail if two channels resolve to the same release tag.
+#
+# next_tag_for only sees tags that already exist in git, and a channel's tag is created
+# at the *end* of its release — so channels sharing a `compose` version all resolve to
+# the same tag up front. The publish matrix runs channels in parallel, which would race
+# two legs onto one Maven version, one git tag and one GitHub release (whose prerelease
+# flag keys off the channel, so the winner decides how stable is labelled).
+#
+# The "-N" suffix disambiguates *sequential* re-releases of a single channel; it is not a
+# way to publish two channels at once. Auto-suffixing here would silently ship a duplicate
+# build as e.g. 1.12.0-1, which outranks 1.12.0 in Gradle/Maven ordering — so refuse loudly
+# instead and let the operator give the channels distinct versions or retire one.
+#
+# Usage: assert_distinct_channel_tags <channel> [channel...]
+assert_distinct_channel_tags() {
+    local seen_tags="" seen_channels=""
+    local channel compose_ver tag idx prev_tag prev_channel
+
+    for channel in "$@"; do
+        compose_ver=$(read_channel_key "$channel" "compose")
+        # Channels without a compose version are skipped by the matrix too
+        [ -z "$compose_ver" ] && continue
+        tag=$(next_tag_for "$compose_ver")
+
+        idx=1
+        for prev_tag in $seen_tags; do
+            if [ "$prev_tag" = "$tag" ]; then
+                prev_channel=$(echo "$seen_channels" | cut -d' ' -f"$idx")
+                print_error "Channels '$prev_channel' and '$channel' both resolve to release tag '$tag'." >&2
+                print_error "Give them distinct 'compose' versions in compose-releases.toml, or retire one channel." >&2
+                return 1
+            fi
+            idx=$((idx + 1))
+        done
+
+        seen_tags="${seen_tags:+$seen_tags }$tag"
+        seen_channels="${seen_channels:+$seen_channels }$channel"
+    done
+
+    return 0
+}
+
 # --- Version patching ---
 
 # Detect sed in-place flag (GNU vs BSD)
@@ -145,12 +187,20 @@ _json_matrix() {
     local channel_filter="${1:-all}"
     local matrix="["
     local first=true
+    local channels=""
 
     for channel in $(list_channels); do
         if [ "$channel_filter" != "all" ] && [ "$channel_filter" != "$channel" ]; then
             continue
         fi
+        channels="${channels:+$channels }$channel"
+    done
 
+    # Refuse to emit a matrix whose legs would race the same tag (see the function's notes)
+    # shellcheck disable=SC2086  # intentional word splitting over the channel list
+    assert_distinct_channel_tags $channels || return 1
+
+    for channel in $channels; do
         local compose_ver material3_ver kotlin_ver jvm_target_ver xcode_ver tag
         compose_ver=$(read_channel_key "$channel" "compose")
         material3_ver=$(read_channel_key "$channel" "compose-material3")

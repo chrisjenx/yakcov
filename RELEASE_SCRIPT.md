@@ -92,6 +92,21 @@ Continue with release? (y/N):
 
 The script automatically detects existing tags and increments.
 
+The `-N` suffix disambiguates **sequential re-releases of one channel**. It is not a way to
+publish two channels at once: because a tag is only created at the end of a channel's release,
+channels sharing a `compose` version all resolve to the *same* tag up front, and the publish
+matrix runs them in parallel — racing one Maven version, one git tag and one GitHub release.
+`assert_distinct_channel_tags` therefore refuses the release plan and the CI matrix outright:
+
+```
+[ERROR] Channels 'stable' and 'next' both resolve to release tag '1.12.0'.
+[ERROR] Give them distinct 'compose' versions in compose-releases.toml, or retire one channel.
+```
+
+Auto-suffixing instead would silently publish a duplicate build as `1.12.0-1`, which *outranks*
+`1.12.0` in Gradle/Maven version ordering — so when upstream has no prerelease ahead of stable,
+release only the stable channel (`--channel stable`) rather than syncing the two.
+
 ## CI Matrix Testing
 
 The CI workflow (`.github/workflows/checks.yml`) automatically tests against all channels defined in `compose-releases.toml`. Each test job (JS, JVM, Apple) runs once per channel using a matrix strategy.

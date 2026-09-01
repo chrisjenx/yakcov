@@ -146,6 +146,14 @@ if [ "$CHANNEL_FILTER" != "all" ]; then
     CHANNELS="$CHANNEL_FILTER"
 fi
 
+# Refuse up front if two channels would resolve to the same tag. Checked here rather than
+# in release_channel because that recomputes next_tag_for after the previous channel's tag
+# is pushed, which hides the clash behind a "-N" suffix — see assert_distinct_channel_tags.
+# shellcheck disable=SC2086  # intentional word splitting over the channel list
+if ! assert_distinct_channel_tags $CHANNELS; then
+    exit 1
+fi
+
 # Show plan
 echo ""
 print_info "=== Release Plan ==="

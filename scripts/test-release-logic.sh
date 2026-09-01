@@ -170,16 +170,56 @@ print_info ""
 print_info "Test 5: JSON matrix output"
 MATRIX=$("$SCRIPT_DIR/lib-release.sh" --json-matrix)
 if echo "$MATRIX" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-    NEXT_JVMTARGET=$(echo "$MATRIX" | python3 -c "import sys,json; m={d['channel']:d for d in json.load(sys.stdin)}; print(m.get('next',{}).get('jvmTarget',''))")
-    if [ "$NEXT_JVMTARGET" = "11" ]; then
-        print_info "✓ JSON matrix is valid and [next] jvmTarget=11: $MATRIX"
+    # Every channel is on Compose 1.12+, so jvmTarget comes from the shared libs.versions.toml
+    # default (11) and no channel overrides it. An override would show up here as non-empty.
+    OVERRIDES=$(echo "$MATRIX" | python3 -c "import sys,json; print(' '.join(d['channel'] for d in json.load(sys.stdin) if d.get('jvmTarget')))")
+    if [ "$ORIGINAL_JVMTARGET" = "11" ] && [ -z "$OVERRIDES" ]; then
+        print_info "✓ JSON matrix is valid, shared jvmTarget=11, no per-channel overrides: $MATRIX"
         PASS=$((PASS + 1))
     else
-        print_error "✗ JSON matrix missing [next] jvmTarget=11 (got '$NEXT_JVMTARGET'): $MATRIX"
+        print_error "✗ Expected shared jvmTarget=11 (got '$ORIGINAL_JVMTARGET') and no overrides (got '$OVERRIDES')"
         FAIL=$((FAIL + 1))
     fi
 else
     print_error "✗ JSON matrix is invalid: $MATRIX"
+    FAIL=$((FAIL + 1))
+fi
+
+# Test 5b: colliding channels are refused rather than silently suffixed
+print_info ""
+print_info "Test 5b: duplicate-tag guard"
+COLLIDE_DIR=$(mktemp -d)
+cp "$SCRIPT_DIR/lib-release.sh" "$COLLIDE_DIR/"
+# next_tag_for shells out to git, so the fixture needs to be a repo (with no 9.9.9 tags)
+git init -q "$COLLIDE_DIR"
+cat > "$COLLIDE_DIR/compose-releases.toml" <<'EOF'
+[stable]
+compose = "9.9.9"
+compose-material3 = "9.9.9"
+
+[next]
+compose = "9.9.9"
+compose-material3 = "9.9.9"
+EOF
+COLLIDE_OUT=$(cd "$COLLIDE_DIR" && bash lib-release.sh --json-matrix 2>&1) && COLLIDE_RC=0 || COLLIDE_RC=$?
+rm -rf "$COLLIDE_DIR"
+if [ "$COLLIDE_RC" -ne 0 ] && echo "$COLLIDE_OUT" | grep -q "both resolve to release tag"; then
+    print_info "✓ Two channels sharing a compose version are refused (exit $COLLIDE_RC)"
+    PASS=$((PASS + 1))
+else
+    print_error "✗ Expected a non-zero exit and a collision error, got rc=$COLLIDE_RC: $COLLIDE_OUT"
+    FAIL=$((FAIL + 1))
+fi
+
+# Test 5c: the real config must not collide
+print_info ""
+print_info "Test 5c: current channels resolve to distinct tags"
+# shellcheck disable=SC2086  # intentional word splitting over the channel list
+if assert_distinct_channel_tags $CHANNELS; then
+    print_info "✓ Current channels resolve to distinct tags"
+    PASS=$((PASS + 1))
+else
+    print_error "✗ Current channels collide on a release tag"
     FAIL=$((FAIL + 1))
 fi
 
