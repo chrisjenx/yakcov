@@ -195,6 +195,23 @@ compose.resources {
     generateResClass = always
 }
 
+// Compose 1.13+ unpacks the Skiko web runtime (skiko.mjs / skiko.wasm) from the *main*
+// compilation's runtime classpath; 1.12 used its own detached configuration instead. Compose is
+// compileOnly in main, so that classpath has no Skiko and the browser tests fail with
+// "Can't resolve './skiko.mjs'". Feed Compose to the web targets' resolvable runtime classpaths
+// only: the published `*RuntimeElements` extend the declared source-set buckets, not
+// `*RuntimeClasspath`, so consumers still get no Compose dependency. Harmless on older Compose.
+val composeWebRuntime = configurations.dependencyScope("composeWebRuntime")
+dependencies {
+    composeWebRuntime(libs.jetbrains.compose.foundation)
+}
+listOf("jsRuntimeClasspath", "wasmJsRuntimeClasspath").forEach { name ->
+    configurations.named(name) { extendsFrom(composeWebRuntime.get()) }
+}
+// On js the unpacked runtime also lands in main's processed resources, which the klib packs
+// (~3.5MB). Keep it out of the published artifact; the test compilation gets its own copy.
+tasks.named<AbstractArchiveTask>("jsJar") { exclude("*skiko*") }
+
 android {
     namespace = "com.chrisjenx.yakcov"
     compileSdk = 37
