@@ -25,6 +25,13 @@
             android:label="State Flow"
             android:theme="@style/Theme.Yakcov"
             android:windowSoftInputMode="adjustResize" />
+        <!-- Exported so the demo can be driven directly: adb shell am start -n com.chrisjenx.yakcov.sample/.SkippedInputActivity -->
+        <activity
+            android:name=".SkippedInputActivity"
+            android:exported="true"
+            android:label="Skipped input"
+            android:theme="@style/Theme.Yakcov"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

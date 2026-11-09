@@ -9,6 +9,30 @@ Compose is moving editable text from the `value` + `onValueChange` pair (`String
 every `TextFieldValue` API is unchanged and nothing is deprecated, so an app can migrate one field
 or module at a time.
 
+## Why: text that round-trips through a model loses input
+
+With `value` + `onValueChange`, the field renders whatever the model holds. If the model updates
+**later** than the next key arrives (a store hop, a reducer on another dispatcher, a slow frame),
+every late write resets the field's edit buffer to stale text. Keystrokes are lost and a mid-text
+paste lands in the wrong place. A `TextFieldState` field owns its text on the Compose clock, and
+the model only **observes** it. Nothing writes the model back into the field while the user types.
+
+Measured with the same keystrokes and the same async model (each change reduced 16 ms late):
+
+| Run | Legacy `TextFieldValue` hoist | `TextFieldState` + `textChanges()` |
+|---|---|---|
+| JVM UI test, 19 chars at 10 ms gaps (`AsyncModelInputTest`) | `teqikbonfx` (9/19 kept) | exact |
+| Android emulator, `adb input text` (43 chars), run 1 | `qikbrwn fjm e t laog` | exact |
+| Android emulator, run 2 | `the quick brop azog` | exact |
+| Mid-text paste / caret edit | lands wrong (test control) | lands at the caret, caret preserved |
+
+The demo is `SkippedInputActivity` in `:sample` (it has a model-lag slider):
+`adb shell am start -n com.chrisjenx.yakcov.sample/.SkippedInputActivity`.
+
+**The rule this record follows throughout:** the `TextFieldState` is the only writer of a field's
+text while the user is typing. The model is downstream of it, and the only model → field write is
+an explicit, one-shot re-seed (§4).
+
 ## What ships
 
 | API | Purpose |
@@ -169,8 +193,9 @@ programmatic write in the focus-lost handler.
 
 ## Tests
 
-`TextFieldStateValidatorTest` (validator, timing, caret, transformations, `textChanges`) and
+`TextFieldStateValidatorTest` (validator, timing, caret, transformations, `textChanges`),
 `TextFieldStateUdfTest` (state → Model hand-off, programmatic writes, versioned re-seed, the
-submit-counter shake) run in full on JVM, Wasm and the iOS simulator. Android unit tests and JS
+submit-counter shake) and `AsyncModelInputTest` (fast typing, mid-text paste and a re-seed under an
+async model, each with a legacy control proving the harness detects the loss) run in full on JVM, Wasm and the iOS simulator. Android unit tests and JS
 run the pure (non-UI) cases and skip the Compose UI ones, as the rest of the suite does
 (`@AndroidJUnitIgnore` / `@JSIgnore`).
