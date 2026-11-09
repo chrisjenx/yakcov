@@ -1,13 +1,15 @@
 # Decision record: TextFieldState support
 
-**Status:** accepted · **Since:** the release after 1.12.1 / 1.13.0-alpha01 · **Scope:** additive (no existing API changes)
+**Status:** accepted · **Since:** the release after 1.12.1 / 1.13.0-alpha01 · **Scope:** additive on every channel, plus deprecations in the Compose 1.13+ artifacts
 
 Compose is moving editable text from the `value` + `onValueChange` pair (`String` /
 `TextFieldValue`, `VisualTransformation`) to a field-owned
 [`TextFieldState`](https://developer.android.com/develop/ui/compose/text/user-input) with
 `InputTransformation` / `OutputTransformation` for formatting. yakcov supports both side by side:
-every `TextFieldValue` API is unchanged and nothing is deprecated, so an app can migrate one field
-or module at a time.
+every `TextFieldValue` API keeps working, and both kinds mix in one `validate()`, so an app can migrate
+one field or module at a time. In the **Compose 1.13+ artifacts** the `value`/`onValueChange`
+wrappers are `@Deprecated` (warning level), matching Compose itself; see
+[Deprecation](#deprecation-compose-113).
 
 ## Why: text that round-trips through a model loses input
 
@@ -56,8 +58,7 @@ an explicit, one-shot re-seed (§4).
 !!! note "Works on every channel"
     `TextFieldState` and its material3 overloads exist on every Compose version yakcov builds
     (1.12.x stable and the 1.13 pre-release line), so the new API ships on **both** channels. You
-    do not have to move to Compose 1.13 to start migrating. (In CMP 1.13.0-beta02 the material3
-    `TextFieldValue` overloads are not yet annotated `@Deprecated`, but the direction is set.)
+    do not have to move to Compose 1.13 to start migrating.
 
 ## 1. Validator-owns-state
 
@@ -190,6 +191,33 @@ re-adding. Use the `InputTransformation` to *restrict* (digits, one dot, `maxLen
 `OutputTransformation` to *present* (padding, grouping, a currency symbol). Write rules against the
 stored, unpadded form. If the stored value itself must be canonical, normalise once on blur with a
 programmatic write in the focus-lost handler.
+
+## Deprecation (Compose 1.13+)
+
+Compose 1.13 deprecates `BasicTextField(value, onValueChange, …)` for both `String` and
+`TextFieldValue`; 1.11 and 1.12 don't. (Checked in the bytecode: in CMP 1.13.0-beta02 and androidx
+material3 1.5.0-rc01 the material3 `TextField`/`OutlinedTextField` value overloads aren't annotated
+yet, but the foundation field they wrap is.) yakcov follows the same line. **Only the 1.13+
+artifacts** deprecate the wrappers around that shape:
+
+| Deprecated in 1.13+ | Use instead |
+|---|---|
+| `TextFieldValueValidator` | `TextFieldStateValidator` |
+| `rememberTextFieldValueValidator(value: String, …)` | `rememberTextFieldStateValidator(initialText = …)` (IDE quick-fix via `ReplaceWith`) |
+| `rememberTextFieldValueValidator(textFieldValue: MutableState<TextFieldValue>, …)` | `rememberTextFieldStateValidator(textFieldState = …)` |
+| `Modifier.onFocusCursorToEnd(value, onValueChange, …)` | `Modifier.onFocusCursorToEnd(state = …)` |
+| `PasswordMatches(textFieldValueField)` | `PasswordMatches(stringField)` with a `TextFieldStateValidator` |
+
+The level is **warning**, so builds keep compiling while you migrate. Nothing is removed; removal
+comes in a later release. Everything not tied to the deprecated field shape is untouched:
+`ValueValidator`, the rules, `GenericValueValidator`, `FieldValidator`, `FieldValidationState`,
+`validationBehavior`, `shakeOnInvalid` and `onFocusLost`.
+
+**How it's built.** All channels compile one common source set, and Kotlin rejects a typealias to
+`kotlin.Deprecated`. So those declarations carry an internal marker, `@TextFieldValueApi(…)`. Before
+1.13 it's a source-only no-op. On 1.13+, the `deprecateTextFieldValueApi` Gradle task compiles a
+copy of each file that uses it, with the marker rewritten to `@Deprecated(…)`. File names, JVM
+facades and the ABI dump don't change.
 
 ## Known limitations
 

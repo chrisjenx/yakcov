@@ -11,6 +11,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.chrisjenx.yakcov.ValueValidator
 import com.chrisjenx.yakcov.ValueValidator.Companion.defaultValidationSeparator
 import com.chrisjenx.yakcov.ValueValidatorRule
+import com.chrisjenx.yakcov.TextFieldValueApi
+import com.chrisjenx.yakcov.TextFieldValueDeprecation
 import com.chrisjenx.yakcov.onFocusCursorToEnd
 import kotlinx.coroutines.CoroutineScope
 
@@ -106,6 +108,7 @@ import kotlinx.coroutines.CoroutineScope
  * Create a new subclass of [ValueValidatorRule] then apply it as a rule to the [TextFieldValueValidator].
  *
  */
+@TextFieldValueApi(TextFieldValueDeprecation)
 @Stable
 class TextFieldValueValidator(
     state: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue()),
@@ -178,6 +181,7 @@ class TextFieldValueValidator(
 /**
  * @see TextFieldValueValidator for docs
  */
+@TextFieldValueApi(TextFieldValueDeprecation)
 @Composable
 fun rememberTextFieldValueValidator(
     textFieldValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue()),
@@ -198,6 +202,13 @@ fun rememberTextFieldValueValidator(
 /**
  * @see TextFieldValueValidator for docs
  */
+@TextFieldValueApi(
+    TextFieldValueDeprecation,
+    ReplaceWith(
+        "rememberTextFieldStateValidator(initialText = value, rules = rules, initialValidate = initialValidate, alwaysShowRule = alwaysShowRule, validationSeparator = validationSeparator)",
+        "com.chrisjenx.yakcov.strings.rememberTextFieldStateValidator",
+    ),
+)
 @Composable
 fun rememberTextFieldValueValidator(
     value: String,

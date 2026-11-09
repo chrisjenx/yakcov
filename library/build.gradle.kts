@@ -16,6 +16,33 @@ plugins {
 // Android JVM bytecode target — per-channel via compose-releases.toml (see libs.versions.toml).
 val jvmTargetVersion = libs.versions.jvmTarget.get()
 
+// Compose 1.13 deprecates the value/onValueChange text fields (BasicTextField) in favour of
+// TextFieldState, so from 1.13 the yakcov wrappers around that shape are deprecated too — and only
+// from 1.13, since older Compose lines don't deprecate it. One common source set can't carry a
+// conditional annotation (and Kotlin forbids a typealias to kotlin.Deprecated), so those
+// declarations carry the internal marker `@TextFieldValueApi(...)`:
+//  - Compose < 1.13: `src/textFieldValueApi/current` defines it as a source-only no-op.
+//  - Compose >= 1.13: `deprecateTextFieldValueApi` copies every commonMain file that uses the marker
+//    into a generated dir with the marker rewritten to `@Deprecated(` (its import blanked, so line
+//    numbers match), and the originals are excluded. File names, and so JVM facades, are unchanged.
+// See docs/decisions/textfieldstate.md.
+val composeDeprecatesTextFieldValue: Boolean = libs.versions.compose.asProvider().get()
+    .split('.', '-').let { (major, minor) -> major.toInt() > 1 || (major.toInt() == 1 && minor.toInt() >= 13) }
+val textFieldValueMarker = "@TextFieldValueApi("
+val commonMainKotlinPath: String = file("src/commonMain/kotlin").absolutePath + File.separator
+val deprecateTextFieldValueApi = tasks.register<Sync>("deprecateTextFieldValueApi") {
+    description = "Rewrites @TextFieldValueApi to @Deprecated for Compose 1.13+ channels."
+    val marker = textFieldValueMarker
+    from("src/commonMain/kotlin") {
+        include { it.isDirectory || (it.name.endsWith(".kt") && it.file.readText().contains(marker)) }
+    }
+    includeEmptyDirs = false
+    into(layout.buildDirectory.dir("generated/textFieldValueApi/kotlin"))
+    filter { line ->
+        if (line.trim() == "import com.chrisjenx.yakcov.TextFieldValueApi") "" else line.replace(marker, "@Deprecated(")
+    }
+}
+
 kotlin {
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     compilerOptions {
@@ -113,6 +140,20 @@ kotlin {
     }
 
     sourceSets {
+        commonMain {
+            if (composeDeprecatesTextFieldValue) {
+                val marker = textFieldValueMarker
+                val originals = commonMainKotlinPath
+                kotlin.srcDir(deprecateTextFieldValueApi)
+                // Drop only the ORIGINALS of the rewritten files (the copies live outside originals).
+                kotlin.exclude { el ->
+                    el.file.path.startsWith(originals) && !el.isDirectory &&
+                        el.name.endsWith(".kt") && el.file.readText().contains(marker)
+                }
+            } else {
+                kotlin.srcDir("src/textFieldValueApi/current/kotlin")
+            }
+        }
         commonMain.dependencies {
             // Change to compile only to not force consumers to bring in all compose dependencies
             compileOnly(libs.jetbrains.compose.runtime)

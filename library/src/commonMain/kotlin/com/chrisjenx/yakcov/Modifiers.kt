@@ -168,6 +168,10 @@ fun Modifier.validationBehavior(
  *
  * @param highlight when true, selects the whole text instead of collapsing to the end.
  */
+@TextFieldValueApi(
+    "Compose 1.13 deprecates value/onValueChange text fields. Let the field own a " +
+        "TextFieldState and use onFocusCursorToEnd(state = …). See docs/decisions/textfieldstate.md.",
+)
 @Composable
 fun Modifier.onFocusCursorToEnd(
     value: TextFieldValue,

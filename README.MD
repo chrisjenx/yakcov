@@ -71,8 +71,9 @@ ViewModel/presenter owns a `FieldValidator`, or a pure MVI reducer folds rules w
 
 The examples use Compose's field-owned `TextFieldState`. Compose 1.13 deprecates the
 `value`/`onValueChange` text fields because text round-tripped through state can drop keystrokes
-and misplace pastes. `TextFieldValueValidator` / `rememberTextFieldValueValidator` still work, and
-both kinds mix in one `listOf(a, b).validate()`, so you can migrate field by field. For reducer
+and misplace pastes. `TextFieldValueValidator` / `rememberTextFieldValueValidator` still work (and are
+`@Deprecated`, at warning level, in the Compose 1.13+ artifacts only), and both kinds mix in one
+`listOf(a, b).validate()`, so you can migrate field by field. For reducer
 (UDF) forms, see the [MVI/UDF guide](https://chrisjenx.github.io/yakcov/patterns/mvi/); for the
 reasoning and a side-by-side demo, see the
 [TextFieldState decision record](https://chrisjenx.github.io/yakcov/decisions/textfieldstate/).
