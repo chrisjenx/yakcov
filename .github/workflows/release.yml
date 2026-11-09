@@ -8,6 +8,7 @@ on:
         type: choice
         options:
           - all
+          - previous
           - stable
           - next
       dry-run:
@@ -99,15 +100,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # A pushed tag is not a Release on its own — create one so the Releases page tracks
-          # what's on Maven Central. Prerelease keys off the channel (the next/prerelease channel),
-          # NOT the tag suffix (stable's "-N" is just collision-avoidance, not a prerelease marker).
-          prerelease=""
-          if [ "${{ matrix.channel }}" != "stable" ]; then prerelease="--prerelease"; fi
+          # what's on Maven Central. Flags key off the channel's track (prerelease ->
+          # --prerelease, previous -> --latest=false), NOT the tag suffix (a "-N" is just
+          # collision-avoidance, not a prerelease marker). See release_flags_for in lib-release.sh.
+          release_flags=$(./scripts/lib-release.sh --release-flags "${{ matrix.channel }}")
           gh release create "${{ matrix.tag }}" \
             --title "${{ matrix.tag }}" \
             --generate-notes \
             --verify-tag \
-            $prerelease
+            $release_flags
 
   Summary:
     if: always()

@@ -10,8 +10,22 @@
 #   jvm-target       - Android JVM bytecode target override (optional, inherits jvmTarget from libs.versions.toml)
 #   xcode            - Xcode version for Apple CI builds (optional, uses runner default if omitted)
 #   track            - Upstream channel followed by scripts/check-compose-updates.py:
-#                      "stable" or "prerelease" (optional; defaults to "stable" for the
-#                      [stable] section and "prerelease" for any other section)
+#                      "previous", "stable" or "prerelease" (optional; defaults to "stable"
+#                      for [stable], "previous" for [previous], "prerelease" otherwise)
+#
+# Support window: the latest stable Compose is the middle channel, with one older stable
+# minor line below it and one unstable line above it — [previous] / [stable] / [next].
+# The weekly tracker moves all three automatically: when a new stable minor lands,
+# [stable] moves onto it and [previous] rolls forward to the line [stable] just left.
+
+# One stable minor line behind [stable] (e.g. stable 1.12.x -> previous 1.11.x), for
+# consumers not yet on the latest Compose. A required CI leg, released like [stable].
+[previous]
+track = "previous"
+compose = "1.11.1"
+compose-material3 = "1.11.0-alpha07"
+# kotlin omitted -> inherits from libs.versions.toml (Compose 1.11 needs >= 2.3.10).
+xcode = "26.3"
 
 [stable]
 compose = "1.12.2"

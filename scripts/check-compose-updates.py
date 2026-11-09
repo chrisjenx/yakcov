@@ -2,10 +2,14 @@
 """Track upstream Compose Multiplatform versions and update compose-releases.toml.
 
 Each channel in compose-releases.toml is mapped to an upstream "track":
+  - track = "previous"   -> follow the latest stable release of the minor line just
+                            before the latest stable one (stable 1.12.x -> 1.11.x)
   - track = "stable"     -> follow the latest stable Compose release
   - track = "prerelease" -> follow the latest alpha/beta/rc Compose release
-If a channel omits `track`, the section named "stable" defaults to "stable" and
-every other section defaults to "prerelease".
+Together these give the supported window: one older stable line, the latest stable,
+and one unstable line ahead of it. If a channel omits `track`, the section named
+"stable" defaults to "stable", "previous" defaults to "previous", and every other
+section defaults to "prerelease".
 
 Data sources (stdlib only, no third-party deps):
   - Compose version   : Maven Central metadata for org.jetbrains.compose:runtime
@@ -72,6 +76,19 @@ def is_stable(v):
 def latest_stable(versions):
     stable = [v for v in versions if is_stable(v)]
     return max(stable, key=parse_version) if stable else None
+
+
+def latest_previous_stable(versions):
+    """Latest stable release of the newest minor line *older* than the latest stable's line.
+
+    stable 1.12.2 with 1.11.0/1.11.1 published -> 1.11.1. None when there is no older line.
+    """
+    top = latest_stable(versions)
+    if not top:
+        return None
+    top_mm = major_minor(top)
+    older = [v for v in versions if is_stable(v) and major_minor(v) < top_mm]
+    return max(older, key=parse_version) if older else None
 
 
 def latest_prerelease(versions):
@@ -183,11 +200,14 @@ def rewrite_channel_key(text, channel, key, value):
 def _track_for(name, cfg):
     track = cfg.get("track")
     if track is None:
-        return "stable" if name == "stable" else "prerelease"
-    if track not in ("stable", "prerelease"):
-        raise ValueError('Channel [%s] has invalid track=%r (expected "stable" or "prerelease").'
-                         % (name, track))
+        return name if name in ("stable", "previous") else "prerelease"
+    if track not in TRACKS:
+        raise ValueError('Channel [%s] has invalid track=%r (expected one of %s).'
+                         % (name, track, ", ".join('"%s"' % t for t in TRACKS)))
     return track
+
+
+TRACKS = ("previous", "stable", "prerelease")
 
 
 def compute_updates(channels, compose_versions, m3_versions, notes_fetcher):
@@ -205,6 +225,12 @@ def compute_updates(channels, compose_versions, m3_versions, notes_fetcher):
 
         if track == "stable":
             desired_compose = latest_stable(compose_versions)
+        elif track == "previous":
+            desired_compose = latest_previous_stable(compose_versions)
+            if not desired_compose:
+                flags.append("No stable minor line older than %s — keeping current compose %s."
+                             % (max_stable, cur_compose))
+                desired_compose = cur_compose
         else:
             desired_compose = latest_prerelease(compose_versions)
             if (desired_compose and max_stable
@@ -512,6 +538,40 @@ def run_self_test():
         check("invalid track raises", False)
     except ValueError:
         check("invalid track raises", True)
+
+    # previous track: latest stable of the minor line just below the latest stable line.
+    check("previous = top of the older line", latest_previous_stable(cv) == "1.10.3")
+    check("previous skips prereleases of the older line",
+          latest_previous_stable(["1.10.0", "1.10.1-rc01", "1.11.0"]) == "1.10.0")
+    check("previous none without an older line", latest_previous_stable(["1.11.0", "1.11.1"]) is None)
+    check("previous none without any stable", latest_previous_stable(["1.12.0-alpha01"]) is None)
+    check("previous across a major", latest_previous_stable(["1.99.2", "2.0.0"]) == "1.99.2")
+    window = {
+        "previous": {"compose": "1.10.0", "compose-material3": "1.10.0-alpha04"},
+        "stable": {"compose": "1.10.3", "compose-material3": "1.10.0-alpha05"},
+        "next": {"compose": "1.11.0-beta02", "compose-material3": "1.11.0-alpha06"},
+    }
+    upsw = compute_updates(window, cv, mv, fetch)
+    check("[previous] defaults to the previous track", upsw["previous"]["track"] == "previous")
+    check("window: previous -> 1.10.3", upsw["previous"]["compose"]["desired"] == "1.10.3")
+    check("window: previous m3 matches its line",
+          upsw["previous"]["compose-material3"]["desired"] == "1.10.0-alpha05")
+    check("window: stable -> 1.11.1", upsw["stable"]["compose"]["desired"] == "1.11.1")
+    check("window: next -> 1.12.0-alpha01", upsw["next"]["compose"]["desired"] == "1.12.0-alpha01")
+    # When a new stable minor lands, previous rolls forward to the line stable just left.
+    rolled = compute_updates(
+        {"previous": {"compose": "1.10.3", "compose-material3": "1.10.0-alpha05"}},
+        cv + ["1.12.0"], mv, fetch)
+    check("previous rolls forward with stable", rolled["previous"]["compose"]["desired"] == "1.11.1")
+    held = compute_updates(
+        {"previous": {"compose": "1.10.3", "compose-material3": "1.10.0-alpha05"}},
+        ["1.11.0", "1.11.1"], mv, fetch)
+    check("previous held + flagged with no older line",
+          held["previous"]["compose"]["desired"] == "1.10.3"
+          and any("No stable minor line older" in f for f in held["previous"]["flags"]))
+    check("explicit track=previous accepted",
+          compute_updates({"old": {"compose": "1.10.0", "compose-material3": "1.10.0-alpha04",
+                                   "track": "previous"}}, cv, mv, fetch)["old"]["track"] == "previous")
 
     # apply_updates raises (never silently drops) when a needed line cannot be matched.
     bad_text = '[s]\ncompose = "1.0.0" pinned\n'
