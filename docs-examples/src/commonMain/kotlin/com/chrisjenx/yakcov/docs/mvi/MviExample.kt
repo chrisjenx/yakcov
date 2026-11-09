@@ -2,6 +2,10 @@ package com.chrisjenx.yakcov.docs.mvi
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -10,17 +14,22 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.chrisjenx.yakcov.FieldValidationState
 import com.chrisjenx.yakcov.ValueValidatorRule
 import com.chrisjenx.yakcov.hasNoErrors
+import com.chrisjenx.yakcov.onFocusCursorToEnd
 import com.chrisjenx.yakcov.strings.Email
 import com.chrisjenx.yakcov.strings.MinLength
 import com.chrisjenx.yakcov.strings.Required
 import com.chrisjenx.yakcov.supportingText
+import com.chrisjenx.yakcov.textChanges
 import com.chrisjenx.yakcov.toFieldState
 import com.chrisjenx.yakcov.validationBehavior
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 // --8<-- [start:mvi-model]
 // Plain top-level rule lists: shared by reduce() and any unit test, no Compose needed.
@@ -91,56 +100,83 @@ fun reduce(model: SignUpModel, event: SignUpEvent): SignUpModel = when (event) {
 // --8<-- [end:mvi-reduce]
 
 // --8<-- [start:mvi-store]
-// Single source of truth + single dispatch entry point. The only Compose-aware piece;
-// swap for a ViewModel + StateFlow without touching reduce/Model/Event.
+// The component: your ViewModel / Decompose component / presenter. It owns two things:
+//  - the store (Model + dispatch) — the source of truth for everything except the keystrokes, and
+//  - one TextFieldState per field — the editing buffer, owned by the field on the Compose clock.
+// Text flows ONE way: field -> textChanges() -> dispatch -> reduce. Nothing ever writes the Model
+// back into a field while the user types, so no keystroke or paste can be lost to a late update.
 @Stable
-class SignUpStore(initial: SignUpModel = initialSignUpModel()) {
+class SignUpComponent(scope: CoroutineScope, initial: SignUpModel = initialSignUpModel()) {
+    val email = TextFieldState(initial.email)
+    val password = TextFieldState(initial.password)
+
     var model by mutableStateOf(initial)
         private set
 
     fun dispatch(event: SignUpEvent) {
         model = reduce(model, event)
     }
+
+    init {
+        // The whole hand-off. textChanges() emits plain Strings (current text first, then each
+        // change) and ignores caret moves. In a ViewModel pass viewModelScope; in Decompose, the
+        // component's lifecycle scope.
+        scope.launch { email.textChanges().collect { dispatch(SignUpEvent.EmailChanged(it)) } }
+        scope.launch { password.textChanges().collect { dispatch(SignUpEvent.PasswordChanged(it)) } }
+    }
 }
 // --8<-- [end:mvi-store]
 
+// --8<-- [start:mvi-writes]
+// Programmatic writes (suggestion pick, prefill, clear) go to the TextFieldState — the same path as
+// typing — and reach the Model through textChanges(). The caret lands at the end.
+fun SignUpComponent.prefillEmail(suggestion: String) = email.setTextAndPlaceCursorAtEnd(suggestion)
+
+fun SignUpComponent.clearForm() {
+    email.clearText()
+    password.clearText()
+}
+// --8<-- [end:mvi-writes]
+
 // --8<-- [start:mvi-ui]
 @Composable
-fun MviSignUpScreen(store: SignUpStore = remember { SignUpStore() }) {
-    val model = store.model
+fun MviSignUpScreen() {
+    // In an app this is your ViewModel / component; remembered here to keep the example standalone.
+    val scope = rememberCoroutineScope()
+    val component = remember { SignUpComponent(scope) }
+    val model = component.model
     Column {
         OutlinedTextField(
-            value = model.email,
-            onValueChange = { store.dispatch(SignUpEvent.EmailChanged(it)) },
+            state = component.email, // the field owns the text — no value / onValueChange
             label = { Text("Email") },
             isError = model.emailState.isError,
             supportingText = model.emailState.supportingText(),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
+                .onFocusCursorToEnd(state = component.email)
                 .validationBehavior(
                     isError = model.emailState.isError,
                     shakeTrigger = model.submitAttempts,
-                    onFocusLost = { store.dispatch(SignUpEvent.EmailFocusLost) },
+                    onFocusLost = { component.dispatch(SignUpEvent.EmailFocusLost) },
                 ),
         )
         OutlinedTextField(
-            value = model.password,
-            onValueChange = { store.dispatch(SignUpEvent.PasswordChanged(it)) },
+            state = component.password,
             label = { Text("Password") },
             isError = model.passwordState.isError,
             supportingText = model.passwordState.supportingText(),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .validationBehavior(
                     isError = model.passwordState.isError,
                     shakeTrigger = model.submitAttempts,
-                    onFocusLost = { store.dispatch(SignUpEvent.PasswordFocusLost) },
+                    onFocusLost = { component.dispatch(SignUpEvent.PasswordFocusLost) },
                 ),
         )
         Button(
-            onClick = { store.dispatch(SignUpEvent.Submit) },
+            onClick = { component.dispatch(SignUpEvent.Submit) },
             modifier = Modifier.fillMaxWidth(),
         ) { Text(if (model.canSubmit) "Create account" else "Fix errors to submit") }
         model.submitted?.let { Text(if (it) "Valid — proceeding" else "Fix the errors above") }

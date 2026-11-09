@@ -17,19 +17,19 @@ example compiled in CI against the current API.
 @Composable
 fun BasicSignUpScreen(onSubmit: (email: String, password: String) -> Unit) {
     // No state holder: the validators live in the composable, remembered across
-    // recompositions. Each one owns its TextFieldValue draft + validation state.
-    val email = rememberTextFieldValueValidator(rules = listOf(Required, Email))
-    val password = rememberTextFieldValueValidator(rules = listOf(Required, MinLength(8)))
+    // recompositions. Each one owns a TextFieldState (the field's text) and validates it by
+    // observing the state — there is no onValueChange to wire.
+    val email = rememberTextFieldStateValidator(rules = listOf(Required, Email))
+    val password = rememberTextFieldStateValidator(rules = listOf(Required, MinLength(8)))
 
     Column {
         with(email) {
             OutlinedTextField(
-                value = value,
-                onValueChange = ::onValueChange,
+                state = textFieldState,
                 label = { Text("Email") },
                 isError = isError(),
                 supportingText = supportingText(),
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier
                     .fillMaxWidth()
                     // Show errors when focus leaves the field; shake on invalid submit.
@@ -38,12 +38,11 @@ fun BasicSignUpScreen(onSubmit: (email: String, password: String) -> Unit) {
         }
         with(password) {
             OutlinedTextField(
-                value = value,
-                onValueChange = ::onValueChange,
+                state = textFieldState,
                 label = { Text("Password") },
                 isError = isError(),
                 supportingText = supportingText(),
-                singleLine = true,
+                lineLimits = TextFieldLineLimits.SingleLine,
                 modifier = Modifier
                     .fillMaxWidth()
                     .validationConfig(validateOnFocusLost = true, shakeOnInvalid = true),
@@ -53,7 +52,7 @@ fun BasicSignUpScreen(onSubmit: (email: String, password: String) -> Unit) {
             onClick = {
                 // Form-level validate(): surfaces errors on every field, true when all pass.
                 if (listOf(email, password).validate()) {
-                    onSubmit(email.value.text, password.value.text)
+                    onSubmit(email.value, password.value)
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -68,27 +67,14 @@ ViewModel/presenter owns a `FieldValidator`, or a pure MVI reducer folds rules w
 [ViewModel](https://chrisjenx.github.io/yakcov/patterns/viewmodel/) and
 [MVI/UDF](https://chrisjenx.github.io/yakcov/patterns/mvi/) guides.
 
-### `TextFieldState`
+### `TextFieldState`, and the `value`/`onValueChange` APIs
 
-Using the field-owned `TextFieldState` text fields? `rememberTextFieldStateValidator` is the
-drop-in counterpart. It has the same rules, members and error timing, and it observes the state, so
-there is no `onValueChange`:
-
-```kotlin
-val email = rememberTextFieldStateValidator(rules = listOf(Required, Email))
-with(email) {
-    OutlinedTextField(
-        state = textFieldState,
-        modifier = Modifier.validationConfig(validateOnFocusLost = true, showErrorOnInteraction = false),
-        isError = isError(),
-        supportingText = supportingText(),
-    )
-}
-```
-
-The `TextFieldValue` APIs are unchanged, and both kinds mix in one `listOf(a, b).validate()`, so
-you can migrate field by field. For reducer (UDF) forms, programmatic writes and
-`InputTransformation`/`OutputTransformation`, see the
+The examples use Compose's field-owned `TextFieldState`. Compose 1.13 deprecates the
+`value`/`onValueChange` text fields because text round-tripped through state can drop keystrokes
+and misplace pastes. `TextFieldValueValidator` / `rememberTextFieldValueValidator` still work, and
+both kinds mix in one `listOf(a, b).validate()`, so you can migrate field by field. For reducer
+(UDF) forms, see the [MVI/UDF guide](https://chrisjenx.github.io/yakcov/patterns/mvi/); for the
+reasoning and a side-by-side demo, see the
 [TextFieldState decision record](https://chrisjenx.github.io/yakcov/decisions/textfieldstate/).
 
 ## Dependencies
