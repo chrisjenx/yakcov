@@ -59,7 +59,10 @@ Notes on the wiring:
   baseline and swallows any shake that became due while it was gone.
 - **`onFocusCursorToEnd` needs a `TextFieldValue` in your model,** not a `String`. The examples on
   this page hoist `String`, so adopting cursor-to-end means migrating the field's model type.
-  `TextFieldValue` is a value type and is safe inside an immutable model.
+  `TextFieldValue` is a value type and is safe inside an immutable model. Alternatively, let the field
+  own a `TextFieldState`: the Model keeps a plain `String`, and
+  `onFocusCursorToEnd(state = …)` moves the caret through the state itself. See the
+  [TextFieldState decision record](../decisions/textfieldstate.md).
 
 ## Persistence & process death
 

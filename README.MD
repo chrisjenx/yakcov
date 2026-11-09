@@ -68,6 +68,29 @@ ViewModel/presenter owns a `FieldValidator`, or a pure MVI reducer folds rules w
 [ViewModel](https://chrisjenx.github.io/yakcov/patterns/viewmodel/) and
 [MVI/UDF](https://chrisjenx.github.io/yakcov/patterns/mvi/) guides.
 
+### `TextFieldState`
+
+Using the field-owned `TextFieldState` text fields? `rememberTextFieldStateValidator` is the
+drop-in counterpart. It has the same rules, members and error timing, and it observes the state, so
+there is no `onValueChange`:
+
+```kotlin
+val email = rememberTextFieldStateValidator(rules = listOf(Required, Email))
+with(email) {
+    OutlinedTextField(
+        state = textFieldState,
+        modifier = Modifier.validationConfig(validateOnFocusLost = true, showErrorOnInteraction = false),
+        isError = isError(),
+        supportingText = supportingText(),
+    )
+}
+```
+
+The `TextFieldValue` APIs are unchanged, and both kinds mix in one `listOf(a, b).validate()`, so
+you can migrate field by field. For reducer (UDF) forms, programmatic writes and
+`InputTransformation`/`OutputTransformation`, see the
+[TextFieldState decision record](https://chrisjenx.github.io/yakcov/decisions/textfieldstate/).
+
 ## Dependencies
 
 Published to [Maven Central](https://central.sonatype.com/artifact/com.chrisjenx.yakcov/library) for

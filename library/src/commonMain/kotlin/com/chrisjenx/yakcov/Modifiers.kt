@@ -1,5 +1,8 @@
 package com.chrisjenx.yakcov
 
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.placeCursorAtEnd
+import androidx.compose.foundation.text.input.selectAll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -181,6 +184,33 @@ fun Modifier.onFocusCursorToEnd(
                 // Yes, this is the wrong way around (bug workaround to get cursor to end)
                 val range = if (!highlight) TextRange(length) else TextRange(length, 0)
                 currentOnValueChange(currentValue.copy(selection = range))
+            }
+        }
+    }
+}
+
+/**
+ * Moves the cursor to the end of [state]'s text when this element gains focus — the
+ * [TextFieldState] form of [onFocusCursorToEnd], usable with or without a validator.
+ *
+ * The state owns its selection, so this edits it in place (`placeCursorAtEnd()` / `selectAll()`);
+ * there is no value to hoist and no `onValueChange` to call. The edit is deferred to [scope] so it
+ * lands after the field's own focus handling, which would otherwise reposition the cursor.
+ *
+ * @param highlight when true, selects the whole text instead of collapsing to the end.
+ */
+@Composable
+fun Modifier.onFocusCursorToEnd(
+    state: TextFieldState,
+    scope: CoroutineScope = rememberCoroutineScope(),
+    highlight: Boolean = false,
+): Modifier {
+    val currentState by rememberUpdatedState(state)
+    val currentHighlight by rememberUpdatedState(highlight)
+    return onFocusChanged { focusState ->
+        if (focusState.isFocused) {
+            scope.launch {
+                currentState.edit { if (currentHighlight) selectAll() else placeCursorAtEnd() }
             }
         }
     }
