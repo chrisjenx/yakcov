@@ -9,9 +9,10 @@ directly in the composable.
 
 How the wiring works:
 
-- `rememberTextFieldValueValidator` keeps each validator across recompositions. The
-  validator owns the field's `TextFieldValue` draft *and* its validation state — no
-  separate `mutableStateOf` needed.
+- `rememberTextFieldStateValidator` keeps each validator across recompositions. It owns the
+  field's `TextFieldState` (the text, saved across configuration change) *and* its validation
+  state, and it validates by observing the state, so there's no `onValueChange` to wire. The
+  older `rememberTextFieldValueValidator` (`value`/`onValueChange`) still works.
 - `Modifier.validationConfig(validateOnFocusLost = true, shakeOnInvalid = true)` starts
   validation when the user leaves the field and shakes it when a submit finds it
   invalid. Nothing turns red while they're still typing.

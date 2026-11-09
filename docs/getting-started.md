@@ -24,12 +24,13 @@ See the [built-in rules](recipes/built-in-rules.md) reference for the full catal
 
 | | In-composition | State-holder-owned (headless) |
 |---|---|---|
-| **Create with** | `rememberTextFieldValueValidator(rules)` / `rememberGenericValueValidator(state, rules)` | `FieldValidator(initial, rules)` — plain constructor |
+| **Create with** | `rememberTextFieldStateValidator(rules)` (the field owns a `TextFieldState`) / `rememberGenericValueValidator(state, rules)` | `FieldValidator(initial, rules)`: plain constructor |
 | **Choose when** | The form has no state holder; everything lives in the composable | A ViewModel/presenter owns form state; you want `submit()` testable without UI |
 
 Both are snapshot-state backed, so composables that read them recompose automatically.
 The pattern guides ([ViewModel](patterns/viewmodel.md), [MVI](patterns/mvi.md),
-[Circuit](patterns/circuit.md)) show which to reach for in each architecture.
+[Circuit](patterns/circuit.md)) show which to reach for in each architecture. For a reducer
+form whose fields own a `TextFieldState`, follow the [MVI/UDF setup](patterns/mvi.md#setup-in-five-steps).
 
 ## Showing errors
 

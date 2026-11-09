@@ -82,6 +82,12 @@ class SampleActivity : ComponentActivity() {
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) { Text(text = "Open state-flow visualizer →") }
+                        Button(
+                            onClick = {
+                                context.startActivity(Intent(context, SkippedInputActivity::class.java))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(text = "Open skipped-input demo (TextFieldState) →") }
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text(text = "Email", style = MaterialTheme.typography.headlineSmall)

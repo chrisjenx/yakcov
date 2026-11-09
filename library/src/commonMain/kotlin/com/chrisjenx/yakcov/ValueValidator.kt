@@ -206,6 +206,8 @@ abstract class ValueValidator<V, R>(
         shakeOnInvalid: Boolean = false,
         showErrorOnInteraction: Boolean = true,
     ): Modifier = composed {
+        // Let state-observing validators (TextFieldStateValidator) watch their value while attached
+        ObserveValueChanges()
         // Set scope if shaking is enabled
         shakeOnInvalidScope = if (shakeOnInvalid) rememberCoroutineScope() else null
         // Track if we should show error on user input
@@ -228,6 +230,13 @@ abstract class ValueValidator<V, R>(
             )
             .then(if (shakeOnInvalid) Modifier.shakable(shakingState) else Modifier)
     }
+
+    /**
+     * Hook for validators whose value is owned elsewhere (a `TextFieldState`) and must be *observed*
+     * rather than pushed in through [onValueChange]. Composed by [validationConfig]; no-op by default.
+     */
+    @Composable
+    internal open fun ObserveValueChanges() = Unit
 
     /**
      * Returns a [Modifier] that will validate the [TextFieldValue] when the focus is lost.

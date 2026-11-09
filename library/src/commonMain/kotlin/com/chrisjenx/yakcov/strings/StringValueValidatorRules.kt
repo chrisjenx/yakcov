@@ -2,6 +2,8 @@
 
 package com.chrisjenx.yakcov.strings
 
+import com.chrisjenx.yakcov.TextFieldValueApi
+
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -361,6 +363,11 @@ fun PasswordMatches(stringField: ValueValidator<String, *>): ValueValidatorRule<
     return PasswordMatchesString(stringField)
 }
 
+@TextFieldValueApi(
+    "Compose 1.13 deprecates value/onValueChange text fields. Hold the password in a " +
+        "TextFieldStateValidator and use PasswordMatches(stringField) — it accepts any " +
+        "ValueValidator<String, *>. See docs/decisions/textfieldstate.md.",
+)
 @JvmName("PasswordMatchesTextFieldValue")
 fun PasswordMatches(textFieldValueField: ValueValidator<TextFieldValue, *>): ValueValidatorRule<String> {
     return PasswordMatchesTextFieldValue(textFieldValueField)

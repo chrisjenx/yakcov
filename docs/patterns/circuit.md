@@ -1,9 +1,12 @@
 # Circuit
 
-**Recommended wiring: the validator lives in the presenter.**
-[Circuit](https://slackhq.github.io/circuit/) presenters are composable functions, so
-`remember { FieldValidator(...) }` works there naturally — the presenter owns the form
-state, and the UI stays a dumb renderer of `CircuitUiState`.
+**Recommended wiring: the presenter owns each field's `TextFieldState` and the validator that
+follows it.** [Circuit](https://slackhq.github.io/circuit/) presenters are composable functions, so
+`remember { TextFieldState() }`, `remember { FieldValidator(...) }` and a `LaunchedEffect` that
+pipes `textChanges()` into the validator all work there naturally. The field owns the text, the
+presenter owns the form state, and the UI stays a dumb renderer of `CircuitUiState`. The text is
+never rendered from state, so a late recomposition can't drop a keystroke (see the
+[decision record](../decisions/textfieldstate.md)).
 
 ## State and events
 
@@ -35,8 +38,8 @@ state, and the UI stays a dumb renderer of `CircuitUiState`.
     (`@Parcelize` plumbing), which is app-level wiring unrelated to validation — so the
     example hosts the presenter directly. Only `circuit-foundation` is needed for
     everything shown here, and `rememberRetained` is a drop-in upgrade for `remember`
-    if you want the validators to survive Circuit's retention scope.
+    if you want the text buffers and validators to survive Circuit's retention scope.
 
-Prefer immutable state throughout? The [MVI value-hoist wiring](mvi.md) drops into a
-Circuit presenter unchanged — fold rules with `toFieldState` and put
-`FieldValidationState` in your `CircuitUiState` instead of the validator.
+Prefer immutable state throughout? The [MVI/UDF wiring](mvi.md) drops into a Circuit presenter
+unchanged. Fold rules with `toFieldState`, put the text `String` and the `FieldValidationState` in
+your `CircuitUiState` instead of the validator, and keep the `TextFieldState` in the presenter.

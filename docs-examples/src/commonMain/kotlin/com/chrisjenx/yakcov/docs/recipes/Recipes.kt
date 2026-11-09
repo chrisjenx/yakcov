@@ -1,6 +1,7 @@
 package com.chrisjenx.yakcov.docs.recipes
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,7 +18,7 @@ import com.chrisjenx.yakcov.strings.MinLength
 import com.chrisjenx.yakcov.strings.Phone
 import com.chrisjenx.yakcov.strings.PhoneFormat
 import com.chrisjenx.yakcov.strings.Required
-import com.chrisjenx.yakcov.strings.rememberTextFieldValueValidator
+import com.chrisjenx.yakcov.strings.rememberTextFieldStateValidator
 
 // --8<-- [start:custom-rule]
 // A reusable rule: an object (or data class for parameterised rules) implementing
@@ -46,15 +47,14 @@ val NoPlusAddressing = ValueValidatorRule<String> { value ->
 fun PhoneField() {
     // Phone(defaultRegion) is powered by libphonenumber-kotlin, which yakcov declares
     // compileOnly — your app must add the dependency (see this page's install section).
-    val phone = rememberTextFieldValueValidator(rules = listOf(Required, Phone("US")))
+    val phone = rememberTextFieldStateValidator(rules = listOf(Required, Phone("US")))
     with(phone) {
         OutlinedTextField(
-            value = value,
-            onValueChange = ::onValueChange,
+            state = textFieldState,
             label = { Text("Phone") },
             isError = isError(),
             supportingText = supportingText(),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .validationConfig(validateOnFocusLost = true),
@@ -67,15 +67,14 @@ fun PhoneField() {
 fun PhoneFormatField() {
     // PhoneFormat is a lenient, dependency-free format check — no libphonenumber needed.
     // The server stays authoritative and normalizes to E.164.
-    val phone = rememberTextFieldValueValidator(rules = listOf(Required, PhoneFormat))
+    val phone = rememberTextFieldStateValidator(rules = listOf(Required, PhoneFormat))
     with(phone) {
         OutlinedTextField(
-            value = value,
-            onValueChange = ::onValueChange,
+            state = textFieldState,
             label = { Text("Phone") },
             isError = isError(),
             supportingText = supportingText(),
-            singleLine = true,
+            lineLimits = TextFieldLineLimits.SingleLine,
             modifier = Modifier
                 .fillMaxWidth()
                 .validationConfig(validateOnFocusLost = true),
