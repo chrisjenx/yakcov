@@ -2,7 +2,7 @@
 
 # Yakcov Dual-Channel Release Script
 # Reads compose-releases.toml and builds/publishes for each configured channel.
-# Usage: ./scripts/release.sh [--channel stable|next|all] [--dry-run]
+# Usage: ./scripts/release.sh [--channel previous|stable|next|all] [--dry-run]
 
 set -e
 
@@ -35,7 +35,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h|--help)
-            echo "Usage: ./scripts/release.sh [--channel stable|next|all] [--dry-run]"
+            echo "Usage: ./scripts/release.sh [--channel previous|stable|next|all] [--dry-run]"
             echo ""
             echo "Options:"
             echo "  --channel <name>  Release only the specified channel (default: all)"
@@ -114,10 +114,10 @@ release_channel() {
     # keys off the channel (the next/prerelease channel), not the tag's "-N" collision suffix.
     # Non-fatal: the artifact is already on Maven Central and the tag is pushed.
     if command -v gh >/dev/null 2>&1; then
-        local prerelease=""
-        if [ "$channel" != "stable" ]; then prerelease="--prerelease"; fi
+        local release_flags
+        release_flags=$(release_flags_for "$channel")
         print_channel "$channel" "Creating GitHub Release: $tag"
-        gh release create "$tag" --title "$tag" --generate-notes --verify-tag $prerelease \
+        gh release create "$tag" --title "$tag" --generate-notes --verify-tag $release_flags \
             || print_channel "$channel" "WARN: gh release create failed — tag is pushed, create the Release manually"
     else
         print_channel "$channel" "gh CLI not found — skipping GitHub Release (tag pushed); install gh or create it manually"
