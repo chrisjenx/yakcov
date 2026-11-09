@@ -17,6 +17,13 @@ every late write resets the field's edit buffer to stale text. Keystrokes are lo
 paste lands in the wrong place. A `TextFieldState` field owns its text on the Compose clock, and
 the model only **observes** it. Nothing writes the model back into the field while the user types.
 
+![Legacy TextFieldValue hoist drops keystrokes; TextFieldState keeps them](../assets/textfieldstate/skipped-input.gif)
+
+*Both fields get the same keystroke on the same frame, every 10 ms, and feed the same model that
+applies each change 16 ms late. Rendered on the JVM with Compose's desktop runtime by
+`SkippedInputDemoRender` (regenerate with
+`YAKCOV_DEMO_OUT=/tmp/demo ./gradlew :library:jvmTest --tests '*SkippedInputDemoRender*' --rerun`).*
+
 Measured with the same keystrokes and the same async model (each change reduced 16 ms late):
 
 | Run | Legacy `TextFieldValue` hoist | `TextFieldState` + `textChanges()` |
