@@ -240,6 +240,43 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+# Test 5d: track -> GitHub Release flags. [previous] must not be marked prerelease (it is a real
+# stable line) and must not steal "Latest" from [stable] when it publishes after it.
+print_info ""
+print_info "Test 5d: track defaults and release flags"
+TRACK_DIR=$(mktemp -d)
+cp "$SCRIPT_DIR/lib-release.sh" "$TRACK_DIR/"
+cat > "$TRACK_DIR/compose-releases.toml" <<'EOF'
+[previous]
+compose = "9.8.0"
+compose-material3 = "9.8.0"
+
+[stable]
+compose = "9.9.0"
+compose-material3 = "9.9.0"
+
+[next]
+compose = "9.10.0-beta01"
+compose-material3 = "9.10.0-beta01"
+
+[lts]
+track = "stable"
+compose = "9.7.0"
+compose-material3 = "9.7.0"
+EOF
+for expect in "previous:--latest=false" "stable:" "next:--prerelease" "lts:"; do
+    ch="${expect%%:*}"; want="${expect#*:}"
+    got=$(cd "$TRACK_DIR" && ./lib-release.sh --release-flags "$ch")
+    if [ "$got" = "$want" ]; then
+        print_info "✓ [$ch] release flags = '${want}'"
+        PASS=$((PASS + 1))
+    else
+        print_error "✗ [$ch] release flags: expected '${want}', got '${got}'"
+        FAIL=$((FAIL + 1))
+    fi
+done
+rm -rf "$TRACK_DIR"
+
 # Test 6: Gradle wrapper exists
 print_info ""
 print_info "Test 6: Prerequisites"

@@ -50,6 +50,34 @@ read_channel_key() {
     ' compose-releases.toml
 }
 
+# The channel's upstream track (previous | stable | prerelease). Mirrors _track_for in
+# scripts/check-compose-updates.py: an explicit `track` wins, else [stable] -> stable,
+# [previous] -> previous, anything else -> prerelease.
+# Usage: channel_track <channel>
+channel_track() {
+    local channel="$1" track
+    track=$(read_channel_key "$channel" "track")
+    if [ -n "$track" ]; then echo "$track"; return; fi
+    case "$channel" in
+        stable|previous) echo "$channel" ;;
+        *) echo "prerelease" ;;
+    esac
+}
+
+# `gh release create` flags for a channel's GitHub Release:
+#   prerelease -> --prerelease      (alpha/beta/rc)
+#   previous   -> --latest=false    (a real release, but must not take the "Latest" badge
+#                                    from [stable] when it happens to publish after it)
+#   stable     -> (none)            (GitHub marks it Latest)
+# Usage: release_flags_for <channel>
+release_flags_for() {
+    case "$(channel_track "$1")" in
+        prerelease) echo "--prerelease" ;;
+        previous) echo "--latest=false" ;;
+        *) echo "" ;;
+    esac
+}
+
 # --- Tag logic ---
 
 # Determine the next tag for a given base version.
@@ -247,6 +275,13 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         --json-matrix)
             _json_matrix "${2:-all}"
             ;;
+        --release-flags)
+            if [ -z "${2:-}" ]; then
+                print_error "Usage: $0 --release-flags <channel>"
+                exit 1
+            fi
+            release_flags_for "$2"
+            ;;
         --patch)
             if [ -z "${2:-}" ]; then
                 print_error "Usage: $0 --patch <channel>"
@@ -256,7 +291,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
             ;;
         --help|-h)
             echo "Usage:"
-            echo "  $0 --json-matrix [all|stable|next]   Output JSON matrix for CI"
+            echo "  $0 --json-matrix [all|<channel>]     Output JSON matrix for CI"
+            echo "  $0 --release-flags <channel>          gh release create flags for a channel"
             echo "  $0 --patch <channel>                  Patch libs.versions.toml"
             echo ""
             echo "Or source this file for shell functions:"
