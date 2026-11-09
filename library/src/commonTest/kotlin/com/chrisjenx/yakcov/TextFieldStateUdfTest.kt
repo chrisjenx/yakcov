@@ -123,7 +123,7 @@ class TextFieldStateUdfTest {
         runOnIdle { h.name.setTextAndPlaceCursorAtEnd("Suggested") }
         waitForIdle()
         assertEquals("Suggested", h.model.name)
-        assertEquals(TextRange(9), h.name.selection, "caret at end — replaces asCaretEndEntry")
+        assertEquals(TextRange(9), h.name.selection, "caret at end, no TextRange bookkeeping")
         assertTrue(listOf(h.model.nameState).hasNoErrors())
 
         runOnIdle { h.name.clearText() }
