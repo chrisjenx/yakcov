@@ -1,0 +1,1513 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yet Another Kotlin COmpose Validation library">
+      
+      
+      
+        <link rel="canonical" href="https://chrisjenx.github.io/yakcov/decisions/textfieldstate/">
+      
+      
+        <link rel="prev" href="../../recipes/phone/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+    
+    
+      
+        <title>TextFieldState support - Yakcov</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#decision-record-textfieldstate-support" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Yakcov" class="md-header__button md-logo" aria-label="Yakcov" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Yakcov
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              TextFieldState support
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/chrisjenx/yakcov" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    chrisjenx/yakcov
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Yakcov" class="md-nav__button md-logo" aria-label="Yakcov" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Yakcov
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/chrisjenx/yakcov" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    chrisjenx/yakcov
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Patterns
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Patterns
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/basic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Basic screen
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/viewmodel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ViewModel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/mvi/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MVI / UDF
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../patterns/circuit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Circuit
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Recipes
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Recipes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../recipes/built-in-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Built-in rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../recipes/custom-rules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../recipes/phone/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Phone validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TextFieldState support
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TextFieldState support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-text-that-round-trips-through-a-model-loses-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why: text that round-trips through a model loses input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-ships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What ships
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-validator-owns-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Validator-owns-state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-modifiers-and-who-owns-the-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Modifiers, and who owns the behaviour
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-udf-forms-what-does-the-model-hold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. UDF forms: what does the Model hold?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-programmatic-writes-suggestion-preset-re-seed-clear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Programmatic writes (suggestion, preset, re-seed, clear)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-transformations-raw-or-transformed-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Transformations: raw or transformed text?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deprecation-compose-113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deprecation (Compose 1.13+)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#why-text-that-round-trips-through-a-model-loses-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why: text that round-trips through a model loses input
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-ships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What ships
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-validator-owns-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Validator-owns-state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-modifiers-and-who-owns-the-behaviour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Modifiers, and who owns the behaviour
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-udf-forms-what-does-the-model-hold" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. UDF forms: what does the Model hold?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-programmatic-writes-suggestion-preset-re-seed-clear" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Programmatic writes (suggestion, preset, re-seed, clear)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-transformations-raw-or-transformed-text" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Transformations: raw or transformed text?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deprecation-compose-113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deprecation (Compose 1.13+)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="decision-record-textfieldstate-support">Decision record: TextFieldState support</h1>
+<p><strong>Status:</strong> accepted · <strong>Since:</strong> the release after 1.12.1 / 1.13.0-alpha01 · <strong>Scope:</strong> additive on every channel, plus deprecations in the Compose 1.13+ artifacts</p>
+<p>Compose is moving editable text from the <code>value</code> + <code>onValueChange</code> pair (<code>String</code> /
+<code>TextFieldValue</code>, <code>VisualTransformation</code>) to a field-owned
+<a href="https://developer.android.com/develop/ui/compose/text/user-input"><code>TextFieldState</code></a> with
+<code>InputTransformation</code> / <code>OutputTransformation</code> for formatting. yakcov supports both side by side:
+every <code>TextFieldValue</code> API keeps working, and both kinds mix in one <code>validate()</code>, so an app can migrate
+one field or module at a time. In the <strong>Compose 1.13+ artifacts</strong> the <code>value</code>/<code>onValueChange</code>
+wrappers are <code>@Deprecated</code> (warning level), matching Compose itself; see
+<a href="#deprecation-compose-113">Deprecation</a>.</p>
+<h2 id="why-text-that-round-trips-through-a-model-loses-input">Why: text that round-trips through a model loses input</h2>
+<p>With <code>value</code> + <code>onValueChange</code>, the field renders whatever the model holds. If the model updates
+<strong>later</strong> than the next key arrives (a store hop, a reducer on another dispatcher, a slow frame),
+every late write resets the field's edit buffer to stale text. Keystrokes are lost and a mid-text
+paste lands in the wrong place. A <code>TextFieldState</code> field owns its text on the Compose clock, and
+the model only <strong>observes</strong> it. Nothing writes the model back into the field while the user types.</p>
+<p><img alt="Legacy TextFieldValue hoist drops keystrokes; TextFieldState keeps them" src="../../assets/textfieldstate/skipped-input.gif" /></p>
+<p><em>Both fields get the same keystroke on the same frame, every 10 ms, and feed the same model that
+applies each change 16 ms late. Rendered on the JVM with Compose's desktop runtime by
+<code>SkippedInputDemoRender</code> (regenerate with
+<code>YAKCOV_DEMO_OUT=/tmp/demo ./gradlew :library:jvmTest --tests '*SkippedInputDemoRender*' --rerun</code>).</em></p>
+<p>Measured with the same keystrokes and the same async model (each change reduced 16 ms late):</p>
+<table>
+<thead>
+<tr>
+<th>Run</th>
+<th>Legacy <code>TextFieldValue</code> hoist</th>
+<th><code>TextFieldState</code> + <code>textChanges()</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JVM UI test, 19 chars at 10 ms gaps (<code>AsyncModelInputTest</code>)</td>
+<td><code>teqikbonfx</code> (9/19 kept)</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>Android emulator, <code>adb input text</code> (43 chars), run 1</td>
+<td><code>qikbrwn fjm e t laog</code></td>
+<td>exact</td>
+</tr>
+<tr>
+<td>Android emulator, run 2</td>
+<td><code>the quick brop azog</code></td>
+<td>exact</td>
+</tr>
+<tr>
+<td>Mid-text paste / caret edit</td>
+<td>lands wrong (test control)</td>
+<td>lands at the caret, caret preserved</td>
+</tr>
+</tbody>
+</table>
+<p>The demo is <code>SkippedInputActivity</code> in <code>:sample</code> (it has a model-lag slider):
+<code>adb shell am start -n com.chrisjenx.yakcov.sample/.SkippedInputActivity</code>.</p>
+<p><strong>The rule this record follows throughout:</strong> the <code>TextFieldState</code> is the only writer of a field's
+text while the user is typing. The model is downstream of it, and the only model → field write is
+an explicit, one-shot re-seed (§4).</p>
+<h2 id="what-ships">What ships</h2>
+<table>
+<thead>
+<tr>
+<th>API</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TextFieldStateValidator</code> / <code>rememberTextFieldStateValidator</code></td>
+<td>Validator-owns-state over a <code>TextFieldState</code>. Same rules, members and error timing as <code>TextFieldValueValidator</code>.</td>
+</tr>
+<tr>
+<td><code>Modifier.onFocusCursorToEnd(state: TextFieldState, highlight)</code></td>
+<td>Caret to end (or select all) on focus, through the state's own selection. The validator has the same member.</td>
+</tr>
+<tr>
+<td><code>TextFieldState.textChanges(): Flow&lt;String&gt;</code></td>
+<td>The state → Model hand-off for reducer (UDF) forms. Emits text only, never caret moves.</td>
+</tr>
+<tr>
+<td><code>validationBehavior</code>, <code>shakeOnInvalid</code>, <code>onFocusLost</code>, <code>validationConfig(validator)</code></td>
+<td><strong>Unchanged.</strong> They never took a value, so they already work with <code>TextFieldState</code> fields.</td>
+</tr>
+</tbody>
+</table>
+<p><code>TextFieldStateValidator</code> extends <code>ValueValidator&lt;String, String&gt;</code>, so it mixes with
+<code>TextFieldValueValidator</code> in one <code>listOf(a, b).validate()</code> and keeps <code>isValid</code>, <code>isError()</code>,
+<code>supportingText()</code>, <code>validate()</code>, <code>reset()</code> and the <code>validationConfig</code> member exactly as before.</p>
+<div class="admonition note">
+<p class="admonition-title">Works on every channel</p>
+<p><code>TextFieldState</code> and its material3 overloads exist on every Compose version yakcov builds
+(1.12.x stable and the 1.13 pre-release line), so the new API ships on <strong>both</strong> channels. You
+do not have to move to Compose 1.13 to start migrating.</p>
+</div>
+<h2 id="1-validator-owns-state">1. Validator-owns-state</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@Composable</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">EmailField</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="c1">// Owns a saveable TextFieldState and observes it — no onValueChange anywhere.</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rememberTextFieldStateValidator</span><span class="p">(</span><span class="n">rules</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">listOf</span><span class="p">(</span><span class="n">Required</span><span class="p">,</span><span class="w"> </span><span class="n">Email</span><span class="p">))</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="n">Column</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">        </span><span class="n">with</span><span class="p">(</span><span class="n">email</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">            </span><span class="n">OutlinedTextField</span><span class="p">(</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">                </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">textFieldState</span><span class="p">,</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">                </span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Text</span><span class="p">(</span><span class="s">"Email"</span><span class="p">)</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">                </span><span class="n">modifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Modifier</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">                    </span><span class="p">.</span><span class="na">onFocusCursorToEnd</span><span class="p">()</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">                    </span><span class="p">.</span><span class="na">validationConfig</span><span class="p">(</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">                        </span><span class="n">validateOnFocusLost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">                        </span><span class="n">shakeOnInvalid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">                        </span><span class="n">showErrorOnInteraction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="c1">// errors on blur/submit only</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">                    </span><span class="p">),</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">                </span><span class="n">isError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">isError</span><span class="p">(),</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">                </span><span class="n">supportingText</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">supportingText</span><span class="p">(),</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">            </span><span class="p">)</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">        </span><span class="n">Button</span><span class="p">(</span><span class="n">onClick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">listOf</span><span class="p">(</span><span class="n">email</span><span class="p">).</span><span class="na">validate</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* submit */</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Text</span><span class="p">(</span><span class="s">"Save"</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>How validation observes the state.</strong> Rules read <code>textFieldState.text</code> through a snapshot read,
+so <code>isValid</code>/<code>isError()</code>/<code>supportingText()</code> recompute on every edit with no <code>onValueChange</code>. The one
+thing that needs a running observer is the move from <em>pristine</em> to <em>validating</em> on the user's first
+edit. That is the step <code>onValueChange</code> performs today, and it is what makes
+<code>showErrorOnInteraction</code> meaningful. <code>observeTextChanges()</code> does it with
+<code>snapshotFlow { state.text.toString() }</code>. <code>rememberTextFieldStateValidator</code> and the
+<code>validationConfig</code> modifier both run it while the field is composed. A validator you construct
+yourself (for example as a <code>val</code> on a component) and use without <code>validationConfig</code> must run it:
+<code>LaunchedEffect(v) { v.observeTextChanges() }</code>, or launch it from the component's scope.</p>
+<p><strong>Error timing is unchanged.</strong> Errors show on blur (<code>validateOnFocusLost = true</code>) or submit
+(<code>validate()</code>). With <code>showErrorOnInteraction = false</code> they never show while a fresh field is being
+typed into, and after the first blur they update live. <code>initialValidate = true</code> still starts
+validating immediately, which a field whose starting value is already valid needs (an optional
+<code>Email</code>, a quantity seeded <code>"1"</code>). A pristine field still reports <code>isValid == false</code>.</p>
+<h2 id="2-modifiers-and-who-owns-the-behaviour">2. Modifiers, and who owns the behaviour</h2>
+<p><code>validationBehavior(isError, shakeTrigger, onFocusLost)</code> and <code>shakeOnInvalid(isError, trigger)</code> are
+already value-agnostic, so no <code>TextFieldState</code> overload is needed. The only value-coupled modifier
+was <code>onFocusCursorToEnd</code>, which now has a <code>TextFieldState</code> overload that edits the selection in
+place (<code>placeCursorAtEnd()</code> / <code>selectAll()</code>). There is no value to hoist and no callback to call.</p>
+<p><strong>Recommendation for a field wrapper</strong> (for example one <code>AppTextField(state, rules, format, style)</code>):
+the wrapper should <em>own</em> these behaviours and apply the yakcov modifiers internally, rather than
+asking every call site to chain them. Focus-loss validation, shake on invalid submit and
+caret-to-end are properties of "a validated field", not of a screen, and putting them in one place
+removes the per-call-site drift. The modifiers stay public as the building blocks, and keeping them
+small is what makes them composable in a wrapper.</p>
+<h2 id="3-udf-forms-what-does-the-model-hold">3. UDF forms: what does the Model hold?</h2>
+<p>The options when the field owns a <code>TextFieldState</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>a. The <code>TextFieldState</code> itself in the Model</strong></td>
+<td>✗ It is a mutable, reference-identity holder, the same reason a Model never holds validators. <code>copy()</code> aliases it, <code>==</code> becomes identity, and persistence and time-travel break.</td>
+</tr>
+<tr>
+<td><strong>b. An immutable <code>String</code> snapshot, kept in sync one way (state → Model)</strong></td>
+<td>✓ <strong>Recommended.</strong> The reducer is unchanged in shape.</td>
+</tr>
+<tr>
+<td><strong>c. An adapter that computes <code>FieldValidationState</code> outside the reducer</strong></td>
+<td>✗ Validation moves out of <code>reduce()</code>, and <code>showError</code> gets two owners. <code>textChanges()</code> is the only adapter worth having: a one-liner that gets the <code>toString()</code>/selection detail right.</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>component</strong> (Decompose component, ViewModel, presenter) owns the <code>TextFieldState</code> as a <code>val</code>
+next to its store. The <strong>Model</strong> holds the text as a <code>String</code> plus the field's
+<code>FieldValidationState</code>. The <strong>reducer</strong> folds rules exactly as today.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kd">private</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">amountRules</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">ValueValidatorRule</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">listOf</span><span class="p">(</span><span class="n">Required</span><span class="p">,</span><span class="w"> </span><span class="n">Decimal</span><span class="p">)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="cm">/** Immutable: the text is a String snapshot. The TextFieldState lives on the component, not here. */</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">ExpenseModel</span><span class="p">(</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">amount</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">""</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">amountState</span><span class="p">:</span><span class="w"> </span><span class="n">FieldValidationState</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">amountRules</span><span class="p">.</span><span class="na">toFieldState</span><span class="p">(</span><span class="s">""</span><span class="p">,</span><span class="w"> </span><span class="n">showError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">),</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">submitAttempts</span><span class="p">:</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">canSubmit</span><span class="p">:</span><span class="w"> </span><span class="kt">Boolean</span><span class="w"> </span><span class="k">get</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">listOf</span><span class="p">(</span><span class="n">amountState</span><span class="p">).</span><span class="na">hasNoErrors</span><span class="p">()</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">}</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="kd">sealed</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nc">ExpenseEvent</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">AmountChanged</span><span class="p">(</span><span class="kd">val</span><span class="w"> </span><span class="nv">text</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseEvent</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">    </span><span class="kd">data</span><span class="w"> </span><span class="kd">object</span><span class="w"> </span><span class="nc">AmountFocusLost</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseEvent</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">    </span><span class="kd">data</span><span class="w"> </span><span class="kd">object</span><span class="w"> </span><span class="nc">Submit</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseEvent</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">}</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">reduce</span><span class="p">(</span><span class="n">model</span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseModel</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseEvent</span><span class="p">):</span><span class="w"> </span><span class="n">ExpenseModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">    </span><span class="c1">// Identical in shape to the TextFieldValue hoist: fold on the text, preserve showError.</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="k">is</span><span class="w"> </span><span class="n">ExpenseEvent</span><span class="p">.</span><span class="na">AmountChanged</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">copy</span><span class="p">(</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">        </span><span class="n">amount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="na">text</span><span class="p">,</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">        </span><span class="n">amountState</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">amountRules</span><span class="p">.</span><span class="na">toFieldState</span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="na">text</span><span class="p">,</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">amountState</span><span class="p">.</span><span class="na">showError</span><span class="p">),</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">    </span><span class="p">)</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">    </span><span class="n">ExpenseEvent</span><span class="p">.</span><span class="na">AmountFocusLost</span><span class="w"> </span><span class="o">-&gt;</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">        </span><span class="n">model</span><span class="p">.</span><span class="na">copy</span><span class="p">(</span><span class="n">amountState</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">amountRules</span><span class="p">.</span><span class="na">toFieldState</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="na">amount</span><span class="p">,</span><span class="w"> </span><span class="n">showError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">))</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="n">ExpenseEvent</span><span class="p">.</span><span class="na">Submit</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">copy</span><span class="p">(</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">        </span><span class="n">amountState</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">amountRules</span><span class="p">.</span><span class="na">toFieldState</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="na">amount</span><span class="p">,</span><span class="w"> </span><span class="n">showError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="p">),</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">        </span><span class="n">submitAttempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">submitAttempts</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">1</span><span class="p">,</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">    </span><span class="p">)</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="cm">/** The component (Decompose component, ViewModel, presenter…) — NOT the Model. */</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nd">@Stable</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kd">class</span><span class="w"> </span><span class="nc">ExpenseComponent</span><span class="p">(</span><span class="n">scope</span><span class="p">:</span><span class="w"> </span><span class="n">CoroutineScope</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="cm">/** The field's editing buffer. A `val`, created once, never copied into the Model. */</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">amount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TextFieldState</span><span class="p">()</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="kd">var</span><span class="w"> </span><span class="nv">model</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="n">mutableStateOf</span><span class="p">(</span><span class="n">ExpenseModel</span><span class="p">())</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">        </span><span class="n">private</span><span class="w"> </span><span class="k">set</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="kd">fun</span><span class="w"> </span><span class="nf">dispatch</span><span class="p">(</span><span class="n">event</span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseEvent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">        </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">reduce</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="w">    </span><span class="k">init</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">        </span><span class="c1">// state → model: the one-way hand-off. Text only; caret moves don't emit.</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="w">        </span><span class="n">scope</span><span class="p">.</span><span class="na">launch</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">amount</span><span class="p">.</span><span class="na">textChanges</span><span class="p">().</span><span class="na">collect</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dispatch</span><span class="p">(</span><span class="n">ExpenseEvent</span><span class="p">.</span><span class="na">AmountChanged</span><span class="p">(</span><span class="nb">it</span><span class="p">))</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@Composable</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">ExpenseForm</span><span class="p">(</span><span class="n">component</span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseComponent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">component</span><span class="p">.</span><span class="na">model</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="n">OutlinedTextField</span><span class="p">(</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">        </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">component</span><span class="p">.</span><span class="na">amount</span><span class="p">,</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">        </span><span class="n">modifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Modifier</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">            </span><span class="p">.</span><span class="na">onFocusCursorToEnd</span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">component</span><span class="p">.</span><span class="na">amount</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">            </span><span class="p">.</span><span class="na">validationBehavior</span><span class="p">(</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">                </span><span class="n">isError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">amountState</span><span class="p">.</span><span class="na">isError</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">                </span><span class="n">shakeTrigger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">submitAttempts</span><span class="p">,</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">                </span><span class="n">onFocusLost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">component</span><span class="p">.</span><span class="na">dispatch</span><span class="p">(</span><span class="n">ExpenseEvent</span><span class="p">.</span><span class="na">AmountFocusLost</span><span class="p">)</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">            </span><span class="p">),</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">        </span><span class="n">isError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">amountState</span><span class="p">.</span><span class="na">isError</span><span class="p">,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="w">        </span><span class="n">supportingText</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">amountState</span><span class="p">.</span><span class="na">supportingText</span><span class="p">(),</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="w">    </span><span class="p">)</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Compared with today.</strong> <code>rules.toFieldState(value.text, showError)</code> becomes
+<code>rules.toFieldState(text, showError)</code>, and everything else (keystroke events preserve <code>showError</code>,
+focus-loss and submit force it, <code>hasNoErrors()</code> for <code>canSubmit</code>, the <code>submitAttempts</code> shake counter)
+carries over unchanged. The Model's field type shrinks from <code>TextFieldValue</code> to <code>String</code>, because the
+caret now lives in the <code>TextFieldState</code>. The rules about seeding and clamping <code>TextRange</code> no longer
+apply.</p>
+<p><strong>Caveats.</strong></p>
+<ul>
+<li>The hand-off is asynchronous: the Model catches up on the next snapshot apply, before the next
+  frame. A click handler runs as a later event and sees the final text. If an action can fire in
+  the same frame as an edit, carry the text in the event: <code>Submit(amount = amount.text.toString())</code>.</li>
+<li><code>textChanges()</code> conflates. A burst of edits may arrive as its final text, which is all a reducer
+  needs.</li>
+<li>Process death: persist the Model's <code>String</code> (it is the source of truth for restore) and re-seed
+  the state from it, or use <code>rememberTextFieldState</code> / <code>TextFieldState.Saver</code> for a UI-owned state.</li>
+</ul>
+<h2 id="4-programmatic-writes-suggestion-preset-re-seed-clear">4. Programmatic writes (suggestion, preset, re-seed, clear)</h2>
+<p><strong>Write the <code>TextFieldState</code>, never the Model.</strong> Writes travel one way: state → Model through
+<code>textChanges()</code>. <code>setTextAndPlaceCursorAtEnd</code> puts the caret at the end, which replaces
+<code>TextFieldValue(text, TextRange(text.length))</code> helpers such as a "caret-end entry". A new
+<code>TextFieldState(text)</code> also starts with the caret at the end.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="cm">/** A reducer-owned, one-shot write request. The version makes each request distinct. */</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kd">data</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nc">Seed</span><span class="p">(</span><span class="kd">val</span><span class="w"> </span><span class="nv">text</span><span class="p">:</span><span class="w"> </span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kd">val</span><span class="w"> </span><span class="nv">version</span><span class="p">:</span><span class="w"> </span><span class="kt">Int</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nd">@Composable</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">ProgrammaticWrites</span><span class="p">(</span><span class="n">state</span><span class="p">:</span><span class="w"> </span><span class="n">TextFieldState</span><span class="p">,</span><span class="w"> </span><span class="n">suggestions</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">seed</span><span class="p">:</span><span class="w"> </span><span class="n">Seed?</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="c1">// Reducer re-seed (server load, edit prefill): apply only when the version changes, so it can</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="c1">// never overwrite keystrokes the Model hasn't caught up with yet.</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="n">LaunchedEffect</span><span class="p">(</span><span class="n">seed</span><span class="o">?.</span><span class="na">version</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">seed</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="n">state</span><span class="p">.</span><span class="na">setTextAndPlaceCursorAtEnd</span><span class="p">(</span><span class="n">seed</span><span class="p">.</span><span class="na">text</span><span class="p">)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="n">Column</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="w">        </span><span class="n">OutlinedTextField</span><span class="p">(</span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">state</span><span class="p">)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="w">        </span><span class="c1">// Suggestion pick / preset fill: write the state at the event's source. Caret lands at the</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">        </span><span class="c1">// end; the textChanges() collector carries the text to the Model.</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="w">        </span><span class="n">suggestions</span><span class="p">.</span><span class="na">forEach</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="o">-&gt;</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="w">            </span><span class="n">Button</span><span class="p">(</span><span class="n">onClick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">state</span><span class="p">.</span><span class="na">setTextAndPlaceCursorAtEnd</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Text</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="w">        </span><span class="c1">// Clear.</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="w">        </span><span class="n">Button</span><span class="p">(</span><span class="n">onClick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">state</span><span class="p">.</span><span class="na">clearText</span><span class="p">()</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Text</span><span class="p">(</span><span class="s">"Clear"</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Write</th>
+<th>Where it originates</th>
+<th>How</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Suggestion pick, preset fill</td>
+<td>UI event</td>
+<td><code>state.setTextAndPlaceCursorAtEnd(text)</code> in the handler</td>
+</tr>
+<tr>
+<td>Clear</td>
+<td>UI event</td>
+<td><code>state.clearText()</code></td>
+</tr>
+<tr>
+<td>Re-seed (server load, edit prefill, reset after save)</td>
+<td>Reducer</td>
+<td>Reducer publishes a versioned <code>Seed(text, version)</code> (or a one-shot effect). The UI applies it in <code>LaunchedEffect(seed.version)</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rejected: the model echo</strong> (<code>LaunchedEffect(model.text) { if (state.text != model.text) state.set…(model.text) }</code>).
+It loses keystrokes. Type "a" and the Model becomes "a". Type "b" before the effect runs, and the
+effect compares the state's "ab" with the Model's stale "a" and writes "a" back. A versioned seed
+fires only when the reducer means to write.</p>
+<p><strong>With a validator</strong>, the write path decides whether it counts as user interaction:</p>
+<ul>
+<li><code>validator.value = text</code>: replaces the text, caret at end, <strong>not</strong> interaction. The field stays
+  pristine, exactly like assigning <code>TextFieldValueValidator.value</code>. Use it for a re-seed, followed
+  by <code>reset()</code> if the field should look untouched.</li>
+<li><code>validator.validate(text)</code>: replaces the text and shows errors.</li>
+<li>A write straight to the state (<code>setTextAndPlaceCursorAtEnd</code>, <code>clearText</code>, <code>edit {}</code>) cannot be
+  told apart from typing, so it <strong>is</strong> interaction. That is right for a suggestion pick.</li>
+</ul>
+<h2 id="5-transformations-raw-or-transformed-text">5. Transformations: raw or transformed text?</h2>
+<p>Rules, <code>textChanges()</code> and the Model all see <strong><code>TextFieldState.text</code></strong>:</p>
+<ul>
+<li><strong>after</strong> the <code>InputTransformation</code>. It runs on user edits (typing, paste, IME) and changes what
+  is stored. A digit filter means the validator never sees the rejected characters.</li>
+<li><strong>before</strong> the <code>OutputTransformation</code>. It only changes what is drawn. "12.5" displayed as "12.50"
+  is still "12.5" to the rules.</li>
+<li><strong>Programmatic writes bypass the <code>InputTransformation</code>.</strong> <code>setTextAndPlaceCursorAtEnd("12a")</code>
+  stores "12a". Normalise a preset before writing it.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cm">/** Input: reject anything but digits and one dot. Rules see the filtered text. */</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kd">val</span><span class="w"> </span><span class="nv">CurrencyInput</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InputTransformation</span><span class="p">.</span><span class="na">byValue</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">current</span><span class="p">,</span><span class="w"> </span><span class="n">proposed</span><span class="w"> </span><span class="o">-&gt;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">filtered</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">proposed</span><span class="p">.</span><span class="na">filter</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nb">it</span><span class="p">.</span><span class="na">isDigit</span><span class="p">()</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">it</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">'.'</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">filtered</span><span class="p">.</span><span class="na">count</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nb">it</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">'.'</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="n">current</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">filtered</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">}</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="cm">/** Output: display-only "12.5" → "12.50". Rules and the Model still see "12.5". */</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="kd">val</span><span class="w"> </span><span class="nv">CurrencyDisplay</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OutputTransformation</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">dot</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">asCharSequence</span><span class="p">().</span><span class="na">indexOf</span><span class="p">(</span><span class="sc">'.'</span><span class="p">)</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dot</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span><span class="w"> </span><span class="n">repeat</span><span class="p">(</span><span class="m">2</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">length</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">dot</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">insert</span><span class="p">(</span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="s">"0"</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">}</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="nd">@Composable</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="kd">fun</span><span class="w"> </span><span class="nf">CurrencyField</span><span class="p">(</span><span class="n">component</span><span class="p">:</span><span class="w"> </span><span class="n">ExpenseComponent</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">    </span><span class="kd">val</span><span class="w"> </span><span class="nv">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">component</span><span class="p">.</span><span class="na">model</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">    </span><span class="n">OutlinedTextField</span><span class="p">(</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">        </span><span class="n">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">component</span><span class="p">.</span><span class="na">amount</span><span class="p">,</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="w">        </span><span class="n">inputTransformation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CurrencyInput</span><span class="p">,</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="w">        </span><span class="n">outputTransformation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CurrencyDisplay</span><span class="p">,</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="w">        </span><span class="n">keyboardOptions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">KeyboardOptions</span><span class="p">(</span><span class="n">keyboardType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">KeyboardType</span><span class="p">.</span><span class="na">Decimal</span><span class="p">),</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="w">        </span><span class="n">modifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Modifier</span><span class="p">.</span><span class="na">validationBehavior</span><span class="p">(</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="w">            </span><span class="n">isError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">amountState</span><span class="p">.</span><span class="na">isError</span><span class="p">,</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="w">            </span><span class="n">shakeTrigger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">submitAttempts</span><span class="p">,</span>
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="w">            </span><span class="n">onFocusLost</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">component</span><span class="p">.</span><span class="na">dispatch</span><span class="p">(</span><span class="n">ExpenseEvent</span><span class="p">.</span><span class="na">AmountFocusLost</span><span class="p">)</span><span class="w"> </span><span class="p">},</span>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="w">        </span><span class="p">),</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">        </span><span class="n">isError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">amountState</span><span class="p">.</span><span class="na">isError</span><span class="p">,</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a><span class="w">        </span><span class="n">supportingText</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="p">.</span><span class="na">amountState</span><span class="p">.</span><span class="na">supportingText</span><span class="p">(),</span>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="w">    </span><span class="p">)</span>
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>Reshaping like currency "12.5" → "12.50".</strong> Don't pad in an <code>InputTransformation</code>: it rewrites
+stored text on every keystroke, fights the caret, and the user can't delete the digit it keeps
+re-adding. Use the <code>InputTransformation</code> to <em>restrict</em> (digits, one dot, <code>maxLength</code>). Use an
+<code>OutputTransformation</code> to <em>present</em> (padding, grouping, a currency symbol). Write rules against the
+stored, unpadded form. If the stored value itself must be canonical, normalise once on blur with a
+programmatic write in the focus-lost handler.</p>
+<h2 id="deprecation-compose-113">Deprecation (Compose 1.13+)</h2>
+<p>Compose 1.13 deprecates <code>BasicTextField(value, onValueChange, …)</code> for both <code>String</code> and
+<code>TextFieldValue</code>; 1.11 and 1.12 don't. (Checked in the bytecode: in CMP 1.13.0-beta02 and androidx
+material3 1.5.0-rc01 the material3 <code>TextField</code>/<code>OutlinedTextField</code> value overloads aren't annotated
+yet, but the foundation field they wrap is.) yakcov follows the same line. <strong>Only the 1.13+
+artifacts</strong> deprecate the wrappers around that shape:</p>
+<table>
+<thead>
+<tr>
+<th>Deprecated in 1.13+</th>
+<th>Use instead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TextFieldValueValidator</code></td>
+<td><code>TextFieldStateValidator</code></td>
+</tr>
+<tr>
+<td><code>rememberTextFieldValueValidator(value: String, …)</code></td>
+<td><code>rememberTextFieldStateValidator(initialText = …)</code> (IDE quick-fix via <code>ReplaceWith</code>)</td>
+</tr>
+<tr>
+<td><code>rememberTextFieldValueValidator(textFieldValue: MutableState&lt;TextFieldValue&gt;, …)</code></td>
+<td><code>rememberTextFieldStateValidator(textFieldState = …)</code></td>
+</tr>
+<tr>
+<td><code>Modifier.onFocusCursorToEnd(value, onValueChange, …)</code></td>
+<td><code>Modifier.onFocusCursorToEnd(state = …)</code></td>
+</tr>
+<tr>
+<td><code>PasswordMatches(textFieldValueField)</code></td>
+<td><code>PasswordMatches(stringField)</code> with a <code>TextFieldStateValidator</code></td>
+</tr>
+</tbody>
+</table>
+<p>The level is <strong>warning</strong>, so builds keep compiling while you migrate. Nothing is removed; removal
+comes in a later release. Everything not tied to the deprecated field shape is untouched:
+<code>ValueValidator</code>, the rules, <code>GenericValueValidator</code>, <code>FieldValidator</code>, <code>FieldValidationState</code>,
+<code>validationBehavior</code>, <code>shakeOnInvalid</code> and <code>onFocusLost</code>.</p>
+<p><strong>How it's built.</strong> All channels compile one common source set, and Kotlin rejects a typealias to
+<code>kotlin.Deprecated</code>. So those declarations carry an internal marker, <code>@TextFieldValueApi(…)</code>. Before
+1.13 it's a source-only no-op. On 1.13+, the <code>deprecateTextFieldValueApi</code> Gradle task compiles a
+copy of each file that uses it, with the marker rewritten to <code>@Deprecated(…)</code>. File names, JVM
+facades and the ABI dump don't change.</p>
+<h2 id="known-limitations">Known limitations</h2>
+<ul>
+<li>Validation state (pristine/validating/showing errors) is not saveable. This is the same as
+  <code>TextFieldValueValidator</code>. <code>rememberTextFieldStateValidator</code> does save the <em>text</em>.</li>
+<li>The pristine → validating step needs the observer running (see §1). Without it, rules still
+  evaluate live, but a fresh field won't start validating until blur or submit.</li>
+</ul>
+<h2 id="tests">Tests</h2>
+<p><code>TextFieldStateValidatorTest</code> (validator, timing, caret, transformations, <code>textChanges</code>),
+<code>TextFieldStateUdfTest</code> (state → Model hand-off, programmatic writes, versioned re-seed, the
+submit-counter shake) and <code>AsyncModelInputTest</code> (fast typing, mid-text paste and a re-seed under an
+async model, each with a legacy control proving the harness detects the loss) run in full on JVM, Wasm and the iOS simulator. Android unit tests and JS
+run the pure (non-UI) cases and skip the Compose UI ones, as the rest of the suite does
+(<code>@AndroidJUnitIgnore</code> / <code>@JSIgnore</code>).</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
+      
+    
+  </body>
+</html>
